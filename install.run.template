@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to log messages with colored output
+log() {
+    local level="$1"
+    local message="$2"
+    local color=""
+
+    case "$level" in
+        "INFO")
+            color="$BLUE"
+            ;;
+        "WARNING")
+            color="$YELLOW"
+            ;;
+        "ERROR")
+            color="$RED"
+            ;;
+        "SUCCESS")
+            color="$GREEN"
+            ;;
+        *)
+            color="$NC"
+            ;;
+    esac
+
+    echo -e "${color}[$(date +'%Y-%m-%d %H:%M:%S')] [$level] $message${NC}"
+}
+
+INSTALL_PATH=/opt/bk-lite
+
+
+export PAYLOAD=$(
+cat <<EOF
+__PAYLOAD__
+EOF
+)
+
+check_install_path() {
+    if [ ! -d "$INSTALL_PATH" ]; then
+        log "INFO" "Installation path $INSTALL_PATH does not exist, creating..."
+        mkdir -p "$INSTALL_PATH"
+        log "SUCCESS" "Installation path $INSTALL_PATH created."
+    else
+        log "WARNING" "Installation path $INSTALL_PATH already exists, file may be overwritten."
+    fi
+}
+
+check_command_exist() {
+    local cmd="$1"
+    if ! command -v "$cmd" &> /dev/null; then
+        log "ERROR" "Command '$cmd' not found."
+        exit 1
+    fi
+}
+
+unpack_payload() {
+  # 如果没有传入目录，就用当前目录
+  local out_dir="${1:-$INSTALL_PATH}"
+  mkdir -p "$out_dir"
+  echo $PAYLOAD | base64 -d | tar -xzf - -C "$out_dir"
+}
+
+install() {
+    cd "$INSTALL_PATH"
+    bash bootstrap.sh "$@"
+}
+
+main(){
+    for cmd in tar base64 awk docker openssl; do
+        check_command_exist "$cmd"
+    done
+    check_install_path
+    unpack_payload
+    install "$@"
+}
+
+main "$@"
+
+exit 0

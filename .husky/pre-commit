@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Check if deploy/docker-compose directory has changes
+if git diff --cached --name-only | grep -q "^deploy/docker-compose/"; then
+  echo "Detected changes in deploy/docker-compose, regenerating install.run..."
+  bash scripts/generate-install.sh
+  git add static/install.run
+  echo "install.run updated and staged for commit"
+fi

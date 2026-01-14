@@ -232,3 +232,5 @@ services:
     restart: always
     networks:
       - prod
+    volumes:
+      - ../conf/certs:/etc/nats/certs:ro

@@ -57,7 +57,7 @@ trap "rm -rf $TMPDIR" EXIT
 # Create tarball
 log "INFO" "Creating tarball from $DEPLOY_DIR..."
 cd "$DEPLOY_DIR"
-tar -czf "$TMPDIR/app.tar.gz" .
+COPYFILE_DISABLE=1 tar -czf "$TMPDIR/app.tar.gz" .
 
 # Encode to base64
 log "INFO" "Encoding to base64..."

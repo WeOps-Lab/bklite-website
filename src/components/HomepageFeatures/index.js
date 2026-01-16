@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import Heading from '@theme/Heading';
 import styles from './styles.module.css';
-import { FaUserShield, FaVial, FaSearch, FaChartBar, FaBell, FaLaptopCode, FaCloud, FaChartLine } from 'react-icons/fa';
+import { FaUserShield, FaSearch, FaChartBar, FaBell, FaLaptopCode, FaCloud, FaChartLine } from 'react-icons/fa';
 import { RiMindMap, RiFlowChart } from 'react-icons/ri';
 import { HiOutlineDatabase, HiOutlineChip } from 'react-icons/hi';
 

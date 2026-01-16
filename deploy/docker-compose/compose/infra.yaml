@@ -233,4 +233,4 @@ services:
     networks:
       - prod
     volumes:
-      - ../conf/certs:/etc/nats/certs:ro
+      - ../conf/certs:/etc/certs

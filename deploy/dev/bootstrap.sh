@@ -365,7 +365,7 @@ DOMAIN=${domain}
 PORT=${WEB_PORT}
 CODE_PORT=${CODE_PORT}
 INSTALL_APPS=system_mgmt,cmdb,monitor,node_mgmt,console_mgmt,alerts,log,mlops,operation_analysis
-
+NEXTAPI_INSTALL_APP="system-manager,ops-analysis,cmdb,monitor,ops-console,opspilot,node-manager,alarm,mlops,playground"
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 POSTGRES_USERNAME=${POSTGRES_USERNAME}
 REDIS_PASSWORD=${REDIS_PASSWORD}

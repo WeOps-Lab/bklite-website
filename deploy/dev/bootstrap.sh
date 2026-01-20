@@ -364,6 +364,7 @@ generate_env_file() {
 DOMAIN=${domain}
 PORT=${WEB_PORT}
 CODE_PORT=${CODE_PORT}
+INSTALL_APPS=system_mgmt,cmdb,monitor,node_mgmt,console_mgmt,alerts,log,mlops,operation_analysis
 
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 POSTGRES_USERNAME=${POSTGRES_USERNAME}

@@ -1,0 +1,226 @@
+networks:
+  dev:
+    driver: bridge
+
+volumes:
+  redis:
+  nats:
+  victoria-metrics:
+  postgres:
+  victoria-logs:
+  falkordb:
+  minio:
+
+services:
+  cloud-ide:
+    image: bklite/cloud-ide
+    env_file:
+      - .env
+    environment:
+      CODESERVER_PASSWORD: ${CODESERVER_PASSWORD}
+      OPENCODE_PASSWORD: ${OPENCODE_PASSWORD}
+    ports:
+      - ${CODE_PORT}:8080
+    networks:
+      - dev
+  redis:
+    image: ${DOCKER_IMAGE_REDIS}
+    restart: always
+    volumes:
+      - redis:/data
+    command:
+      - "redis-server"
+      - "--requirepass"
+      - "${REDIS_PASSWORD}"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-h", "localhost", "-p", "6379", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - dev
+
+  nats:
+    image: ${DOCKER_IMAGE_NATS}
+    restart: always
+    volumes:
+      - ./conf/nats/nats.conf:/etc/nats/nats.conf:ro
+      - ./conf/certs:/etc/nats/certs:ro
+      - nats:/nats
+    command:
+      - "-c"
+      - "/etc/nats/nats.conf"
+    networks:
+      - dev
+
+  victoria-metrics:
+    image: ${DOCKER_IMAGE_VICTORIA_METRICS}
+    restart: always
+    volumes:
+      - victoria-metrics:/victoria-metrics-data
+    command:
+      - "--storageDataPath=/victoria-metrics-data"
+      - "--httpListenAddr=0.0.0.0:8428"
+      - "--retentionPeriod=168h"
+      - "-maxLabelsPerTimeseries=300"
+    networks:
+      - dev
+    depends_on:
+      - nats
+
+  postgres:
+    image: ${DOCKER_IMAGE_POSTGRES}
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /data/postgres
+    volumes:
+      - postgres:/data/postgres
+      - ./conf/postgres/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+    networks:
+      - dev
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+  
+  victoria-logs:
+    image: ${DOCKER_IMAGE_VICTORIALOGS}
+    restart: always
+    networks:
+      - dev
+    volumes:
+      - victoria-logs:/vlogs
+    command:
+      - -storageDataPath=/vlogs
+      - -loggerFormat=json
+      - -insert.maxLineSizeBytes=10000000
+
+  minio:
+    image: ${DOCKER_IMAGE_MINIO}
+    restart: always
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio:/data
+    networks:
+      - dev
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/ready"]
+
+  mlflow:
+    image: ${DOCKER_IMAGE_MLFLOW}
+    command:
+      - mlflow
+      - server
+      - --host
+      - 0.0.0.0
+      - --port
+      - "15000"
+      - --backend-store-uri
+      - postgresql+psycopg2://postgres:${POSTGRES_PASSWORD}@postgres:5432/mlflow
+      - --artifacts-destination
+      - s3://mlflow-artifacts/
+      - --serve-artifacts
+    restart: always   
+    networks:
+      - dev
+    environment:
+      - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER}
+      - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
+      - AWS_DEFAULT_REGION=us-east-1
+      - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+    depends_on:
+      postgres: 
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sSf", "http://mlflow:15000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    
+  nats-executor:
+    image: ${DOCKER_IMAGE_NATS_EXECUTOR}
+    environment:
+      - NATS_INSTANCE_ID=default
+      - NATS_URLS=tls://$NATS_ADMIN_USERNAME:$NATS_ADMIN_PASSWORD@nats:4222
+      - NATS_CA_FILE=/etc/nats/certs/ca.crt
+    networks:
+      - dev
+    restart: always
+    volumes:
+      - ./conf/certs:/etc/nats/certs:ro
+
+  falkordb:
+    image: ${DOCKER_IMAGE_FALKORDB}
+    restart: always
+    environment:
+      - REDIS_ARGS=--requirepass ${FALKORDB_PASSWORD}
+      - FALKORDB_ARGS=THREAD_COUNT 4
+    networks:
+      - dev
+    healthcheck:
+      test: ["CMD", "redis-cli", "-h", "localhost", "-p", "6379", "-a", "${FALKORDB_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - falkordb:/var/lib/falkordb/data
+
+  pgvector:
+    image: ${DOCKER_IMAGE_PGVECTOR}
+    restart: always
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: metis
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - dev
+
+  vector:
+    image: ${DOCKER_IMAGE_VECTOR}
+    command: ["--config", "/etc/vector/vector.yaml"]
+    environment:
+      NATS_ADMIN_USERNAME: ${NATS_ADMIN_USERNAME}
+      NATS_ADMIN_PASSWORD: ${NATS_ADMIN_PASSWORD}
+      VECTOR_NATS_SERVERS: tls://nats:4222
+      VECTOR_VICTORIA_METRICS_URL: http://victoria-metrics:8428
+    volumes:
+      - ./conf/vector/vector.yaml:/etc/vector/vector.yaml
+      - ./conf/certs:/etc/certs:ro
+    networks:
+      - dev
+    restart: always
+    depends_on:
+      - nats
+      - victoria-logs
+
+  telegraf:
+    image: ${DOCKER_IMAGE_TELEGRAF}
+    environment:
+      METRIC_NATS_USERNAME: ${NATS_ADMIN_USERNAME}
+      METRIC_NATS_PASSWORD: ${NATS_ADMIN_PASSWORD}
+      METRIC_OUTPUT_URL: http://victoria-metrics:8428
+      METRIC_NATS_SERVERS: tls://nats:4222
+    volumes:
+      - ./conf/telegraf/telegraf.conf:/apps/telegraf.conf:ro
+      - ./conf/certs:/etc/certs:ro
+    networks:
+      - dev
+    restart: always
+    depends_on:
+      - nats
+      - victoria-metrics

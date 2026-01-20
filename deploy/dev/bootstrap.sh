@@ -490,7 +490,7 @@ cmd_start() {
     cd "${base_dir}"
     
     log "INFO" "拉取镜像..."
-    ${DOCKER_COMPOSE_CMD} pull 2>/dev/null || true
+    ${DOCKER_COMPOSE_CMD} pull || true
     
     log "INFO" "启动服务..."
     ${DOCKER_COMPOSE_CMD} up -d

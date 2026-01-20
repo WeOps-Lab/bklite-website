@@ -438,7 +438,7 @@ OPENAI_API_KEY=
 OPENAI_API_BASE=
 
 NEXTAUTH_URL=https://${domain}
-NEXTAPI_URL=http://server:8000
+NEXTAPI_URL=http://127.0.0.1:8001
 EOF
     log "SUCCESS" ".env 文件生成完成"
 }

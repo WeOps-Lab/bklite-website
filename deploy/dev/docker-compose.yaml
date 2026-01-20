@@ -10,6 +10,12 @@ volumes:
   victoria-logs:
   falkordb:
   minio:
+  code-ide-cache:
+  code-ide-workspace:
+  code-ide-opencode-bin:
+  code-ide-opencode-data:
+  code-ide-opencode-config:
+  code-ide-opencode-state:
 
 services:
   cloud-ide:
@@ -18,12 +24,18 @@ services:
       - .env
     volumes:
       - ./conf/certs:/etc/certs:ro
+      - code-ide-cache:/cache
+      - code-ide-workspace:/workspace
+      - code-ide-opencode-bin:/root/.opencode
+      - code-ide-opencode-data:/root/.local/share/opencode
+      - code-ide-opencode-config:/root/.config/opencode
+      - code-ide-opencode-state:/root/.local/state/opencode
     environment:
       CODESERVER_PASSWORD: ${CODESERVER_PASSWORD}
       OPENCODE_PASSWORD: ${OPENCODE_PASSWORD}
     ports:
       - ${CODE_PORT}:8080
-      - ${WEB_PORT}:3000
+      - ${PORT}:3000
     networks:
       - dev
   redis:

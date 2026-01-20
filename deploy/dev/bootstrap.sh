@@ -278,7 +278,7 @@ jetstream {
   domain=bklite-${domain}
 }
 
-server_name=nats-server-${domain}
+server_name=nats-server-dev
 authorization {  
   default_permissions = {
     publish =[]

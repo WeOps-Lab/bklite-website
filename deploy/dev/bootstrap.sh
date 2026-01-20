@@ -275,7 +275,7 @@ leafnodes {
 jetstream: enabled
 jetstream {
   store_dir=/nats/storage
-  domain=bklite-${domain}
+  domain=bklite-dev
 }
 
 server_name=nats-server-dev

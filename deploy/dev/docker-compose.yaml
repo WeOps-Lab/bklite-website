@@ -16,6 +16,8 @@ services:
     image: bklite/cloud-ide
     env_file:
       - .env
+    volumes:
+      - ./conf/certs:/etc/certs:ro
     environment:
       CODESERVER_PASSWORD: ${CODESERVER_PASSWORD}
       OPENCODE_PASSWORD: ${OPENCODE_PASSWORD}

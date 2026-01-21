@@ -1,82 +1,65 @@
 # AGENTS.md - BlueKing Lite Website
 
-> Guidelines for AI coding agents working in this Docusaurus documentation site.
+> Guidelines for AI agents working on this Docusaurus documentation site.
 
-## Quick Reference
+## Commands
 
 | Command | Description |
 |---------|-------------|
 | `pnpm install` | Install dependencies |
-| `pnpm start` | Dev server on port 3001 |
+| `pnpm start` | Dev server on http://localhost:3001 |
 | `pnpm build` | Production build to `/build` |
 | `pnpm clear` | Clear Docusaurus cache |
 
+**No test framework configured** - verify changes with `pnpm build`.
+
 ## Tech Stack
 
-- **Framework**: Docusaurus 3.8.1 (static site generator)
-- **React**: 19.0.0
-- **Styling**: CSS Modules + Infima CSS variables
-- **Icons**: react-icons (FaIcons, RiIcons, HiIcons)
-- **Package Manager**: pnpm
-- **Node**: 18+
+- **Framework**: Docusaurus 3.8.1 | **React**: 19.0.0 | **Node**: 18+
+- **Styling**: CSS Modules + Infima variables
+- **Animation**: framer-motion, canvas-confetti
+- **Icons**: react-icons (Fa, Ri, Hi prefixes)
 - **i18n**: zh-Hans (default), en
+- **Package Manager**: pnpm
 
 ## Project Structure
 
 ```
-bklite-website/
-├── src/
-│   ├── components/          # React components (6 total)
-│   │   ├── HomepageFeatures/   # Feature grid showcase
-│   │   ├── AIShowcase/         # Platform capabilities
-│   │   ├── MegaMenu/           # Navigation dropdown
-│   │   ├── LiquidNavbar/       # Scroll-reactive navbar
-│   │   ├── FinalCTA/           # Call-to-action section
-│   │   └── PartnersShowcase/   # Partner logos
-│   ├── pages/               # Docusaurus pages
-│   │   ├── index.js            # Homepage
-│   │   └── pricing.js          # Pricing page
-│   ├── theme/               # Theme overrides
-│   └── css/
-│       └── custom.css          # Global fonts & variables
-├── docs/                    # Markdown documentation (14 modules)
-├── static/                  # Static assets (images)
-├── docusaurus.config.js     # Site configuration
-└── sidebars.js              # Sidebar configuration
+src/
+├── components/     # React components (10 total, each in named folder)
+│   ├── HomepageFeatures/index.js   # Feature grid
+│   ├── AIShowcase/index.js         # Platform capabilities
+│   ├── AnimatedBackground/index.js # Aurora + floating orbs
+│   └── ...                         # MegaMenu, TiltCard, ScrollAnimations, etc.
+├── pages/          # Docusaurus pages (index.js, pricing.js)
+├── theme/          # Theme overrides
+└── css/custom.css  # Global fonts & variables
+docs/               # Markdown docs (35 files across 14 modules)
+static/             # Images + generated install scripts
 ```
 
-## Code Style Guidelines
+## Code Style
 
-### Import Ordering
-
-Order imports in this sequence:
-1. React and React hooks
-2. External libraries (clsx, Docusaurus components)
-3. Theme components (@theme/*)
-4. Local components (@site/src/*)
-5. Styles (CSS modules last)
+### Import Order (STRICT)
 
 ```javascript
-// ✅ Correct order
-import React, { useState, useEffect } from 'react';
-import clsx from 'clsx';
-import Link from '@docusaurus/Link';
-import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import Layout from '@theme/Layout';
+import React, { useState, useEffect } from 'react';  // 1. React
+import clsx from 'clsx';                              // 2. External libs
+import { motion } from 'framer-motion';
+import Layout from '@theme/Layout';                   // 3. @theme/*
 import Heading from '@theme/Heading';
-import HomepageFeatures from '@site/src/components/HomepageFeatures';
-import styles from './index.module.css';
+import HomepageFeatures from '@site/src/components/HomepageFeatures'; // 4. @site/*
+import styles from './index.module.css';              // 5. Styles LAST
 ```
 
-### Component Patterns
+### Component Pattern
 
-**Functional components only** - no class components:
+**Functional components only** with default exports:
 
 ```javascript
-// ✅ Correct: Functional component with hooks
-function Feature({ title, description, icon }) {
+function Feature({ title, icon, description }) {
   return (
-    <div className={styles.featureItem}>
+    <div className={styles.featureCard}>
       <div className={styles.featureIcon}>{icon}</div>
       <Heading as="h3">{title}</Heading>
       <p>{description}</p>
@@ -87,9 +70,7 @@ function Feature({ title, description, icon }) {
 export default function HomepageFeatures() {
   return (
     <section className={styles.features}>
-      {FeatureList.map((props, idx) => (
-        <Feature key={idx} {...props} />
-      ))}
+      {FeatureList.map((props, idx) => <Feature key={idx} {...props} />)}
     </section>
   );
 }
@@ -99,92 +80,32 @@ export default function HomepageFeatures() {
 
 | Type | Convention | Example |
 |------|------------|---------|
-| Components | PascalCase | `HomepageFeatures`, `FinalCTA` |
-| Functions | camelCase | `handleCopy`, `closeQRCode` |
-| Variables | camelCase | `selectedVersion`, `showQRCode` |
-| CSS classes | camelCase in modules | `styles.featureCard` |
-| Files (components) | `index.js` in named folder | `components/MegaMenu/index.js` |
-| Files (pages) | lowercase | `pricing.js` |
-| CSS modules | `styles.module.css` | `HomepageFeatures/styles.module.css` |
-
-### Export Patterns
-
-- **Default exports** for page components and main component exports
-- **Named exports** not used in this codebase
-
-```javascript
-// ✅ Standard pattern
-export default function ComponentName() { ... }
-```
+| Components | PascalCase | `HomepageFeatures`, `TiltCard` |
+| Functions/variables | camelCase | `handleCopy`, `selectedVersion` |
+| Component folders | PascalCase | `components/MegaMenu/index.js` |
+| CSS modules | `styles.module.css` | `styles.featureCard` |
+| Pages | lowercase | `pricing.js` |
 
 ### Styling
 
-**CSS Modules** for component styles:
+Use CSS Modules with Infima variables:
 
 ```javascript
 import styles from './styles.module.css';
-
-// Usage
-<div className={styles.featureCard}>
-<div className={clsx(styles.button, styles.primary)}>
+<div className={clsx(styles.card, styles.primary)}>
 ```
-
-**CSS Variables** (Infima) for theming:
 
 ```css
-/* Use Docusaurus/Infima variables */
-color: var(--ifm-color-primary);
-font-family: var(--ifm-font-family-base);
-font-weight: var(--ifm-font-weight-semibold);
+.card {
+  color: var(--ifm-color-primary);
+  font-family: var(--ifm-font-family-base);
+  font-weight: var(--ifm-font-weight-semibold);
+}
 ```
 
-**Gradient classes** defined per component:
+### Data & Error Handling
 
-```css
-.gradient-monitoring { /* monitoring theme gradient */ }
-.gradient-opspilot { /* AI theme gradient */ }
-```
-
-### Data Patterns
-
-Data is defined as static arrays/objects within components:
-
-```javascript
-const FeatureGroups = [
-  {
-    groupTitle: '经典运维',
-    groupSubtitle: '成熟稳定的运维能力体系',
-    features: [
-      {
-        title: '监控中心',
-        icon: <FaChartBar color="var(--ifm-color-primary)" />,
-        badge: '全域监控',
-        highlights: ['秒级监控', '弹性采集', '精准告警'],
-        description: <>全域监控体系...</>,
-      },
-      // ...
-    ]
-  },
-];
-```
-
-### State Management
-
-Use React hooks for local state only:
-
-```javascript
-const [selectedVersion, setSelectedVersion] = useState('basic');
-const [isOpen, setIsOpen] = useState(false);
-const menuRef = useRef(null);
-
-useEffect(() => {
-  // Side effects
-}, [dependency]);
-```
-
-### Error Handling
-
-Wrap async operations in try-catch:
+Define static data as const arrays within components. Wrap async ops in try-catch:
 
 ```javascript
 const handleCopy = async () => {
@@ -200,76 +121,35 @@ const handleCopy = async () => {
 
 ### Comments
 
-- Use `//` for single-line comments
-- Use `/* */` for section dividers in CSS
-- Chinese comments are acceptable (matches i18n default)
+- Chinese comments OK (matches i18n default)
+- Use `//` for code, `/* */` for CSS section dividers
 
-```javascript
-// 版本切换处理函数
-const handleVersionChange = (version) => { ... };
+## Pre-commit Hook
 
-// 确保页面加载时滚动到顶部
-useEffect(() => { ... }, []);
-```
-
-```css
-/* ==============================================
-   导航栏优化 - 配合 MegaMenu 使用
-   ============================================== */
-```
-
-## Documentation Files
-
-- Location: `/docs/{module}/`
-- Format: Markdown (.md)
-- Sidebars: Auto-generated from directory structure
-
-Modules: `opspilot`, `monitor`, `log`, `alert`, `cmdb`, `node`, `mlops`, `itsm`, `console`, `system`, `deploy`, `faq`, `dev`, `operations`
-
-## Build & Deploy
-
-### Development
-```bash
-pnpm start  # Starts on http://localhost:3001
-```
-
-### Production Build
-```bash
-pnpm build  # Outputs to /build
-```
-
-### Docker
-```bash
-docker build -t bklite-website .
-docker run -p 80:80 bklite-website
-```
-
-### Pre-commit Hook
-
-Changes to `deploy/docker-compose/` trigger automatic regeneration of `static/install.run`:
-
-```bash
-# .husky/pre-commit
-bash scripts/generate-install.sh
-git add static/install.run
-```
+Changes to `deploy/docker-compose/` or `deploy/dev/` auto-regenerate `static/install.run` and `static/install.dev`.
 
 ## DO NOT
 
-- ❌ Add TypeScript (project uses JavaScript only)
-- ❌ Use class components
-- ❌ Import from relative paths when `@site/` or `@theme/` aliases work
-- ❌ Add testing frameworks (none configured)
-- ❌ Use global state management (Redux, Context) - not needed
-- ❌ Modify `custom.css` font stacks without understanding CJK requirements
-- ❌ Remove `!important` from font declarations (intentional for consistency)
+- Add TypeScript (JavaScript only)
+- Use class components
+- Use relative imports when `@site/` or `@theme/` aliases work
+- Add testing frameworks or Redux/Context
+- Use `as any`, `@ts-ignore`, `@ts-expect-error`
+- Remove `!important` from font declarations in custom.css
+- Modify CJK font stacks without understanding requirements
 
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `docusaurus.config.js` | Site config, navbar, footer, i18n |
-| `sidebars.js` | Documentation sidebar structure |
-| `src/css/custom.css` | Global fonts, CSS variables |
-| `src/pages/index.js` | Homepage with hero section |
-| `Dockerfile` | Multi-stage build (Node → Nginx) |
+| `docusaurus.config.js` | Site config, navbar, footer, i18n, analytics |
+| `sidebars.js` | Doc sidebar structure |
+| `src/css/custom.css` | Global fonts (CJK-optimized), CSS variables |
+| `src/pages/index.js` | Homepage with framer-motion animations |
+| `.husky/pre-commit` | Auto-generate install scripts |
+
+## Build & Deploy
+
+```bash
+pnpm build && docker build -t bklite-website . && docker run -p 80:80 bklite-website
+```

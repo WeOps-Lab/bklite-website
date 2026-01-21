@@ -2,8 +2,14 @@
 
 # Check if deploy/docker-compose directory has changes
 if git diff --cached --name-only | grep -q "^deploy/docker-compose/"; then
-  echo "Detected changes in deploy/docker-compose, regenerating install.run..."
-  bash scripts/generate-install.sh
-  git add static/install.run
-  echo "install.run updated and staged for commit"
+  echo "Detected changes in deploy/docker-compose, regenerating install.run and syncing dev conf..."
+  bash scripts/generate-install.sh all
+  git add static/install.run static/install.dev deploy/dev/conf/
+  echo "install.run and install.dev updated and staged for commit"
+# Check if only deploy/dev directory has changes (excluding conf which is synced from docker-compose)
+elif git diff --cached --name-only | grep -q "^deploy/dev/"; then
+  echo "Detected changes in deploy/dev, regenerating install.dev..."
+  bash scripts/generate-install.sh dev
+  git add static/install.dev deploy/dev/conf/
+  echo "install.dev updated and staged for commit"
 fi

@@ -1,45 +1,43 @@
 networks:
-  prod:
+  dev:
     driver: bridge
-    name: bklite-prod
 
 volumes:
   redis:
   nats:
   victoria-metrics:
   postgres:
-  neo4j:
   victoria-logs:
   falkordb:
   minio:
+  code-ide-cache:
+  code-ide-workspace:
+  code-ide-opencode-bin:
+  code-ide-opencode-data:
+  code-ide-opencode-config:
+  code-ide-opencode-state:
 
 services:
-  traefik:
-    image: ${DOCKER_IMAGE_TRAEFIK}
-    restart: always
-    ports:
-      - "${TRAEFIK_WEB_PORT}:${TRAEFIK_WEB_PORT}"
+  cloud-ide:
+    image: bklite/cloud-ide
+    env_file:
+      - .env
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ../conf/traefik/dynamic.yml:/etc/traefik/dynamic.yml
-      - ../conf/traefik/certs:/etc/certs:ro
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.services.traefik-dashboard.loadbalancer.server.port=8080"
-    command:
-      - "--log.level=INFO"
-      - "--api.insecure=true"
-      - "--api.dashboard=${TRAEFIK_ENABLE_DASHBOARD}"
-      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
-      - "--providers.docker.exposedByDefault=false"
-      - "--providers.file.filename=/etc/traefik/dynamic.yml"
-      - "--providers.file.watch=true"
-      - "--accesslog"
-      - "--entrypoints.websecure.address=:${TRAEFIK_WEB_PORT}"
-      - "--entrypoints.websecure.http.tls=true"
+      - ./conf/certs:/etc/certs:ro
+      - code-ide-cache:/cache
+      - code-ide-workspace:/workspace
+      - code-ide-opencode-bin:/root/.opencode
+      - code-ide-opencode-data:/root/.local/share/opencode
+      - code-ide-opencode-config:/root/.config/opencode
+      - code-ide-opencode-state:/root/.local/state/opencode
+    environment:
+      CODESERVER_PASSWORD: ${CODESERVER_PASSWORD}
+      OPENCODE_PASSWORD: ${OPENCODE_PASSWORD}
+    ports:
+      - ${CODE_PORT}:8080
+      - ${PORT}:3000
     networks:
-      - prod
-
+      - dev
   redis:
     image: ${DOCKER_IMAGE_REDIS}
     restart: always
@@ -49,63 +47,53 @@ services:
       - "redis-server"
       - "--requirepass"
       - "${REDIS_PASSWORD}"
-    ports:
-      - "6379:6379"
     healthcheck:
-      test: ["CMD", "redis-cli", "-h", "redis", "-p", "6379", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "-h", "localhost", "-p", "6379", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
     networks:
-      - prod
+      - dev
 
   nats:
     image: ${DOCKER_IMAGE_NATS}
     restart: always
     volumes:
-      - ../conf/nats/nats.conf:/etc/nats/nats.conf:ro
-      - ../conf/certs:/etc/nats/certs:ro
+      - ./conf/nats/nats.conf:/etc/nats/nats.conf:ro
+      - ./conf/certs:/etc/nats/certs:ro
       - nats:/nats
-    ports:
-      - "4222:4222"
-      - "7422:7422"
     command:
       - "-c"
       - "/etc/nats/nats.conf"
     networks:
-      - prod
+      - dev
 
   victoria-metrics:
     image: ${DOCKER_IMAGE_VICTORIA_METRICS}
     restart: always
     volumes:
       - victoria-metrics:/victoria-metrics-data
-    ports:
-      - "8428:8428"
     command:
       - "--storageDataPath=/victoria-metrics-data"
       - "--httpListenAddr=0.0.0.0:8428"
       - "--retentionPeriod=168h"
       - "-maxLabelsPerTimeseries=300"
     networks:
-      - prod
+      - dev
     depends_on:
       - nats
 
   postgres:
-    container_name: postgres
     image: ${DOCKER_IMAGE_POSTGRES}
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PGDATA: /data/postgres
-    ports:
-      - "5432:5432"
     volumes:
       - postgres:/data/postgres
-      - ../conf/postgres/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+      - ./conf/postgres/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
     networks:
-      - prod
+      - dev
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USERNAME}"]
       interval: 10s
@@ -117,11 +105,9 @@ services:
     image: ${DOCKER_IMAGE_VICTORIALOGS}
     restart: always
     networks:
-      - prod
+      - dev
     volumes:
       - victoria-logs:/vlogs
-    ports:
-      - "9428:9428"      
     command:
       - -storageDataPath=/vlogs
       - -loggerFormat=json
@@ -133,14 +119,11 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     command: server /data --console-address ":9001"
     volumes:
       - minio:/data
     networks:
-      - prod
+      - dev
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/ready"]
 
@@ -158,11 +141,9 @@ services:
       - --artifacts-destination
       - s3://mlflow-artifacts/
       - --serve-artifacts
-    ports:
-      - "15000:15000"
     restart: always   
     networks:
-      - prod
+      - dev
     environment:
       - AWS_ACCESS_KEY_ID=${MINIO_ROOT_USER}
       - AWS_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD}
@@ -181,16 +162,15 @@ services:
     
   nats-executor:
     image: ${DOCKER_IMAGE_NATS_EXECUTOR}
-    container_name: nats-executor
     environment:
       - NATS_INSTANCE_ID=default
       - NATS_URLS=tls://$NATS_ADMIN_USERNAME:$NATS_ADMIN_PASSWORD@nats:4222
       - NATS_CA_FILE=/etc/nats/certs/ca.crt
     networks:
-      - prod
+      - dev
     restart: always
     volumes:
-      - ../conf/certs:/etc/nats/certs:ro
+      - ./conf/certs:/etc/nats/certs:ro
 
   falkordb:
     image: ${DOCKER_IMAGE_FALKORDB}
@@ -198,12 +178,10 @@ services:
     environment:
       - REDIS_ARGS=--requirepass ${FALKORDB_PASSWORD}
       - FALKORDB_ARGS=THREAD_COUNT 4
-    ports:
-      - "6479:6379"      
     networks:
-      - prod
+      - dev
     healthcheck:
-      test: ["CMD", "redis-cli", "-h", "redis", "-p", "6379", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "-h", "localhost", "-p", "6379", "-a", "${FALKORDB_PASSWORD}", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -225,12 +203,39 @@ services:
       timeout: 5s
       retries: 3
     networks:
-      - prod
+      - dev
 
-  webhookd:
-    image: ${DOCKER_IMAGE_WEBHOOKD}
-    restart: always
-    networks:
-      - prod
+  vector:
+    image: ${DOCKER_IMAGE_VECTOR}
+    command: ["--config", "/etc/vector/vector.yaml"]
+    environment:
+      NATS_ADMIN_USERNAME: ${NATS_ADMIN_USERNAME}
+      NATS_ADMIN_PASSWORD: ${NATS_ADMIN_PASSWORD}
+      VECTOR_NATS_SERVERS: tls://nats:4222
+      VECTOR_VICTORIA_METRICS_URL: http://victoria-metrics:8428
     volumes:
-      - ../conf/certs:/etc/certs
+      - ./conf/vector/vector.yaml:/etc/vector/vector.yaml
+      - ./conf/certs:/etc/certs:ro
+    networks:
+      - dev
+    restart: always
+    depends_on:
+      - nats
+      - victoria-logs
+
+  telegraf:
+    image: ${DOCKER_IMAGE_TELEGRAF}
+    environment:
+      METRIC_NATS_USERNAME: ${NATS_ADMIN_USERNAME}
+      METRIC_NATS_PASSWORD: ${NATS_ADMIN_PASSWORD}
+      METRIC_OUTPUT_URL: http://victoria-metrics:8428
+      METRIC_NATS_SERVERS: tls://nats:4222
+    volumes:
+      - ./conf/telegraf/telegraf.conf:/apps/telegraf.conf:ro
+      - ./conf/certs:/etc/certs:ro
+    networks:
+      - dev
+    restart: always
+    depends_on:
+      - nats
+      - victoria-metrics

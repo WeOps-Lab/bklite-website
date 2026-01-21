@@ -3,9 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-DEPLOY_DIR="$PROJECT_ROOT/deploy/docker-compose"
 TEMPLATE_FILE="$PROJECT_ROOT/install.run.template"
-OUTPUT_FILE="$PROJECT_ROOT/static/install.run"
 
 # Colors for output
 RED='\033[0;31m'
@@ -42,35 +40,85 @@ if [ ! -f "$TEMPLATE_FILE" ]; then
     exit 1
 fi
 
-# Check if deploy directory exists
-if [ ! -d "$DEPLOY_DIR" ]; then
-    log "ERROR" "Deploy directory not found: $DEPLOY_DIR"
-    exit 1
-fi
+# Function to generate installer
+generate_installer() {
+    local deploy_dir="$1"
+    local output_file="$2"
+    local name="$3"
 
-log "INFO" "Starting install.run generation..."
+    if [ ! -d "$deploy_dir" ]; then
+        log "ERROR" "Deploy directory not found: $deploy_dir"
+        return 1
+    fi
 
-# Create temporary directory
-TMPDIR=$(mktemp -d)
-trap "rm -rf $TMPDIR" EXIT
+    log "INFO" "Starting $name generation..."
 
-# Create tarball
-log "INFO" "Creating tarball from $DEPLOY_DIR..."
-cd "$DEPLOY_DIR"
-tar -czf "$TMPDIR/app.tar.gz" .
+    # Create temporary directory
+    local tmpdir=$(mktemp -d)
+    trap "rm -rf $tmpdir" RETURN
 
-# Encode to base64
-log "INFO" "Encoding to base64..."
-PAYLOAD=$(base64 < "$TMPDIR/app.tar.gz" | tr -d '\n')
+    # Create tarball (use options to avoid macOS extended attributes)
+    log "INFO" "Creating tarball from $deploy_dir..."
+    cd "$deploy_dir"
+    # COPYFILE_DISABLE=1 prevents ._* files, --no-xattrs and --no-mac-metadata prevent xattr headers
+    COPYFILE_DISABLE=1 tar --no-xattrs --no-mac-metadata -czf "$tmpdir/app.tar.gz" . 2>/dev/null || \
+    COPYFILE_DISABLE=1 tar -czf "$tmpdir/app.tar.gz" .
 
-# Replace placeholder in template
-log "INFO" "Generating install.run from template..."
-sed "s#__PAYLOAD__#$PAYLOAD#g" "$TEMPLATE_FILE" > "$OUTPUT_FILE"
+    # Encode to base64
+    log "INFO" "Encoding to base64..."
+    local payload=$(base64 < "$tmpdir/app.tar.gz" | tr -d '\n')
 
-# Make it executable
-chmod +x "$OUTPUT_FILE"
+    # Replace placeholder in template
+    log "INFO" "Generating $name from template..."
+    sed "s#__PAYLOAD__#$payload#g" "$TEMPLATE_FILE" > "$output_file"
 
-log "SUCCESS" "install.run generated successfully at: $OUTPUT_FILE"
-log "INFO" "File size: $(du -h "$OUTPUT_FILE" | cut -f1)"
+    # Make it executable
+    chmod +x "$output_file"
+
+    log "SUCCESS" "$name generated successfully at: $output_file"
+    log "INFO" "File size: $(du -h "$output_file" | cut -f1)"
+}
+
+# Copy shared conf files to dev directory
+sync_dev_conf() {
+    local source_conf="$PROJECT_ROOT/deploy/docker-compose/conf"
+    local target_conf="$PROJECT_ROOT/deploy/dev/conf"
+
+    log "INFO" "Syncing conf files from docker-compose to dev..."
+
+    # Create target directories
+    mkdir -p "$target_conf/vector"
+    mkdir -p "$target_conf/telegraf"
+    mkdir -p "$target_conf/postgres"
+
+    # Copy conf files
+    [ -f "$source_conf/vector/vector.yaml" ] && cp "$source_conf/vector/vector.yaml" "$target_conf/vector/"
+    [ -f "$source_conf/telegraf/telegraf.conf" ] && cp "$source_conf/telegraf/telegraf.conf" "$target_conf/telegraf/"
+    [ -f "$source_conf/postgres/initdb.sql" ] && cp "$source_conf/postgres/initdb.sql" "$target_conf/postgres/"
+
+    log "SUCCESS" "Conf files synced to dev directory"
+}
+
+# Parse arguments
+TARGET="${1:-all}"
+
+case "$TARGET" in
+    "run"|"docker-compose")
+        generate_installer "$PROJECT_ROOT/deploy/docker-compose" "$PROJECT_ROOT/static/install.run" "install.run"
+        ;;
+    "dev")
+        sync_dev_conf
+        generate_installer "$PROJECT_ROOT/deploy/dev" "$PROJECT_ROOT/static/install.dev" "install.dev"
+        ;;
+    "all")
+        generate_installer "$PROJECT_ROOT/deploy/docker-compose" "$PROJECT_ROOT/static/install.run" "install.run"
+        sync_dev_conf
+        generate_installer "$PROJECT_ROOT/deploy/dev" "$PROJECT_ROOT/static/install.dev" "install.dev"
+        ;;
+    *)
+        log "ERROR" "Unknown target: $TARGET. Use 'run', 'dev', or 'all'"
+        exit 1
+        ;;
+esac
 
 exit 0

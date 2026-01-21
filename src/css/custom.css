@@ -223,38 +223,121 @@ samp {
   white-space: nowrap;
 }
 
-/* GitHub 按钮样式优化 */
+.navbar__link[href*='github.com'],
+.navbar__link[href*='deepwiki.com'],
+.navbar__link[href*='bklite.canway.net'] {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 20px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-decoration: none !important;
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
+}
+
 .navbar__link[href*='github.com'] {
-  background: rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
-  padding: 6px 14px;
-  font-weight: 600;
-  transition: all 0.2s ease;
+  color: #475569 !important;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .navbar__link[href*='github.com']:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(148, 163, 184, 0.4);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
   transform: translateY(-1px);
 }
 
-/* 在线体验按钮特殊样式 */
+.navbar__link[href*='deepwiki.com'] {
+  color: #6366f1 !important;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.15);
+  box-shadow: 
+    0 2px 8px rgba(99, 102, 241, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.navbar__link[href*='deepwiki.com']:hover {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.25);
+  box-shadow: 
+    0 4px 16px rgba(99, 102, 241, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
 .navbar__link[href*='bklite.canway.net'] {
-  background: linear-gradient(
-    135deg,
-    var(--ifm-color-primary) 0%,
-    var(--ifm-color-primary-dark) 100%
-  );
   color: white !important;
-  border-radius: 8px;
-  padding: 6px 16px;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(var(--ifm-color-primary-rgb), 0.25);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 2px 12px rgba(99, 102, 241, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .navbar__link[href*='bklite.canway.net']:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(var(--ifm-color-primary-rgb), 0.35);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 1) 0%, rgba(139, 92, 246, 1) 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 6px 20px rgba(99, 102, 241, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+/* 深色模式下的导航栏按钮 */
+[data-theme='dark'] .navbar__link[href*='github.com'] {
+  color: #e2e8f0 !important;
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(148, 163, 184, 0.2);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='dark'] .navbar__link[href*='github.com']:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(148, 163, 184, 0.3);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .navbar__link[href*='deepwiki.com'] {
+  color: #a5b4fc !important;
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.25);
+  box-shadow: 
+    0 2px 8px rgba(99, 102, 241, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .navbar__link[href*='deepwiki.com']:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.35);
+  box-shadow: 
+    0 4px 16px rgba(99, 102, 241, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+[data-theme='dark'] .navbar__link[href*='bklite.canway.net'] {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.85) 0%, rgba(139, 92, 246, 0.85) 100%);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 2px 12px rgba(99, 102, 241, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+[data-theme='dark'] .navbar__link[href*='bklite.canway.net']:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.95) 0%, rgba(139, 92, 246, 0.95) 100%);
+  box-shadow: 
+    0 6px 20px rgba(99, 102, 241, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* 响应式优化 */

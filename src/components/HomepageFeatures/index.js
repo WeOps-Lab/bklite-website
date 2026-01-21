@@ -1,5 +1,7 @@
 import clsx from 'clsx';
 import Heading from '@theme/Heading';
+import { FadeInUp, StaggerContainer, StaggerItem } from '@site/src/components/ScrollAnimations';
+import { TiltCard } from '@site/src/components/TiltCard';
 import styles from './styles.module.css';
 import { FaUserShield, FaSearch, FaChartBar, FaBell, FaLaptopCode, FaCloud, FaChartLine } from 'react-icons/fa';
 import { RiMindMap, RiFlowChart } from 'react-icons/ri';
@@ -160,7 +162,7 @@ const FeatureGroups = [
 
 function Feature({ title, description, gradient, icon, badge, metric, highlights }) {
   return (
-    <div className={styles.featureItem}>
+    <TiltCard className={styles.featureItem} tiltAmount={8} scale={1.02}>
       <div className={clsx(styles.featureCard, styles[gradient])}>
         <div className={styles.cardHeader}>
           <div className={styles.featureIcon}>
@@ -188,25 +190,26 @@ function Feature({ title, description, gradient, icon, badge, metric, highlights
 
         <div className={clsx(styles.featureGlow, styles[gradient])}></div>
       </div>
-    </div>
+    </TiltCard>
   );
 }
 
 export default function HomepageFeatures() {
   return (
     <section className={styles.features}>
-      {/* AI风格装饰元素 */}
       <div className={styles.aiOrb1}></div>
       <div className={styles.aiOrb2}></div>
       <div className={styles.aiOrb3}></div>
       <div className={styles.gridPattern}></div>
 
       <div className="container">
-        <div className={styles.sectionHeader}>
-          <Heading as="h2" className={styles.sectionTitle}>
-            产品模块
-          </Heading>
-        </div>
+        <FadeInUp>
+          <div className={styles.sectionHeader}>
+            <Heading as="h2" className={styles.sectionTitle}>
+              产品模块
+            </Heading>
+          </div>
+        </FadeInUp>
 
         {FeatureGroups.map((group, groupIdx) => {
           const gridClass = group.features.length === 2
@@ -217,15 +220,19 @@ export default function HomepageFeatures() {
 
           return (
             <div key={groupIdx} className={styles.featureGroup}>
-              <div className={styles.groupHeader}>
-                <h3 className={styles.groupTitle}>{group.groupTitle}</h3>
-                <p className={styles.groupSubtitle}>{group.groupSubtitle}</p>
-              </div>
-              <div className={gridClass}>
+              <FadeInUp delay={groupIdx * 0.1}>
+                <div className={styles.groupHeader}>
+                  <h3 className={styles.groupTitle}>{group.groupTitle}</h3>
+                  <p className={styles.groupSubtitle}>{group.groupSubtitle}</p>
+                </div>
+              </FadeInUp>
+              <StaggerContainer className={gridClass} staggerDelay={0.08}>
                 {group.features.map((props, idx) => (
-                  <Feature key={idx} {...props} />
+                  <StaggerItem key={idx} direction="up">
+                    <Feature {...props} />
+                  </StaggerItem>
                 ))}
-              </div>
+              </StaggerContainer>
             </div>
           );
         })}

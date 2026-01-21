@@ -96,19 +96,11 @@ const config = {
           },
           {
             "label": "运维手册",
-            "to": "#"
+            "to": "/docs/operations"
           },
           {
             "label": "开发指南",
-            "to": "#"
-          },
-          {
-            "label": "资源下载",
-            "to": "#"
-          },
-          {
-            "label": "FAQ",
-            "to": "#"
+            "to": "/docs/dev"
           },
           {
             "label": "价格",
@@ -117,6 +109,11 @@ const config = {
           {
             label: '在线体验',
             href: 'https://bklite.canway.net/',
+            position: 'right',
+          },
+          {
+            href: 'https://deepwiki.com/TencentBlueKing/bk-lite',
+            label: 'DeepWiki',
             position: 'right',
           },
           {

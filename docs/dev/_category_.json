@@ -1,0 +1,10 @@
+{
+  "label": "开发指南",
+  "position": 1,
+  "link": {
+    "type": "generated-index",
+    "title": "开发指南",
+    "description": "BK-Lite 开发者文档，包含环境搭建、前端开发、后端开发等内容。",
+    "slug": "/dev"
+  }
+}

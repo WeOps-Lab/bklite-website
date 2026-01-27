@@ -173,6 +173,12 @@
 /* 为固定导航栏腾出空间 */
 :global(body) {
   padding-top: var(--ifm-navbar-height);
+  background: #fff;
+}
+
+:global([data-theme="dark"] body),
+:global([data-theme="dark"]) {
+  background: #000;
 }
 
 /* 改善移动端菜单的液态玻璃效果 */

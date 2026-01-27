@@ -1,5 +1,7 @@
 import clsx from 'clsx';
 import Heading from '@theme/Heading';
+import { FadeInUp, StaggerContainer, StaggerItem } from '@site/src/components/ScrollAnimations';
+import { TiltCard } from '@site/src/components/TiltCard';
 import styles from './styles.module.css';
 
 const platformFeatures = [
@@ -79,7 +81,7 @@ const platformFeatures = [
 
 function PlatformFeature({ icon, title, description, badge, color, metric, highlights }) {
   return (
-    <div className={styles.platformFeatureItem}>
+    <TiltCard className={styles.platformFeatureItem} tiltAmount={6} scale={1.02}>
       <div className={clsx(styles.platformFeatureCard, styles[color])}>
         <div className={styles.cardHeader}>
           <div className={styles.platformFeatureIcon}>
@@ -110,7 +112,7 @@ function PlatformFeature({ icon, title, description, badge, color, metric, highl
 
         <div className={styles.cardGlow}></div>
       </div>
-    </div>
+    </TiltCard>
   );
 }
 
@@ -118,17 +120,21 @@ export default function PlatformShowcase() {
   return (
     <section className={styles.platformShowcase}>
       <div className={styles.container}>
-        <div className={styles.sectionHeader}>
-          <Heading as="h2" className={styles.sectionTitle}>
-            关键特性
-          </Heading>
-        </div>
+        <FadeInUp>
+          <div className={styles.sectionHeader}>
+            <Heading as="h2" className={styles.sectionTitle}>
+              关键特性
+            </Heading>
+          </div>
+        </FadeInUp>
 
-        <div className={styles.platformFeatureGrid}>
+        <StaggerContainer className={styles.platformFeatureGrid} staggerDelay={0.06}>
           {platformFeatures.map((feature, idx) => (
-            <PlatformFeature key={idx} {...feature} />
+            <StaggerItem key={idx} direction="up">
+              <PlatformFeature {...feature} />
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
       </div>
     </section>
   );

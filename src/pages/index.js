@@ -1,12 +1,14 @@
+import React, { useState, useEffect } from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
+import { motion } from 'framer-motion';
+import confetti from 'canvas-confetti';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
 import PlatformShowcase from '@site/src/components/AIShowcase';
 import PartnersShowcase from '@site/src/components/PartnersShowcase';
 import FinalCTA from '@site/src/components/FinalCTA';
 import LiquidNavbar from '@site/src/components/LiquidNavbar';
-import React, { useState, useEffect } from 'react';
-import confetti from 'canvas-confetti';
+import { AuroraBackground, FloatingOrbs } from '@site/src/components/AnimatedBackground';
 import styles from './index.module.css';
 
 function HomepageHeader() {
@@ -145,9 +147,47 @@ function HomepageHeader() {
     }
   };
 
+  const heroVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.15, delayChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
+    visible: {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      transition: { duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }
+    }
+  };
+
+  const statsVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.3 }
+    }
+  };
+
+  const statItemVariants = {
+    hidden: { opacity: 0, scale: 0.8, y: 20 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }
+    }
+  };
+
   return (
     <header className={styles.heroBanner}>
       <div className={styles.heroBackground}>
+        <AuroraBackground />
+        <FloatingOrbs count={5} />
         <div className={styles.floatingShapes}>
           <div className={styles.shape1}></div>
           <div className={styles.shape2}></div>
@@ -155,24 +195,30 @@ function HomepageHeader() {
         </div>
       </div>
       <div className={styles.heroContent}>
-        <div className={styles.heroAnimation}>
-          <div className={styles.heroTitleAccent}>BlueKing Lite</div>
-          <p className={styles.heroSubtitle}>
+        <motion.div
+          className={styles.heroAnimation}
+          variants={heroVariants}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div className={styles.heroTitleAccent} variants={itemVariants}>
+            BlueKing Lite
+          </motion.div>
+          <motion.p className={styles.heroSubtitle} variants={itemVariants}>
             全栈能力，轻量落地
-          </p>
-          <div className={styles.heroStats}>
-            <div className={styles.statCard}>
+          </motion.p>
+          <motion.div className={styles.heroStats} variants={statsVariants}>
+            <motion.div className={styles.statCard} variants={statItemVariants}>
               <div className={styles.statValue}>AI原生</div>
-            </div>
-            <div className={styles.statCard}>
+            </motion.div>
+            <motion.div className={styles.statCard} variants={statItemVariants}>
               <div className={styles.statValue}>极简部署</div>
-            </div>
-            <div className={styles.statCard}>
+            </motion.div>
+            <motion.div className={styles.statCard} variants={statItemVariants}>
               <div className={styles.statValue}>按需启用</div>
-            </div>
-          </div>
-          <div className={styles.quickInstall}>
-            {/* 版本选择器 */}
+            </motion.div>
+          </motion.div>
+          <motion.div className={styles.quickInstall} variants={itemVariants}>
             <div className={styles.versionSelector}>
               <div className={styles.versionTabs} data-selected={selectedVersion}>
                 {Object.entries(versions).map(([key, version]) => (
@@ -191,7 +237,6 @@ function HomepageHeader() {
               </div>
             </div>
 
-            {/* 代码块 */}
             <div className={styles.codeBlock}>
               <div className={styles.codeContentWrapper}>
                 <pre className={styles.codeContent}>
@@ -212,8 +257,8 @@ function HomepageHeader() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </header>
   );

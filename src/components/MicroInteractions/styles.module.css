@@ -1,0 +1,192 @@
+/* ==============================================
+   MicroInteractions - Cloudflare-inspired effects
+   ============================================== */
+
+/* MagneticButton - follows cursor magnetically */
+.magneticButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  transition: transform 0.1s ease-out;
+}
+
+/* RippleButton - Material-style ripple on click */
+.rippleButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+
+.rippleContainer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  animation: rippleExpand 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes rippleExpand {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.6;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+
+/* HoverGlow - cursor-following glow overlay */
+.hoverGlow {
+  position: relative;
+  overflow: hidden;
+}
+
+.glowOverlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+
+/* PulseIcon - pulsing ring effect for icons */
+.pulseIcon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pulse {
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid var(--pulse-color, rgba(99, 102, 241, 0.4));
+  animation: pulseRing 2s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pulseRing {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* ShineEffect - glossy shine sweep on hover */
+.shineEffect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shine {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transform: skewX(-25deg);
+  pointer-events: none;
+  transition: none;
+}
+
+.shineEffect:hover .shine {
+  animation: shineSweep 0.75s ease-out forwards;
+}
+
+@keyframes shineSweep {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 150%;
+  }
+}
+
+/* TextReveal - word-by-word text reveal */
+.textReveal {
+  display: inline-flex;
+  flex-wrap: wrap;
+}
+
+.word {
+  display: inline-block;
+  white-space: pre;
+}
+
+/* ==============================================
+   Additional utility animations
+   ============================================== */
+
+/* Subtle float animation for decorative elements */
+@keyframes subtleFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.subtleFloat {
+  animation: subtleFloat 3s ease-in-out infinite;
+}
+
+/* Glow pulse for highlighted elements */
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.5);
+  }
+}
+
+.glowPulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+/* Border glow animation */
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: rgba(99, 102, 241, 0.3);
+  }
+  50% {
+    border-color: rgba(99, 102, 241, 0.6);
+  }
+}
+
+.borderGlow {
+  animation: borderGlow 2s ease-in-out infinite;
+}

@@ -1,0 +1,10 @@
+{
+  "label": "运维手册",
+  "position": 2,
+  "link": {
+    "type": "generated-index",
+    "title": "运维手册",
+    "description": "BK-Lite 运维手册，包含组件概览、备份还原、故障排查等内容。",
+    "slug": "/operations"
+  }
+}

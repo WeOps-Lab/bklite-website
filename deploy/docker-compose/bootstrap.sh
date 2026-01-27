@@ -937,7 +937,7 @@ authorization {
       user: "${NATS_MONITOR_USERNAME}"
       password: "${NATS_MONITOR_PASSWORD}"
       permissions: {
-        publish = ["metrics.>","vector"]
+        publish = ["metrics.>","vector","_INBOX.>"]
         subscribe = []
       }
     }

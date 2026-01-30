@@ -725,7 +725,9 @@ generate_collector_packages() {
     cp "${STAGE_L}/VERSION" "${STAGE_W}/"
     
     rm -rf "${STAGE_W}/misc"
-    
+
+    cp ${STAGE_W}/collector-sidecar-installer.exe "${PKG}/controller/windows/"
+
     (cd "${OPT}/windows" && zip -rq "${PKG}/controller/fusion-collectors-windows-amd64.zip" fusion-collectors)
     log "INFO" "Windows package built successfully."
 
@@ -1028,6 +1030,7 @@ python manage.py collector_package_init --os linux --object Nats-Executor --pk_v
 python manage.py controller_package_init --os windows --pk_version $WINDOWS_SIDECAR_VERSION --file_path /apps/pkgs/controller/fusion-collectors-windows-amd64.zip
 python manage.py collector_package_init --os windows --object Telegraf --pk_version latest --file_path /apps/pkgs/collector/windows/telegraf.exe
 python manage.py collector_package_init --os windows --object Nats-Executor --pk_version latest --file_path /apps/pkgs/collector/windows/nats-executor.exe
+python manage.py installer_init --file_path /apps/pkgs/controller/windows/collector-sidecar-installer.exe
 EOF
 
 

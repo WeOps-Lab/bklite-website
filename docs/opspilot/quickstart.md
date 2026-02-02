@@ -169,6 +169,6 @@ Agent），分别使用不同情况，可根据文字说明和示例图选取想
 ![功能图片27.png](https://static.cwoa.net/4b7d46720e8c4102a21970677163669c.png)
 
 ## 🎯 场景教程
-- [5分钟搭建一个web应用巡检](./scenarios/5min-setup-web-app-inspection.md)
-- [Kubernetes集群巡检配置](./scenarios/kubernetes-inspection-scenario.md)
-- [Postgres检查快速开始](./scenarios/postgres-inspection-quickstart.md)
+- [Web应用巡检助手配置指南](./tutorial.md#web应用巡检助手配置指南)
+- [Kubernetes集群巡检助手配置指南](./tutorial.md#kubernetes-集群巡检助手配置指南)
+- [Postgres DB助手快速上手指南](./tutorial.md#postgres-db助手快速上手指南)

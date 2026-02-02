@@ -1,90 +1,98 @@
-import React, { useRef, useState } from 'react';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import styles from './styles.module.css';
+
+// Performance optimization: Using native CSS transforms instead of framer-motion springs
+// to reduce overhead when many TiltCard instances are rendered simultaneously.
+// Key techniques: RAF-throttled mouse events, CSS custom properties for glow effect.
 
 export function TiltCard({
   children,
   className,
   tiltAmount = 10,
-  glowColor = 'rgba(99, 102, 241, 0.4)',
+  glowColor = 'rgba(99, 102, 241, 0.3)',
   scale = 1.02,
   perspective = 1000,
-  springConfig = { stiffness: 300, damping: 20 },
   ...props
 }) {
   const cardRef = useRef(null);
+  const rafRef = useRef(null);
   const [isHovered, setIsHovered] = useState(false);
+  const transformRef = useRef({ rotateX: 0, rotateY: 0, glowX: 50, glowY: 50 });
 
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-
-  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [tiltAmount, -tiltAmount]), springConfig);
-  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-tiltAmount, tiltAmount]), springConfig);
-  const scaleValue = useSpring(1, springConfig);
-
-  const glowX = useSpring(mouseX, springConfig);
-  const glowY = useSpring(mouseY, springConfig);
-
-  const handleMouseMove = (e) => {
+  const applyTransform = useCallback(() => {
     if (!cardRef.current) return;
+    
+    const { rotateX, rotateY, glowX, glowY } = transformRef.current;
+    const currentScale = isHovered ? scale : 1;
+    
+    cardRef.current.style.transform = 
+      `perspective(${perspective}px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${currentScale})`;
+    cardRef.current.style.setProperty('--glow-x', `${glowX}%`);
+    cardRef.current.style.setProperty('--glow-y', `${glowY}%`);
+  }, [perspective, scale, isHovered]);
 
-    const rect = cardRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+  const handleMouseMove = useCallback((e) => {
+    if (!cardRef.current) return;
+    
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+    }
+    
+    rafRef.current = requestAnimationFrame(() => {
+      const rect = cardRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
 
-    const normalizedX = (e.clientX - centerX) / (rect.width / 2);
-    const normalizedY = (e.clientY - centerY) / (rect.height / 2);
+      const rotateX = ((e.clientY - centerY) / (rect.height / 2)) * -tiltAmount;
+      const rotateY = ((e.clientX - centerX) / (rect.width / 2)) * tiltAmount;
+      const glowX = ((e.clientX - rect.left) / rect.width) * 100;
+      const glowY = ((e.clientY - rect.top) / rect.height) * 100;
 
-    x.set(normalizedX);
-    y.set(normalizedY);
+      transformRef.current = { rotateX, rotateY, glowX, glowY };
+      applyTransform();
+    });
+  }, [tiltAmount, applyTransform]);
 
-    const relativeX = ((e.clientX - rect.left) / rect.width) * 100;
-    const relativeY = ((e.clientY - rect.top) / rect.height) * 100;
-    mouseX.set(relativeX);
-    mouseY.set(relativeY);
-  };
-
-  const handleMouseEnter = () => {
+  const handleMouseEnter = useCallback(() => {
     setIsHovered(true);
-    scaleValue.set(scale);
-  };
+  }, []);
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = useCallback(() => {
     setIsHovered(false);
-    x.set(0);
-    y.set(0);
-    mouseX.set(50);
-    mouseY.set(50);
-    scaleValue.set(1);
-  };
+    
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+    }
+    
+    transformRef.current = { rotateX: 0, rotateY: 0, glowX: 50, glowY: 50 };
+    
+    if (cardRef.current) {
+      cardRef.current.style.transform = `perspective(${perspective}px) rotateX(0deg) rotateY(0deg) scale(1)`;
+      cardRef.current.style.setProperty('--glow-x', '50%');
+      cardRef.current.style.setProperty('--glow-y', '50%');
+    }
+  }, [perspective]);
+
+  useEffect(() => {
+    applyTransform();
+  }, [isHovered, applyTransform]);
 
   return (
-    <motion.div
+    <div
       ref={cardRef}
       className={`${styles.tiltCard} ${className || ''}`}
-      style={{
-        perspective,
-        rotateX,
-        rotateY,
-        scale: scaleValue,
-      }}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      style={{ '--glow-color': glowColor }}
       {...props}
     >
       {children}
-      <motion.div
+      <div 
         className={styles.glowEffect}
-        style={{
-          background: `radial-gradient(circle at ${glowX}% ${glowY}%, ${glowColor}, transparent 60%)`,
-          opacity: isHovered ? 1 : 0,
-        }}
+        style={{ opacity: isHovered ? 1 : 0 }}
       />
-    </motion.div>
+    </div>
   );
 }
 
@@ -96,24 +104,35 @@ export function TiltCardSimple({
   ...props
 }) {
   const cardRef = useRef(null);
+  const rafRef = useRef(null);
 
-  const handleMouseMove = (e) => {
+  const handleMouseMove = useCallback((e) => {
     if (!cardRef.current) return;
+    
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+    }
+    
+    rafRef.current = requestAnimationFrame(() => {
+      const rect = cardRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
 
-    const rect = cardRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
+      const rotateX = ((e.clientY - centerY) / (rect.height / 2)) * -tiltAmount;
+      const rotateY = ((e.clientX - centerX) / (rect.width / 2)) * tiltAmount;
 
-    const rotateX = ((e.clientY - centerY) / (rect.height / 2)) * -tiltAmount;
-    const rotateY = ((e.clientX - centerX) / (rect.width / 2)) * tiltAmount;
+      cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale})`;
+    });
+  }, [tiltAmount, scale]);
 
-    cardRef.current.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale})`;
-  };
-
-  const handleMouseLeave = () => {
-    if (!cardRef.current) return;
-    cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
-  };
+  const handleMouseLeave = useCallback(() => {
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+    }
+    if (cardRef.current) {
+      cardRef.current.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale(1)';
+    }
+  }, []);
 
   return (
     <div

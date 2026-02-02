@@ -16,6 +16,11 @@
   pointer-events: none;
   transition: opacity 0.3s ease;
   z-index: 1;
+  background: radial-gradient(
+    circle at var(--glow-x, 50%) var(--glow-y, 50%),
+    var(--glow-color, rgba(99, 102, 241, 0.3)),
+    transparent 60%
+  );
 }
 
 .tiltCardSimple {

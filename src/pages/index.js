@@ -268,21 +268,22 @@ export default function Home() {
   // 确保页面加载时滚动到顶部
   useEffect(() => {
     // 立即滚动到顶部
-    window.scrollTo({
-      top: 0,
-      left: 0,
-      behavior: 'instant'
-    });
+    const scrollToTop = () => {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: 'instant'
+      });
+    };
+
+    scrollToTop();
+
+    // 使用 ref 跟踪事件监听器是否已添加
+    let listenerAdded = false;
 
     // 使用requestAnimationFrame确保DOM渲染完成后再次检查
     const handleLoad = () => {
-      requestAnimationFrame(() => {
-        window.scrollTo({
-          top: 0,
-          left: 0,
-          behavior: 'instant'
-        });
-      });
+      requestAnimationFrame(scrollToTop);
     };
 
     // 监听窗口加载完成
@@ -290,19 +291,17 @@ export default function Home() {
       handleLoad();
     } else {
       window.addEventListener('load', handleLoad);
+      listenerAdded = true;
     }
 
     // 延迟执行，确保所有动画开始后页面位置正确
-    const timeoutId = setTimeout(() => {
-      window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: 'instant'
-      });
-    }, 100);
+    const timeoutId = setTimeout(scrollToTop, 100);
 
     return () => {
-      window.removeEventListener('load', handleLoad);
+      // 仅在事件监听器已添加时才移除
+      if (listenerAdded) {
+        window.removeEventListener('load', handleLoad);
+      }
       clearTimeout(timeoutId);
     };
   }, []);

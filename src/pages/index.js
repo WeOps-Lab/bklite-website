@@ -13,6 +13,7 @@ import styles from './index.module.css';
 
 function HomepageHeader() {
   const [selectedVersion, setSelectedVersion] = useState('basic');
+  const [copyState, setCopyState] = useState('idle'); // 'idle' | 'success' | 'error'
 
   // 版本配置
   const versions = {
@@ -110,41 +111,41 @@ function HomepageHeader() {
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(versions[selectedVersion].command);
-
-      // 添加视觉反馈 - 复制按钮样式变化
-      const copyBtn = document.querySelector(`.${styles.copyButton}`);
-      if (copyBtn) {
-        copyBtn.classList.add(styles.copied);
-        copyBtn.querySelector(`.${styles.copyIcon}`).textContent = '✅';
-
-        // 2秒后恢复原状
-        setTimeout(() => {
-          copyBtn.classList.remove(styles.copied);
-          copyBtn.querySelector(`.${styles.copyIcon}`).textContent = '📋';
-        }, 2000);
-      }
-
-      // 随机选择一种撒花效果
+      setCopyState('success');
+      
       const effects = [basicCannon, randomDirection, realisticLook];
       const randomEffect = effects[Math.floor(Math.random() * effects.length)];
       randomEffect();
 
+      setTimeout(() => setCopyState('idle'), 2000);
     } catch (err) {
-      console.error('复制失败:', err);
-      // 添加失败反馈
-      const copyBtn = document.querySelector(`.${styles.copyButton}`);
-      if (copyBtn) {
-        copyBtn.style.background = 'rgba(239, 68, 68, 0.2)';
-        copyBtn.style.color = '#ef4444';
-        copyBtn.querySelector(`.${styles.copyIcon}`).textContent = '❌';
-
-        setTimeout(() => {
-          copyBtn.style.background = '';
-          copyBtn.style.color = '';
-          copyBtn.querySelector(`.${styles.copyIcon}`).textContent = '📋';
-        }, 2000);
-      }
+      console.error('Copy failed:', err);
+      setCopyState('error');
+      setTimeout(() => setCopyState('idle'), 2000);
     }
+  };
+
+  const getCopyIcon = () => {
+    switch (copyState) {
+      case 'success': return '✅';
+      case 'error': return '❌';
+      default: return '📋';
+    }
+  };
+
+  const getCopyButtonStyle = () => {
+    const baseStyle = {
+      background: `${versions[selectedVersion].gradient.replace('135deg,', '135deg, ')}15`,
+      color: versions[selectedVersion].color
+    };
+    
+    if (copyState === 'success') {
+      return { ...baseStyle, background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' };
+    }
+    if (copyState === 'error') {
+      return { ...baseStyle, background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' };
+    }
+    return baseStyle;
   };
 
   const heroVariants = {
@@ -243,16 +244,13 @@ function HomepageHeader() {
                   <code>{versions[selectedVersion].command}</code>
                 </pre>
                 <button
-                  className={styles.copyButton}
+                  className={`${styles.copyButton} ${copyState === 'success' ? styles.copied : ''}`}
                   onClick={handleCopy}
                   title="复制脚本"
-                  style={{
-                    background: `${versions[selectedVersion].gradient.replace('135deg,', '135deg, ')}15`,
-                    color: versions[selectedVersion].color
-                  }}
+                  style={getCopyButtonStyle()}
                 >
                   <span className={styles.copyIcon}>
-                    📋
+                    {getCopyIcon()}
                   </span>
                 </button>
               </div>

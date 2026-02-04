@@ -1584,51 +1584,49 @@ sidebar_position: 2
 
 通过 Telegraf 采集器连接 MinIO 的 Prometheus 指标接口，收集对象存储系统的 **运行状态**、**存储容量**、**网络流量** 及 **S3 请求** 等关键指标。
 #### 前置条件
-
-在接入前，请确保网络连通性，并准备好用于身份验证的密钥（Access Key / Secret Key）。
+在接入前，请确保网络连通性，并满足版本限制要求：**仅支持 MinIO 服务端 RELEASE.2024-07-15T19-02-30Z 及之前版本、MinIO 客户端（mc）RELEASE.2024-07-11T18-01-28Z 及之前版本**。
 
 1.  **确认服务端口**
     *   MinIO 通常运行在 `9000` 端口。
-    *   **验证命令**：`curl -I http://<MinIO_IP>:9000/minio/health/live`
-    *   **成功标准**：返回 `200 OK`，说明服务在线。
+    *   **验证命令**：需检查以下 4 个接口的连通性
+        ```bash
+        # 1. 检查集群指标接口
+        curl -I http://<MinIO_IP>:9000/minio/v2/metrics/cluster
+        # 2. 检查存储桶指标接口
+        curl -I http://<MinIO_IP>:9000/minio/v2/metrics/bucket
+        # 3. 检查资源指标接口
+        curl -I http://<MinIO_IP>:9000/minio/v2/metrics/resource
+    *   **成功标准**：返回 `200 OK`，说明服务及指标接口均在线。
 
-2.  **准备监控账号（二选一）**
+2.  **准备免密监控账号**
+    > MinIO 的指标接口默认需要鉴权。本次配置免密访问，无需设置 Secret Key。
+    *   **前置要求**：需在运维机上安装对应版本的 MinIO 客户端工具 `mc` 并已配置好连接别名（示例别名为 `myminio`）。
+    *   **步骤 1：定义只读策略**
+        创建一个名为 `prometheus.json` 的文件，内容如下：
+        ```json
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": ["admin:Prometheus"],
+                    "Effect": "Allow",
+                    "Resource": ["arn:minio:admin:::*"]
+                }
+            ]
+        }
+        ```
+    *   **步骤 2：应用策略并创建免密用户**
+        执行以下 mc 命令创建免密用户并绑定策略：
+        ```bash
+        # 1. 添加策略到 MinIO
+        mc admin policy add myminio monitor_policy prometheus.json
 
-    > MinIO 的指标接口默认需要鉴权。请根据安全需求选择以下方式。
+        # 2. 创建免密监控用户 (AccessKey: monitor，无SecretKey)
+        mc admin user add myminio monitor ""
 
-    *   **方案 A：使用现有管理员凭证（快速接入）**
-        *   直接使用 MinIO 安装时设置的 **RootUser** (Access Key) 和 **RootPassword** (Secret Key)。
-        *   **适用场景**：测试环境或您拥有最高权限，且允许在监控系统中配置管理员密钥。
-
-    *   **方案 B：创建最小权限账号（安全最佳实践）**
-        *   *前置要求：需在运维机上安装 MinIO 客户端工具 `mc` 并已配置好连接别名（示例别名为 `myminio`）。*
-        *   **步骤 1：定义只读策略**
-            创建一个名为 `prometheus.json` 的文件，内容如下：
-            ```json
-            {
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Action": ["admin:Prometheus"],
-                        "Effect": "Allow",
-                        "Resource": ["arn:minio:admin:::*"]
-                    }
-                ]
-            }
-            ```
-        *   **步骤 2：应用策略并创建用户**
-            执行以下 `mc` 命令创建用户并绑定策略：
-            ```bash
-            # 1. 添加策略到 MinIO
-            mc admin policy add myminio monitor_policy prometheus.json
-            
-            # 2. 创建监控用户 (AccessKey: monitor, SecretKey: Monitor@2025)
-            mc admin user add myminio monitor Monitor@2025
-            
-            # 3. 将只读策略绑定给该用户
-            mc admin policy set myminio monitor_policy user=monitor
-            ```
-
+        # 3. 将只读策略绑定给该免密用户
+        mc admin policy set myminio monitor_policy user=monitor
+        ```
 ---
 #### 步骤一：选择集成插件
 

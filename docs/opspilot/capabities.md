@@ -2,13 +2,13 @@
 sidebar_position: 5
 ---
 
-# 内置能力
-
-汇总介绍 OpsPilot 中的各种内置能力，详细解析其作用。
-
+# 能力概括
+OpsPilot 的能力体系由两大核心模块构成：
+- **多类型大模型接入**：支持国内外主流 LLM、Embed、Rerank 及 OCR 模型，满足问答、检索、文档理解等 AI 场景需求。  
+- **平台内置工具**：开箱即用的运维与通用工具，覆盖集群管理、CI/CD、巡检、办公等场景，无需额外配置即可使用。
 ## 模型
 
-在这一块内容中，将详细介绍各个模型的类型、功能、应用场景等，帮助用户选用模型。
+OpsPilot 支持接入多种主流大语言模型与行业模型，本章将介绍不同模型的类型、能力特点与适用场景，帮助用户根据业务需求灵活选用合适的模型。
 
 ### LLM模型
 
@@ -244,44 +244,45 @@ sidebar_position: 5
 
 #### 模型列表
 
-| 品牌名 | 图标  模型ID| 模型名称 |
-|------------------|----------|----------------------------------|------------------------------|
-| 网易有道         |          | bce-embedding-base_v1           | BCE Embedding Base v1        | 可通过 ollama 部署：`ollama pull lrs33/bce-embedding-base_v1`           |
-| BAAI (智源研究院) | BAAI     | bge-base-en                     | BGE Base English             |
-| BAAI (智源研究院) | BAAI     | bge-base-en-v1.5                | BGE Base English v1.5        |
-| BAAI (智源研究院) | BAAI     | bge-base-zh                     | BGE Base Chinese             |
-| BAAI (智源研究院) | BAAI     | bge-base-zh-v1.5                | BGE Base Chinese v1.5        |
-| BAAI (智源研究院) | BAAI     | bge-large-en                    | BGE Large English            |
-| BAAI (智源研究院) | BAAI     | bge-large-en-v1.5               | BGE Large English v1.5       |
-| BAAI (智源研究院) | BAAI     | bge-large-zh                    | BGE Large Chinese            |
-| BAAI (智源研究院) | BAAI     | bge-large-zh-noinstruct         | BGE Large Chinese NoInstruct |
-| BAAI (智源研究院) | BAAI     | bge-large-zh-v1.5               | BGE Large Chinese v1.5       |
-| BAAI (智源研究院) | BAAI     | bge-m3                          | BGE M3                       |
-| BAAI (智源研究院) | BAAI     | bge-small-en-v1.5               | BGE Small English v1.5       |
-| BAAI (智源研究院) | BAAI     | bge-small-zh                    | BGE Small Chinese            |
-| BAAI (智源研究院) | BAAI     | bge-small-zh-v1.5               | BGE Small Chinese v1.5       |
-| 微软             |          | e5-large-v2                     | E5 Large v2                  |
-| 阿里             | Alibaba  | gte-base                        | GTE Base                     |
-| 阿里             | Alibaba  | gte-large                       | GTE Large                    |
-| 阿里             | Alibaba  | gte-Qwen2                       | GTE Qwen2                    |
-| Jina AI          | Jina     | jina-clip-v2                    | Jina CLIP v2                 |
-| Jina AI          | Jina     | jina-embeddings-v2-base-en      | Jina Embeddings v2 Base EN   |
-| Jina AI          | Jina     | jina-embeddings-v2-base-zh      | Jina Embeddings v2 Base ZH   |
-| Jina AI          | Jina     | jina-embeddings-v2-small-en     | Jina Embeddings v2 Small EN  |
-| Jina AI          | Jina     | jina-embeddings-v3              | Jina Embeddings v3           |
-| Jina AI          | Jina     | jina-embeddings-v4              | Jina Embeddings v4           |
-| Moka AI          |          | m3e-base                        | M3E Base                     |
-| Moka AI          |          | m3e-large                       | M3E Large                    |ge                               |
-| Moka AI          |          | m3e-small                       | M3E Small                    |
-| 微软             |          | multilingual-e5-large           | Multilingual E5 Large        |
-| 阿里             | Alibaba  | Qwen3-Embedding-0.6B            | Qwen3 Embedding 0.6B         |
-| 阿里             | Alibaba  | Qwen3-Embedding-4B              | Qwen3 Embedding 4B           |
-| 阿里             | Alibaba  | Qwen3-Embedding-8B              | Qwen3 Embedding 8B           |
-| 赛博智能         |          | text2vec-base-chinese           | Text2Vec Base Chinese        |
-| 赛博智能         |          | text2vec-base-chinese-paraphrase | Text2Vec Base Chinese Paraphrase |
-| 赛博智能         |          | text2vec-base-chinese-sentence  | Text2Vec Base Chinese Sentence |
-| 赛博智能         |          | text2vec-base-multilingual      | Text2Vec Base Multilingual   |
-| 赛博智能         |          | text2vec-large-chinese          | Text2Vec Large Chinese       |
+| 品牌名 | 图标 | 模型ID | 模型名称 |
+|--------|------|--------|----------|
+| 网易有道 |      | bce-embedding-base_v1 | BCE Embedding Base v1（可通过 ollama 部署：`ollama pull lrs33/bce-embedding-base_v1`） |
+| BAAI (智源研究院) | BAAI | bge-base-en | BGE Base English |
+| BAAI (智源研究院) | BAAI | bge-base-en-v1.5 | BGE Base English v1.5 |
+| BAAI (智源研究院) | BAAI | bge-base-zh | BGE Base Chinese |
+| BAAI (智源研究院) | BAAI | bge-base-zh-v1.5 | BGE Base Chinese v1.5 |
+| BAAI (智源研究院) | BAAI | bge-large-en | BGE Large English |
+| BAAI (智源研究院) | BAAI | bge-large-en-v1.5 | BGE Large English v1.5 |
+| BAAI (智源研究院) | BAAI | bge-large-zh | BGE Large Chinese |
+| BAAI (智源研究院) | BAAI | bge-large-zh-noinstruct | BGE Large Chinese NoInstruct |
+| BAAI (智源研究院) | BAAI | bge-large-zh-v1.5 | BGE Large Chinese v1.5 |
+| BAAI (智源研究院) | BAAI | bge-m3 | BGE M3 |
+| BAAI (智源研究院) | BAAI | bge-small-en-v1.5 | BGE Small English v1.5 |
+| BAAI (智源研究院) | BAAI | bge-small-zh | BGE Small Chinese |
+| BAAI (智源研究院) | BAAI | bge-small-zh-v1.5 | BGE Small Chinese v1.5 |
+| 微软 |      | e5-large-v2 | E5 Large v2 |
+| 微软 |      | multilingual-e5-large | Multilingual E5 Large |
+| 阿里 | Alibaba | gte-base | GTE Base |
+| 阿里 | Alibaba | gte-large | GTE Large |
+| 阿里 | Alibaba | gte-Qwen2 | GTE Qwen2 |
+| 阿里 | Alibaba | Qwen3-Embedding-0.6B | Qwen3 Embedding 0.6B |
+| 阿里 | Alibaba | Qwen3-Embedding-4B | Qwen3 Embedding 4B |
+| 阿里 | Alibaba | Qwen3-Embedding-8B | Qwen3 Embedding 8B |
+| Jina AI | Jina | jina-clip-v2 | Jina CLIP v2 |
+| Jina AI | Jina | jina-embeddings-v2-base-en | Jina Embeddings v2 Base EN |
+| Jina AI | Jina | jina-embeddings-v2-base-zh | Jina Embeddings v2 Base ZH |
+| Jina AI | Jina | jina-embeddings-v2-small-en | Jina Embeddings v2 Small EN |
+| Jina AI | Jina | jina-embeddings-v3 | Jina Embeddings v3 |
+| Jina AI | Jina | jina-embeddings-v4 | Jina Embeddings v4 |
+| Moka AI |      | m3e-base | M3E Base |
+| Moka AI |      | m3e-large | M3E Large |
+| Moka AI |      | m3e-small | M3E Small |
+| 赛博智能 |      | text2vec-base-chinese | Text2Vec Base Chinese |
+| 赛博智能 |      | text2vec-base-chinese-paraphrase | Text2Vec Base Chinese Paraphrase |
+| 赛博智能 |      | text2vec-base-chinese-sentence | Text2Vec Base Chinese Sentence |
+| 赛博智能 |      | text2vec-base-multilingual | Text2Vec Base Multilingual |
+| 赛博智能 |      | text2vec-large-chinese | Text2Vec Large Chinese |
+
 
 ### Rerank 模型
 

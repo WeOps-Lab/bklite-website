@@ -58,6 +58,9 @@ services:
       - UV_OFFLINE=True
       - OPENAI_API_KEY=
       - OPENAI_API_BASE=
+      - MLOPS_RUNTIME=docker
+      - MLOPS_DOCKER_NETWORK=bklite-prod
+      - MLOPS_KUBERNETES_NAMESPACE=
     healthcheck:
       test: ["CMD", "curl", "-s", "-o", "/dev/null", "-w", "'%{http_code}'", "http://127.0.0.1:8000/"]
       interval: 10s

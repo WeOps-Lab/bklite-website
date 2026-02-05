@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import styles from './styles.module.css';
 
@@ -34,14 +34,17 @@ export function FlowingGradient({ className, colors, speed = 8 }) {
 }
 
 export function FloatingOrbs({ count = 6, className }) {
-  const orbs = Array.from({ length: count }, (_, i) => ({
-    id: i,
-    size: 60 + Math.random() * 100,
-    x: Math.random() * 100,
-    y: Math.random() * 100,
-    duration: 15 + Math.random() * 20,
-    delay: Math.random() * -20,
-  }));
+  // 使用 useMemo 缓存随机生成的 orbs 配置，避免每次渲染时重新生成
+  // 这样可以保证动画的稳定性，防止组件重新渲染时 orbs 位置突然改变
+  const orbs = useMemo(() => 
+    Array.from({ length: count }, (_, i) => ({
+      id: i,
+      size: 60 + Math.random() * 100,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      duration: 15 + Math.random() * 20,
+      delay: Math.random() * -20,
+    })), [count]);
 
   return (
     <div className={`${styles.orbsContainer} ${className || ''}`}>

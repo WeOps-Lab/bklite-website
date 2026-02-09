@@ -1062,6 +1062,9 @@ EOF
 }
 
 package() {
+    # 设置 MIRROR 默认值（package 不调用 init_env，需单独初始化）
+    MIRROR=${MIRROR:-"bk-lite.tencentcloudcr.com/bklite"}
+    
     # 解析命令行参数
     local skip_opspilot_images=true
     local skip_vllm_images=true

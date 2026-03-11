@@ -13,7 +13,7 @@ export async function onRequest(context) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "User-Agent": context.request.headers.get("User-Agent") || "Unknown",
+          "User-Agent": "Mozilla/5.0 (Compatible; BKLite Tracker/1.0)",
         },
         body: JSON.stringify({
           payload: {

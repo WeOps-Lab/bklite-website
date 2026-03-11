@@ -7,23 +7,28 @@ export async function onRequest(context) {
   const response = await context.next();
   const url = new URL(context.request.url);
 
+  const newResponse = new Response(response.body, response);
+  newResponse.headers.set("X-Middleware", "true");
+
   if (TRACK_PATHS.includes(url.pathname)) {
-    const name = url.pathname.replace("/", ""); // e.g. "install.dev"
+    newResponse.headers.set("X-Tracked", "true");
 
     context.waitUntil(
       fetch(UMAMI_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent": context.request.headers.get("User-Agent") || "Unknown",
+        },
         body: JSON.stringify({
           payload: {
             hostname: url.hostname,
             language: "en",
             referrer: context.request.headers.get("Referer") || "",
             screen: "0x0",
-            title: name,
+            title: url.pathname.replace("/", ""),
             url: url.pathname,
             website: WEBSITE_ID,
-            name: `download-${name}`,
           },
           type: "event",
         }),
@@ -31,5 +36,5 @@ export async function onRequest(context) {
     );
   }
 
-  return response;
+  return newResponse;
 }

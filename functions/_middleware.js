@@ -7,15 +7,9 @@ export async function onRequest(context) {
   const response = await context.next();
   const url = new URL(context.request.url);
 
-  const newResponse = new Response(response.body, response);
-  newResponse.headers.set("X-Middleware", "true");
-
   if (TRACK_PATHS.includes(url.pathname)) {
-    newResponse.headers.set("X-Tracked", "true");
-
-    // 临时调试：同步等待 fetch 结果，写入响应头
-    try {
-      const umamiRes = await fetch(UMAMI_URL, {
+    context.waitUntil(
+      fetch(UMAMI_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -33,15 +27,9 @@ export async function onRequest(context) {
           },
           type: "event",
         }),
-      });
-
-      newResponse.headers.set("X-Umami-Status", umamiRes.status.toString());
-      const body = await umamiRes.text();
-      newResponse.headers.set("X-Umami-Response", body.substring(0, 200));
-    } catch (err) {
-      newResponse.headers.set("X-Umami-Error", err.message);
-    }
+      })
+    );
   }
 
-  return newResponse;
+  return response;
 }

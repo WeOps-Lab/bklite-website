@@ -8,12 +8,15 @@ export async function onRequest(context) {
   const url = new URL(context.request.url);
 
   if (TRACK_PATHS.includes(url.pathname)) {
+    const clientIP = context.request.headers.get("CF-Connecting-IP") || "";
+
     context.waitUntil(
       fetch(UMAMI_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "User-Agent": "Mozilla/5.0 (Compatible; BKLite Tracker/1.0)",
+          "X-Forwarded-For": clientIP,
         },
         body: JSON.stringify({
           payload: {

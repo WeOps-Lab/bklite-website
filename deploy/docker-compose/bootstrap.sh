@@ -168,7 +168,7 @@ init_docker_images() {
     # 数据库镜像
     export DOCKER_IMAGE_POSTGRES=$(add_mirror_prefix "postgres:15")
     export DOCKER_IMAGE_PGVECTOR=$(add_mirror_prefix "pgvector/pgvector:pg15")
-    export DOCKER_IMAGE_FALKORDB=$(add_mirror_prefix "falkordb/falkordb:v4.12.4")
+    export DOCKER_IMAGE_FALKORDB=$(add_mirror_prefix "falkordb/falkordb:latest")
     
     # 监控日志镜像
     export DOCKER_IMAGE_VICTORIA_METRICS=$(add_mirror_prefix "victoriametrics/victoria-metrics:v1.106.1")

@@ -210,6 +210,21 @@ services:
     volumes:
       - falkordb:/var/lib/falkordb/data
 
+  falkordb-opspilot:
+    image: ${DOCKER_IMAGE_FALKORDB}
+    environment:
+      - REDIS_ARGS=--requirepass ${FALKORDB_PASSWORD} --save "60 1" --save "10 1000" --appendonly yes --aof-use-rdb-preamble yes --aof-load-truncated yes --activedefrag yes
+      - FALKORDB_ARGS=THREAD_COUNT 4 DELAY_INDEXING yes
+    networks:
+      - prod
+    healthcheck:
+      test: ["CMD", "redis-cli", "-h", "falkordb-opspilot", "-p", "6379", "-a", "${FALKORDB_PASSWORD}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - falkordb:/var/lib/falkordb/data
+
   pgvector:
     image: ${DOCKER_IMAGE_PGVECTOR}
     restart: always

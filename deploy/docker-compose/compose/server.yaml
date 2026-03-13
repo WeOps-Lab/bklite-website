@@ -19,7 +19,7 @@ services:
       - DB_HOST=postgres
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_PORT=5432
-      - KNOWLEDGE_GRAPH_HOST=falkordb
+      - KNOWLEDGE_GRAPH_HOST=falkordb-opspilot
       - KNOWLEDGE_GRAPH_PASSWORD=${FALKORDB_PASSWORD}
       - KNOWLEDGE_GRAPH_PORT=6379
       - ENABLE_CELERY=true
@@ -71,6 +71,8 @@ services:
       postgres:
         condition: service_healthy
       falkordb:
+        condition: service_healthy
+      falkordb-opspilot:
         condition: service_healthy
       pgvector:
         condition: service_healthy

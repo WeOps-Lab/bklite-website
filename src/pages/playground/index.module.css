@@ -36,7 +36,7 @@
 /* ==================== Tab Bar ==================== */
 .tabBar {
   background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.3);
 }
 
 .tabBarInner {

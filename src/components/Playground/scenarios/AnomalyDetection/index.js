@@ -605,7 +605,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
           disabled={loading || !selectedModel}
         >
           <FiPlay />
-          执行推理
+          开始异常检测
         </button>
       </div>
 

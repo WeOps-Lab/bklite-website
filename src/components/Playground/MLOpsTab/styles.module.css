@@ -24,6 +24,42 @@
   padding-bottom: 40px;
 }
 
+.moduleOverviewWrap {
+  padding: 10px 32px 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.72);
+  background: linear-gradient(180deg, var(--color-surface) 0%, rgba(248, 250, 252, 0.86) 100%);
+}
+
+.moduleOverview {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.moduleOverviewTag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(30, 64, 175, 0.08);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.moduleOverviewText {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+  max-width: 620px;
+}
+
 /* ==================== Sidebar ==================== */
 .sidebar {
   width: 280px;
@@ -58,12 +94,12 @@
 .scenarioItem {
   display: flex;
   align-items: center;
-  padding: 14px 16px;
+  padding: clamp(10px, 0.68vw, 14px) clamp(12px, 0.83vw, 16px);
   cursor: pointer;
   transition: all var(--transition-fast);
-  gap: 14px;
-  border-radius: 12px;
-  margin-bottom: 6px;
+  gap: clamp(10px, 0.72vw, 14px);
+  border-radius: clamp(10px, 0.62vw, 12px);
+  margin-bottom: clamp(4px, 0.32vw, 6px);
   border: 1px solid transparent;
 }
 
@@ -77,10 +113,10 @@
 }
 
 .scenarioItemIcon {
-  width: 44px;
-  height: 44px;
+  width: clamp(34px, 2.08vw, 44px);
+  height: clamp(34px, 2.08vw, 44px);
   background: var(--color-border-light);
-  border-radius: 12px;
+  border-radius: clamp(9px, 0.62vw, 12px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -89,8 +125,8 @@
 }
 
 .scenarioItemIcon svg {
-  width: 22px;
-  height: 22px;
+  width: clamp(17px, 1.04vw, 22px);
+  height: clamp(17px, 1.04vw, 22px);
   color: var(--color-text-secondary);
   transition: all var(--transition-fast);
 }
@@ -111,7 +147,8 @@
 
 .scenarioItemName {
   font-weight: 600;
-  font-size: 14px;
+  font-size: clamp(13px, 0.78vw, 14px);
+  line-height: 1.3;
   color: var(--color-text-primary);
   transition: all var(--transition-fast);
 }
@@ -121,9 +158,9 @@
 }
 
 .scenarioItemCount {
-  font-size: 12px;
+  font-size: clamp(11px, 0.68vw, 12px);
   color: var(--color-text-muted);
-  margin-top: 2px;
+  margin-top: clamp(1px, 0.14vw, 2px);
 }
 
 /* ==================== Sidebar Footer ==================== */
@@ -169,29 +206,38 @@
 }
 
 .inferenceHeader {
-  padding: 20px 24px;
+  padding: 22px 24px 20px;
   border-bottom: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+.inferenceHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .inferenceHeaderLeft h2 {
-  font-size: 18px;
+  font-size: 26px;
   font-weight: 700;
   color: var(--color-text-primary);
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .inferenceHeaderLeft p {
   font-size: 14px;
   color: var(--color-text-secondary);
-  margin-top: 2px;
+  margin-top: 8px;
   margin-bottom: 0;
+  max-width: 680px;
+  line-height: 1.55;
 }
 
 .inferenceBody {
-  padding: 24px;
+  padding: 20px 24px 24px;
 }
 
 /* ==================== Form Elements ==================== */
@@ -327,42 +373,16 @@
   color: var(--color-text-muted);
 }
 
-/* ==================== Scenario Hint ==================== */
-.scenarioHint {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: var(--color-border-light);
-  border-radius: 12px;
-  margin-bottom: 20px;
-  font-size: 14px;
-  color: var(--color-text-secondary);
-}
-
-.scenarioHint svg {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-.scenarioHint.hasScenario {
-  background: linear-gradient(135deg, rgba(30, 64, 175, 0.08) 0%, rgba(59, 130, 246, 0.05) 100%);
-  border: 1px solid rgba(30, 64, 175, 0.15);
-  color: var(--color-text-primary);
-}
-
-.scenarioHint.hasScenario svg {
-  color: var(--color-success);
-}
-
-.scenarioHint .scenarioName {
-  color: var(--color-primary);
-  font-weight: 600;
-}
-
 /* ==================== Responsive ==================== */
 @media (max-width: 1024px) {
+  .moduleOverviewWrap {
+      padding: 10px 20px 0;
+  }
+
+  .moduleOverview {
+      padding-bottom: 10px;
+  }
+
   .contentWrapper {
       flex-direction: column;
   }
@@ -395,15 +415,54 @@
   .inferenceCard {
       max-width: none;
   }
+
+  .inferenceHeaderLeft h2 {
+      font-size: 22px;
+  }
+
+  .inferenceBody {
+      padding: 18px 20px 20px;
+  }
 }
 
 @media (max-width: 640px) {
+  .moduleOverviewWrap {
+      padding: 10px 16px 0;
+  }
+
+  .moduleOverview {
+      gap: 6px;
+      padding-bottom: 10px;
+  }
+
+  .moduleOverviewText {
+      font-size: 11px;
+  }
+
   .mainContent {
       padding: 16px;
   }
 
   .inferenceBody {
       padding: 16px;
+  }
+
+  .inferenceHeader {
+      padding: 18px 16px 16px;
+  }
+
+  .inferenceHeaderLeft h2 {
+      font-size: 20px;
+  }
+
+  .inferenceHeaderLeft p {
+      font-size: 13px;
+      margin-top: 6px;
+  }
+
+  .scenarioHeaderMeta {
+      font-size: 12px;
+      margin-top: 8px;
   }
 
   .scenarioItemCount {

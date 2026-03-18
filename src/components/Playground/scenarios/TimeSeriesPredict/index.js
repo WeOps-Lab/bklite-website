@@ -696,7 +696,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
           disabled={loading || !selectedModel}
         >
           <FiPlay />
-          执行推理
+          开始时序预测
         </button>
       </div>
 

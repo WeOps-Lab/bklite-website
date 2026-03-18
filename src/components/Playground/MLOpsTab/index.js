@@ -9,15 +9,12 @@ import {
   FiType,
   FiImage,
   FiTarget,
-  FiCheck,
-  FiAlertTriangle,
   FiCpu,
   FiChevronDown,
   FiLock
 } from 'react-icons/fi';
 
 import { getToken, hasToken, redirectToLogin } from '@site/src/lib/playgroundAuth';
-import PageHeader from '@site/src/components/Playground/PageHeader';
 import AnomalyDetection from '@site/src/components/Playground/scenarios/AnomalyDetection';
 import TimeSeriesPredict from '@site/src/components/Playground/scenarios/TimeSeriesPredict';
 import ComingSoon from '@site/src/components/Playground/scenarios/ComingSoon';
@@ -28,18 +25,24 @@ import styles from './styles.module.css';
 const scenarioConfig = {
   'anomaly-detection': {
     name: '异常检测',
+    description: '识别时间序列中的异常波动，帮助快速发现异常峰值、突增或突降。',
+    guide: '适合监控指标与资源使用率数据，可直接使用示例数据或上传自己的时间序列进行验证。',
     icon: FiActivity,
     type: 'timeseries-anomaly',
     servingName: 'anomaly_detection_servings'
   },
   'time-series': {
     name: '时序预测',
+    description: '基于历史趋势预测未来一段时间的数据变化，适合容量与负载趋势预估。',
+    guide: '选择模型后可先用示例数据体验，再通过上传自己的指标数据验证预测效果。',
     icon: FiTrendingUp,
     type: 'timeseries-predict',
     servingName: 'timeseries_predict_servings'
   },
   'log-analysis': {
     name: '日志分析',
+    description: '对日志内容进行聚类与归类，帮助识别相似问题和异常日志模式。',
+    guide: '适合批量日志理解与问题归类场景，后续将开放在线体验能力。',
     icon: FiFileText,
     type: 'log-clustering',
     servingName: 'log_clustering_servings',
@@ -47,6 +50,8 @@ const scenarioConfig = {
   },
   'text-classification': {
     name: '文本分类',
+    description: '对文本内容进行自动分类，适合工单、告警说明和文本标签场景。',
+    guide: '适合标准化文本归类场景，后续将开放模型体验与示例数据流程。',
     icon: FiType,
     type: 'text-classification',
     servingName: 'classification_servings',
@@ -54,6 +59,8 @@ const scenarioConfig = {
   },
   'image-classification': {
     name: '图片分类',
+    description: '识别图片所属类别，适合标准化图像识别与自动归类任务。',
+    guide: '适合单目标图像分类场景，后续将提供图片上传与推理体验。',
     icon: FiImage,
     type: 'image-classification',
     servingName: 'image_classification_servings',
@@ -61,6 +68,8 @@ const scenarioConfig = {
   },
   'object-detection': {
     name: '目标检测',
+    description: '检测图像中的目标位置与类别，适合定位与识别并存的视觉任务。',
+    guide: '适合图像中多目标定位场景，后续将开放示例图片与检测结果展示。',
     icon: FiTarget,
     type: 'object-detection',
     servingName: 'object_detection_servings',
@@ -178,7 +187,14 @@ export default function MLOpsTab() {
 
   return (
     <div className={styles.mlopsTab}>
-      <PageHeader title="MLOps 模型能力展示" subtitle="选择应用场景，体验 AI 推理能力" />
+      <div className={styles.moduleOverviewWrap}>
+        <div className={styles.moduleOverview}>
+          <span className={styles.moduleOverviewTag}>MLOps</span>
+          <p className={styles.moduleOverviewText}>
+            聚焦监控分析与趋势预测等运维场景。
+          </p>
+        </div>
+      </div>
 
       <div className={styles.contentWrapper}>
         {/* Sidebar */}
@@ -221,23 +237,12 @@ export default function MLOpsTab() {
           <div className={styles.inferenceCard}>
             <div className={styles.inferenceHeader}>
               <div className={styles.inferenceHeaderLeft}>
-                <h2>推理测试</h2>
-                <p>选择模型和数据源执行推理</p>
+                <h2>{currentConfig?.name || '请选择场景'}</h2>
+                <p>{currentConfig?.description || '从左侧选择一个场景后开始体验。'}</p>
               </div>
             </div>
 
             <div className={styles.inferenceBody}>
-              {/* Scenario Hint */}
-              <div className={clsx(styles.scenarioHint, selectedScenario && styles.hasScenario)}>
-                {selectedScenario ? <FiCheck /> : <FiAlertTriangle />}
-                <span>
-                  当前场景：
-                  <span className={styles.scenarioName}>
-                    {selectedScenario ? scenarioConfig[selectedScenario].name : '请先从左侧选择应用场景'}
-                  </span>
-                </span>
-              </div>
-
               {/* Model Selection — 仅非 comingSoon 场景显示 */}
               {!isComingSoon && (
               <div className={styles.formGroup}>

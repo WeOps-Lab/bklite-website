@@ -769,7 +769,7 @@ python manage.py controller_package_init --os windows --pk_version $WINDOWS_SIDE
 python manage.py collector_package_init --os windows --object Telegraf --pk_version latest --file_path /apps/pkgs/collector/windows/telegraf.exe
 python manage.py collector_package_init --os windows --object Nats-Executor --pk_version latest --file_path /apps/pkgs/collector/windows/nats-executor.exe
 python manage.py installer_init --file_path /apps/pkgs/controller/windows/collector-sidecar-installer.exe
-EXPORTER_DIR="/opt/release/exporters"
+EXPORTER_DIR="/opt/release/linux/exporters"
 
 for filepath in "${EXPORTER_DIR}"/*; do
     [ -f "${filepath}" ] || [ -d "${filepath}" ] || continue

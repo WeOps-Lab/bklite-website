@@ -39,7 +39,7 @@ const scenarioConfig = {
     servingName: 'timeseries_predict_servings'
   },
   'log-analysis': {
-    name: '日志分析',
+    name: '日志聚类',
     description: '对日志内容进行聚类与归类，帮助识别相似问题和异常日志模式。',
     guide: '适合批量日志理解与问题归类场景，后续将开放在线体验能力。',
     icon: FiFileText,

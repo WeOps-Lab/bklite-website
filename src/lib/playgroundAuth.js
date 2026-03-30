@@ -38,6 +38,11 @@ function notifyAuthStateChange() {
   window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGE_EVENT));
 }
 
+function clearAuthState() {
+  removeCookie(TOKEN_COOKIE_NAME);
+  sessionStorage.removeItem(LOGIN_CODE_KEY);
+}
+
 /**
  * 检查是否已登录（cookie 中存在 bklite_token）
  */
@@ -142,7 +147,25 @@ export function requireAuth(loginBaseUrl) {
 export function logout() {
   if (!isBrowser()) return;
 
-  removeCookie(TOKEN_COOKIE_NAME);
-  sessionStorage.removeItem(LOGIN_CODE_KEY);
+  clearAuthState();
   notifyAuthStateChange();
+}
+
+/**
+ * 认证失效：清理本地认证状态，并在状态实际变化时广播
+ * @returns {boolean} true=本次发生了状态清理，false=已处于未登录态
+ */
+export function invalidateAuth() {
+  if (!isBrowser()) return false;
+
+  const hadToken = hasToken();
+  const hadLoginCode = !!sessionStorage.getItem(LOGIN_CODE_KEY);
+
+  if (!hadToken && !hadLoginCode) {
+    return false;
+  }
+
+  clearAuthState();
+  notifyAuthStateChange();
+  return true;
 }

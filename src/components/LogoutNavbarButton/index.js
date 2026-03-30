@@ -3,32 +3,22 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { FiLogOut, FiUser } from 'react-icons/fi';
 
-import { AUTH_STATE_CHANGE_EVENT, hasToken, logout } from '@site/src/lib/playgroundAuth';
+import { logout } from '@site/src/lib/playgroundAuth';
+import useAuthStateSync from '@site/src/lib/useAuthStateSync';
 
 import styles from './styles.module.css';
 
 export default function LogoutNavbarButton({ mobile = false, label = '账号' }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => hasToken());
+  const isLoggedIn = useAuthStateSync();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const normalizedLabel = useMemo(() => label.trim() || '账号', [label]);
 
   useEffect(() => {
-    const syncAuthState = () => {
-      const nextLoggedIn = hasToken();
-      setIsLoggedIn(nextLoggedIn);
-      if (!nextLoggedIn) {
-        setMenuOpen(false);
-      }
-    };
-
-    syncAuthState();
-    window.addEventListener(AUTH_STATE_CHANGE_EVENT, syncAuthState);
-
-    return () => {
-      window.removeEventListener(AUTH_STATE_CHANGE_EVENT, syncAuthState);
-    };
-  }, []);
+    if (!isLoggedIn) {
+      setMenuOpen(false);
+    }
+  }, [isLoggedIn]);
 
   useEffect(() => {
     if (!menuOpen || mobile) {

@@ -12,7 +12,7 @@ import {
   FiAlertTriangle,
 } from 'react-icons/fi';
 
-import { requireAuth, getToken } from '@site/src/lib/playgroundAuth';
+import { getToken, invalidateAuth, requireAuth } from '@site/src/lib/playgroundAuth';
 
 import styles from './index.module.css';
 
@@ -531,6 +531,11 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
           body: JSON.stringify({ data: payload, config: {} }),
         }
       );
+
+      if (response.status === 401) {
+        invalidateAuth();
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(`推理请求失败: ${response.status}`);

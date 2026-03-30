@@ -13,7 +13,13 @@ import {
   FiLock
 } from 'react-icons/fi';
 
-import { AUTH_STATE_CHANGE_EVENT, getToken, hasToken, redirectToLogin } from '@site/src/lib/playgroundAuth';
+import {
+  getToken,
+  hasToken,
+  invalidateAuth,
+  redirectToLogin,
+} from '@site/src/lib/playgroundAuth';
+import useAuthStateSync from '@site/src/lib/useAuthStateSync';
 import AnomalyDetection from '@site/src/components/Playground/scenarios/AnomalyDetection';
 import TimeSeriesPredict from '@site/src/components/Playground/scenarios/TimeSeriesPredict';
 import ComingSoon from '@site/src/components/Playground/scenarios/ComingSoon';
@@ -99,13 +105,22 @@ export default function MLOpsTab() {
   const [servingsLoaded, setServingsLoaded] = useState(false);
   const [servingsLoading, setServingsLoading] = useState(false);
   const [servingsErrorMap, setServingsErrorMap] = useState({});
-  const [isLoggedIn, setIsLoggedIn] = useState(null);
+  const isLoggedIn = useAuthStateSync();
 
   const modelDropdownRef = useRef(null);
 
   const preloadAllServings = useCallback(async () => {
     const token = getToken();
     const scenariosToLoad = Object.keys(scenarioConfig);
+
+    if (!token) {
+      setServings({});
+      setServingsLoaded(false);
+      setServingsLoading(false);
+      setServingsErrorMap({});
+      setSelectedModel('');
+      return;
+    }
 
     setServingsLoading(true);
     setServingsLoaded(false);
@@ -122,6 +137,11 @@ export default function MLOpsTab() {
             Authorization: `Bearer ${token}`,
           },
         });
+
+        if (response.status === 401) {
+          invalidateAuth();
+          throw new Error('AUTH_INVALIDATED');
+        }
 
         if (!response.ok) {
           throw new Error(`获取模型列表失败: ${response.status}`);
@@ -142,6 +162,14 @@ export default function MLOpsTab() {
 
     const nextServings = {};
     const nextErrors = {};
+    const authInvalidated = results.some(
+      (result) => result.status === 'rejected' && result.reason?.message === 'AUTH_INVALIDATED'
+    );
+
+    if (authInvalidated || !hasToken()) {
+      setServingsLoading(false);
+      return;
+    }
 
     results.forEach((result, index) => {
       const scenario = scenariosToLoad[index];
@@ -161,35 +189,18 @@ export default function MLOpsTab() {
     setServingsLoading(false);
   }, [apiBase]);
 
-  const syncLoginState = useCallback(() => {
-    const loggedIn = hasToken();
-    setIsLoggedIn(loggedIn);
-    if (loggedIn) {
+  useEffect(() => {
+    if (isLoggedIn) {
       preloadAllServings();
-    } else {
-      setServings({});
-      setServingsLoaded(false);
-      setServingsLoading(false);
-      setServingsErrorMap({});
-      setSelectedModel('');
+      return;
     }
-  }, [preloadAllServings]);
 
-  // 检查登录状态变化，登录后自动加载当前场景的 serving 列表
-  useEffect(() => {
-    syncLoginState();
-  }, [syncLoginState]);
-
-  useEffect(() => {
-    const handleAuthStateChange = () => {
-      syncLoginState();
-    };
-
-    window.addEventListener(AUTH_STATE_CHANGE_EVENT, handleAuthStateChange);
-    return () => {
-      window.removeEventListener(AUTH_STATE_CHANGE_EVENT, handleAuthStateChange);
-    };
-  }, [syncLoginState]);
+    setServings({});
+    setServingsLoaded(false);
+    setServingsLoading(false);
+    setServingsErrorMap({});
+    setSelectedModel('');
+  }, [isLoggedIn, preloadAllServings]);
 
   // 根据 selectedScenario 获取场景组件
   const ScenarioComponent = scenarioComponents[selectedScenario] || null;

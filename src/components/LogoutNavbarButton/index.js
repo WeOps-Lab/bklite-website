@@ -1,34 +1,89 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import clsx from 'clsx';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import { FiLogOut, FiUser } from 'react-icons/fi';
 
-import { AUTH_STATE_CHANGE_EVENT, hasToken, logout } from '@site/src/lib/playgroundAuth';
+import { fetchLoginInfo, getCachedLoginInfo, logout } from '@site/src/lib/playgroundAuth';
+import useAuthStateSync from '@site/src/lib/useAuthStateSync';
 
 import styles from './styles.module.css';
 
+function getAccountRoleLabel(loginInfo) {
+  if (!loginInfo) {
+    return '';
+  }
+
+  if (loginInfo.isSuperuser) {
+    return '管理员';
+  }
+
+  if (loginInfo.isFirstLogin) {
+    return '访客';
+  }
+
+  return '普通用户';
+}
+
 export default function LogoutNavbarButton({ mobile = false, label = '账号' }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => hasToken());
+  const { siteConfig } = useDocusaurusContext();
+  const loginInfoUrl = siteConfig.customFields.loginInfoUrl;
+  const isLoggedIn = useAuthStateSync();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loginInfo, setLoginInfo] = useState(() => getCachedLoginInfo());
+  const [profileLoading, setProfileLoading] = useState(false);
   const menuRef = useRef(null);
   const normalizedLabel = useMemo(() => label.trim() || '账号', [label]);
+  const accountTitle = useMemo(() => {
+    if (!loginInfo) {
+      return normalizedLabel;
+    }
+
+    return loginInfo.displayName || loginInfo.username || normalizedLabel;
+  }, [loginInfo, normalizedLabel]);
+  const accountIdentityLabel = useMemo(() => {
+    return getAccountRoleLabel(loginInfo);
+  }, [loginInfo]);
 
   useEffect(() => {
-    const syncAuthState = () => {
-      const nextLoggedIn = hasToken();
-      setIsLoggedIn(nextLoggedIn);
-      if (!nextLoggedIn) {
-        setMenuOpen(false);
-      }
-    };
+    if (!isLoggedIn) {
+      setMenuOpen(false);
+      setLoginInfo(null);
+      setProfileLoading(false);
+    }
+  }, [isLoggedIn]);
 
-    syncAuthState();
-    window.addEventListener(AUTH_STATE_CHANGE_EVENT, syncAuthState);
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!isLoggedIn) {
+      return undefined;
+    }
+
+    setLoginInfo((current) => current || getCachedLoginInfo());
+    setProfileLoading(true);
+
+    fetchLoginInfo(loginInfoUrl)
+      .then((result) => {
+        if (!cancelled) {
+          setLoginInfo(result);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoginInfo((current) => current || getCachedLoginInfo());
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setProfileLoading(false);
+        }
+      });
 
     return () => {
-      window.removeEventListener(AUTH_STATE_CHANGE_EVENT, syncAuthState);
+      cancelled = true;
     };
-  }, []);
+  }, [isLoggedIn, loginInfoUrl]);
 
   useEffect(() => {
     if (!menuOpen || mobile) {
@@ -85,15 +140,29 @@ export default function LogoutNavbarButton({ mobile = false, label = '账号' })
         className={clsx(styles.accountButton, menuOpen && styles.accountButtonOpen)}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        aria-label={normalizedLabel}
+        aria-label={accountTitle}
         onClick={() => setMenuOpen((open) => !open)}
       >
-        <FiUser />
+        <span className={styles.accountAvatar}>
+          <FiUser />
+        </span>
       </button>
 
       {menuOpen && (
         <div className={styles.menuPanel} role="menu" aria-label={`${normalizedLabel}菜单`}>
-          <div className={styles.menuHeader}>{normalizedLabel}</div>
+          <div className={styles.menuHeader}>
+            <div className={styles.menuTitleRow}>
+              <span className={styles.menuTitle} title={accountTitle}>{accountTitle}</span>
+              {accountIdentityLabel ? (
+                <span className={styles.identityBadge}>{accountIdentityLabel}</span>
+              ) : null}
+            </div>
+            {loginInfo?.username ? (
+              <span className={styles.menuUsername} title={`用户名：@${loginInfo.username}`}>
+                用户名：@{loginInfo.username}
+              </span>
+            ) : null}
+          </div>
           <button
             type="button"
             className={styles.menuItem}

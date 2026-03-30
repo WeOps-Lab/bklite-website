@@ -22,6 +22,7 @@ const config = {
   customFields: {
     apiBaseUrl: 'https://bklite.canway.net/api/mlops',
     loginBaseUrl: 'https://bklite.canway.net/auth/signin',
+    loginInfoUrl: 'https://bklite.canway.net/api/proxy/core/api/login_info/',
   },
 
   i18n: {

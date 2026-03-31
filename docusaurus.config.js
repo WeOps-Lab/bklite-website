@@ -126,8 +126,17 @@ const config = {
             "to": "/pricing"
           },
           {
-            label: '在线体验',
-            href: 'https://bklite.canway.net/',
+            type: 'custom-icon-link',
+            href: 'https://github.com/TencentBlueKing/bk-lite',
+            label: 'GitHub',
+            icon: 'github',
+            position: 'right',
+          },
+          {
+            type: 'custom-icon-link',
+            href: 'https://deepwiki.com/TencentBlueKing/bk-lite',
+            label: 'DeepWiki',
+            icon: 'deepwiki',
             position: 'right',
           },
           {
@@ -136,13 +145,8 @@ const config = {
             position: 'right',
           },
           {
-            href: 'https://deepwiki.com/TencentBlueKing/bk-lite',
-            label: 'DeepWiki',
-            position: 'right',
-          },
-          {
-            href: 'https://github.com/TencentBlueKing/bk-lite',
-            label: 'GitHub',
+            label: '在线体验',
+            href: 'https://bklite.canway.net/',
             position: 'right',
           },
           {

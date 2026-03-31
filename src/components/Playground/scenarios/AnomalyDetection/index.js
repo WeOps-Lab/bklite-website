@@ -12,7 +12,7 @@ import {
   FiAlertTriangle,
 } from 'react-icons/fi';
 
-import { getToken, invalidateAuth, requireAuth } from '@site/src/lib/playgroundAuth';
+import { authFetch } from '@site/src/lib/playgroundAuth';
 
 import styles from './index.module.css';
 
@@ -495,8 +495,6 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
   // ==================== 推理 ====================
 
   const handleRunInference = async () => {
-    if (!requireAuth(loginBaseUrl)) return;
-
     if (!selectedModel) {
       setFormError('请选择一个模型');
       return;
@@ -518,30 +516,32 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
     try {
       const source = dataSource === 'upload' ? uploadData : sampleData;
       const payload = source.map(d => ({ timestamp: d.time, value: d.value }));
-      const token = getToken();
 
-      const response = await fetch(
+      const result = await authFetch(
         `${apiBase}/predict/${scenarioConfig.algorithmType}/${selectedModel}`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ data: payload, config: {} }),
-        }
+        },
+        { redirectOnMissingToken: true, loginBaseUrl },
       );
 
-      if (response.status === 401) {
-        invalidateAuth();
+      if (result.reason === 'missing-token') {
         return;
       }
-
-      if (!response.ok) {
-        throw new Error(`推理请求失败: ${response.status}`);
+      if (result.reason === 'auth-expired') {
+        setFormError('登录已过期，请重新登录后重试');
+        return;
+      }
+      if (result.reason === 'http-error') {
+        throw new Error(`推理请求失败: ${result.status}`);
+      }
+      if (result.reason === 'network-error') {
+        throw result.error || new Error('网络请求失败');
       }
 
-      const json = await response.json();
+      const json = await result.response.json();
       // 异常检测响应格式：{ data: { results[], metadata } }
       const results = json.data?.results || [];
       const adapted = results.map(item => ({

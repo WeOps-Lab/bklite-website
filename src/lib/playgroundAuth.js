@@ -5,8 +5,10 @@
 
 const TOKEN_COOKIE_NAME = 'bklite_token';
 const LOGIN_CODE_KEY = 'bklite_third_login_code';
+const LOGIN_CODE_FALLBACK_COOKIE_NAME = 'bklite_third_login_code_fallback';
 export const AUTH_STATE_CHANGE_EVENT = 'bklite-auth-state-change';
 const LOGIN_INFO_CACHE_KEY = 'bklite_login_info_cache';
+const AUTH_HINT_KEY = 'bklite_auth_hint';
 
 function isBrowser() {
   return typeof window !== 'undefined' && typeof document !== 'undefined';
@@ -69,21 +71,76 @@ function notifyAuthStateChange() {
   window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGE_EVENT));
 }
 
+function getSessionStorageItem(key) {
+  if (!isBrowser()) return null;
+
+  try {
+    return sessionStorage.getItem(key);
+  } catch (error) {
+    console.error(`读取 sessionStorage(${key}) 失败:`, error);
+    return null;
+  }
+}
+
+function setSessionStorageItem(key, value) {
+  if (!isBrowser()) return false;
+
+  try {
+    sessionStorage.setItem(key, value);
+    return true;
+  } catch (error) {
+    console.error(`写入 sessionStorage(${key}) 失败:`, error);
+    return false;
+  }
+}
+
+function removeSessionStorageItem(key) {
+  if (!isBrowser()) return;
+
+  try {
+    sessionStorage.removeItem(key);
+  } catch (error) {
+    console.error(`删除 sessionStorage(${key}) 失败:`, error);
+  }
+}
+
+function getLoginCode() {
+  return getSessionStorageItem(LOGIN_CODE_KEY) || getCookie(LOGIN_CODE_FALLBACK_COOKIE_NAME);
+}
+
+function persistLoginCode(code) {
+  if (!isBrowser() || !code) return false;
+
+  const storedInSession = setSessionStorageItem(LOGIN_CODE_KEY, code);
+  if (storedInSession) {
+    removeCookie(LOGIN_CODE_FALLBACK_COOKIE_NAME);
+    return true;
+  }
+
+  setCookie(LOGIN_CODE_FALLBACK_COOKIE_NAME, code);
+  return true;
+}
+
+function clearLoginCode() {
+  removeSessionStorageItem(LOGIN_CODE_KEY);
+  removeCookie(LOGIN_CODE_FALLBACK_COOKIE_NAME);
+}
+
 function clearAuthState() {
   removeCookie(TOKEN_COOKIE_NAME);
-  sessionStorage.removeItem(LOGIN_CODE_KEY);
-  sessionStorage.removeItem(LOGIN_INFO_CACHE_KEY);
+  clearLoginCode();
+  removeSessionStorageItem(LOGIN_INFO_CACHE_KEY);
 }
 
 function readLoginInfoCache() {
   if (!isBrowser()) return null;
 
   try {
-    const raw = sessionStorage.getItem(LOGIN_INFO_CACHE_KEY);
+    const raw = getSessionStorageItem(LOGIN_INFO_CACHE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch (error) {
     console.error('读取登录信息缓存失败:', error);
-    sessionStorage.removeItem(LOGIN_INFO_CACHE_KEY);
+    removeSessionStorageItem(LOGIN_INFO_CACHE_KEY);
     return null;
   }
 }
@@ -93,13 +150,38 @@ function writeLoginInfoCache(loginInfo) {
 
   try {
     if (!loginInfo) {
-      sessionStorage.removeItem(LOGIN_INFO_CACHE_KEY);
+      removeSessionStorageItem(LOGIN_INFO_CACHE_KEY);
       return;
     }
 
-    sessionStorage.setItem(LOGIN_INFO_CACHE_KEY, JSON.stringify(loginInfo));
+    setSessionStorageItem(LOGIN_INFO_CACHE_KEY, JSON.stringify(loginInfo));
   } catch (error) {
     console.error('写入登录信息缓存失败:', error);
+  }
+}
+
+function writeAuthHint(reason) {
+  if (!isBrowser() || !reason) return;
+
+  setSessionStorageItem(AUTH_HINT_KEY, JSON.stringify({ reason, ts: Date.now() }));
+}
+
+function clearAuthHint() {
+  if (!isBrowser()) return;
+  removeSessionStorageItem(AUTH_HINT_KEY);
+}
+
+export function getAndClearAuthHint() {
+  if (!isBrowser()) return null;
+
+  try {
+    const raw = getSessionStorageItem(AUTH_HINT_KEY);
+    clearAuthHint();
+    return raw ? JSON.parse(raw) : null;
+  } catch (error) {
+    console.error('读取认证提示失败:', error);
+    clearAuthHint();
+    return null;
   }
 }
 
@@ -115,6 +197,76 @@ export function hasToken() {
  */
 export function getToken() {
   return getCookie(TOKEN_COOKIE_NAME);
+}
+
+/**
+ * 带认证的 fetch 封装
+ * 自动注入 Authorization header，统一处理 token 缺失、401 失效、HTTP 错误和网络异常
+ * @param {string} url - 请求地址
+ * @param {RequestInit} init - 透传给 fetch 的选项
+ * @param {object} options - 额外控制选项
+ * @param {string} [options.loginBaseUrl] - 登录页地址，redirectOnMissingToken 为 true 时使用
+ * @param {boolean} [options.redirectOnMissingToken=false] - token 缺失时是否跳转登录
+ * @returns {Promise<{ok: boolean, reason?: string, status?: number, response?: Response, error?: Error}>}
+ */
+export async function authFetch(url, init = {}, options = {}) {
+  const {
+    loginBaseUrl,
+    redirectOnMissingToken = false,
+  } = options;
+
+  const token = getToken();
+
+  if (!token) {
+    if (redirectOnMissingToken && loginBaseUrl) {
+      redirectToLogin(loginBaseUrl);
+    }
+
+    return {
+      ok: false,
+      reason: 'missing-token',
+    };
+  }
+
+  try {
+    const response = await fetch(url, {
+      ...init,
+      headers: {
+        ...(init.headers || {}),
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 401) {
+      writeAuthHint('auth-expired');
+      invalidateAuth();
+      return {
+        ok: false,
+        reason: 'auth-expired',
+        status: 401,
+      };
+    }
+
+    if (!response.ok) {
+      return {
+        ok: false,
+        reason: 'http-error',
+        status: response.status,
+        response,
+      };
+    }
+
+    return {
+      ok: true,
+      response,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      reason: 'network-error',
+      error,
+    };
+  }
 }
 
 export function getCachedLoginInfo() {
@@ -157,39 +309,33 @@ export function normalizeLoginInfoPayload(payload) {
 }
 
 export async function fetchLoginInfo(loginInfoUrl) {
-  if (!isBrowser() || !loginInfoUrl || !hasToken()) {
+  if (!isBrowser() || !loginInfoUrl) {
     writeLoginInfoCache(null);
     return null;
   }
 
-  const token = getToken();
+  const result = await authFetch(loginInfoUrl, { method: 'GET' });
 
-  try {
-    const response = await fetch(loginInfoUrl, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      // credentials: 'include',
-    });
+  if (result.reason === 'missing-token' || result.reason === 'auth-expired') {
+    writeLoginInfoCache(null);
+    return null;
+  }
 
-    if (response.status === 401) {
-      invalidateAuth();
-      return null;
-    }
-
-    if (!response.ok) {
-      throw new Error(`获取账号信息失败: ${response.status}`);
-    }
-
-    const json = await response.json();
-    const normalized = normalizeLoginInfoPayload(json);
-    writeLoginInfoCache(normalized);
-    return normalized;
-  } catch (error) {
+  if (result.reason === 'http-error') {
+    const error = new Error(`获取账号信息失败: ${result.status}`);
     console.error('获取账号信息失败:', error);
     throw error;
   }
+
+  if (result.reason === 'network-error') {
+    console.error('获取账号信息失败:', result.error);
+    throw result.error;
+  }
+
+  const json = await result.response.json();
+  const normalized = normalizeLoginInfoPayload(json);
+  writeLoginInfoCache(normalized);
+  return normalized;
 }
 
 /**
@@ -212,8 +358,12 @@ function generateLoginCode() {
 export function redirectToLogin(loginBaseUrl) {
   if (!isBrowser()) return;
 
+  clearAuthHint();
+
   const code = generateLoginCode();
-  sessionStorage.setItem(LOGIN_CODE_KEY, code);
+  if (!persistLoginCode(code)) {
+    return;
+  }
 
   // 回调地址：当前站点的 /playground 页面，附带 third_login_code 参数
   const callbackUrl = window.location.origin + '/playground?third_login_code=' + code;
@@ -238,16 +388,17 @@ export function verifyLoginCallback() {
 
   if (!urlCode) return false;
 
-  const storedCode = sessionStorage.getItem(LOGIN_CODE_KEY);
+  const storedCode = getLoginCode();
   const isValid = urlCode === storedCode;
 
   if (isValid && token) {
+    clearAuthHint();
     setCookie(TOKEN_COOKIE_NAME, token);
     notifyAuthStateChange();
   }
 
   // 验证完毕，清理 sessionStorage 和 URL 参数
-  sessionStorage.removeItem(LOGIN_CODE_KEY);
+  clearLoginCode();
   cleanUrlParams();
 
   return isValid;
@@ -282,6 +433,7 @@ export function requireAuth(loginBaseUrl) {
 export function logout() {
   if (!isBrowser()) return;
 
+  clearAuthHint();
   clearAuthState();
   notifyAuthStateChange();
 }
@@ -294,7 +446,7 @@ export function invalidateAuth() {
   if (!isBrowser()) return false;
 
   const hadToken = hasToken();
-  const hadLoginCode = !!sessionStorage.getItem(LOGIN_CODE_KEY);
+  const hadLoginCode = !!getLoginCode();
 
   if (!hadToken && !hadLoginCode) {
     return false;

@@ -11,6 +11,7 @@ const productGroups = [
             { name: 'CMDB', description: '资产可视 · 架构清晰 · 数据可信', link: '/docs/cmdb' },
             { name: '告警中心', description: '智能降噪 · 精准分派 · 快速闭环', link: '/docs/alert' },
             { name: 'ITSM', description: '标准执行 · 透明可控 · 合规保障', link: '/docs/itsm/feature' },
+            { name: '作业管理', description: '批量执行 · 文件分发 · 定时调度', link: '/docs/job/introduce' },
             { name: '运营分析', description: '数据融合 · 智能分析 · 价值呈现', link: '/docs/analysis' },
         ]
     },

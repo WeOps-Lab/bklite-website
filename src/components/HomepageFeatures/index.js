@@ -3,7 +3,7 @@ import Heading from '@theme/Heading';
 import { FadeInUp, StaggerContainer, StaggerItem } from '@site/src/components/ScrollAnimations';
 import { TiltCard } from '@site/src/components/TiltCard';
 import styles from './styles.module.css';
-import { FaUserShield, FaSearch, FaChartBar, FaBell, FaLaptopCode, FaCloud, FaChartLine } from 'react-icons/fa';
+import { FaUserShield, FaSearch, FaChartBar, FaBell, FaLaptopCode, FaCloud, FaChartLine, FaTasks } from 'react-icons/fa';
 import { RiMindMap, RiFlowChart } from 'react-icons/ri';
 import { HiOutlineDatabase, HiOutlineChip } from 'react-icons/hi';
 
@@ -69,6 +69,18 @@ const FeatureGroups = [
         description: (
           <>
             规范工单、变更与事件流程，确保运维执行标准化、过程可追溯、合规有保障
+          </>
+        ),
+      },
+      {
+        title: '作业管理',
+        icon: <FaTasks color="var(--ifm-color-primary)" />,
+        gradient: 'gradient-job',
+        badge: '自动化执行',
+        highlights: ['批量执行', '文件分发', '定时调度'],
+        description: (
+          <>
+            统一任务下发平台，支持脚本执行、文件分发与定时调度，提升批量运维效率
           </>
         ),
       },
@@ -212,7 +224,9 @@ export default function HomepageFeatures() {
         </FadeInUp>
 
         {FeatureGroups.map((group, groupIdx) => {
-          const gridClass = group.features.length === 2
+          const gridClass = group.features.length === 7
+            ? styles.featuresGrid7
+            : group.features.length === 2
             ? styles.featuresGrid2
             : group.features.length === 3
               ? styles.featuresGrid3

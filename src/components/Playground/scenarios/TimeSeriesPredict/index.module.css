@@ -65,6 +65,11 @@
   background: var(--color-surface);
 }
 
+.sampleDataCardResult {
+  border-color: var(--color-border);
+  box-shadow: none;
+}
+
 .sampleDataHeader {
   padding: 14px 16px;
   background: var(--color-border-light);
@@ -72,6 +77,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.sampleDataHeaderMain {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
 .sampleDataTitle {
@@ -103,6 +115,10 @@
   background: var(--color-surface);
 }
 
+.sampleDataChartResult {
+  height: 320px;
+}
+
 /* ==================== Upload Area ==================== */
 .uploadArea {
   border: 2px dashed var(--color-border);
@@ -111,7 +127,6 @@
   text-align: center;
   background: var(--color-surface);
   display: none;
-  cursor: pointer;
   margin-top: 12px;
   transition: all var(--transition-fast);
 }
@@ -123,6 +138,16 @@
 .uploadArea:hover {
   border-color: var(--color-primary-light);
   background: rgba(30, 64, 175, 0.02);
+}
+
+.uploadTrigger {
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
 }
 
 .uploadAreaIcon {
@@ -213,6 +238,28 @@
   display: flex;
   justify-content: flex-end;
   padding: 8px 16px 12px;
+}
+
+.uploadReplaceTop {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.uploadReplaceTop:hover {
+  color: var(--color-text-secondary);
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .uploadReplace {
@@ -463,6 +510,76 @@
   padding: 16px 20px;
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.03) 100%);
   border-bottom: 1px solid var(--color-border);
+}
+
+.resultIndicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--color-success);
+}
+
+.resultIndicator svg {
+  width: 18px;
+  height: 18px;
+}
+
+.resultHeaderMain {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.resultHeaderTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.resultHeaderActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.resultAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.resultAction:hover {
+  color: var(--color-primary);
+  border-color: rgba(148, 163, 184, 0.32);
+  background: rgba(255, 255, 255, 1);
+}
+
+.resultActionSubtle {
+  border-color: rgba(148, 163, 184, 0.16);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--color-text-muted);
+}
+
+.resultActionSubtle:hover {
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--color-text-secondary);
 }
 
 .resultTitle {

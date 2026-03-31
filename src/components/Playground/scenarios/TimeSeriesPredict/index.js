@@ -159,6 +159,188 @@ const chartColors = {
   surface: '#F8FAFC'
 };
 
+function getChartBounds(values, fixedBounds) {
+  if (fixedBounds) return fixedBounds;
+
+  const minVal = Math.floor(Math.min(...values));
+  const maxVal = Math.ceil(Math.max(...values));
+  const padding = Math.max(1, Math.round((maxVal - minVal) * 0.1));
+
+  return {
+    min: minVal - padding,
+    max: maxVal + padding,
+  };
+}
+
+function buildForecastChartOption({
+  sourceSeries,
+  resultData,
+  fallbackFrequencySeconds,
+  previewLabel,
+  showPercentAxis = false,
+  fixedBounds = null,
+}) {
+  const hasResult = Boolean(resultData?.history?.length);
+
+  if (!hasResult) {
+    const values = sourceSeries.map(d => d.value);
+    const spanSeconds = sourceSeries.length > 1 ? sourceSeries[sourceSeries.length - 1].time - sourceSeries[0].time : 0;
+    const interval = Math.max(0, Math.floor(sourceSeries.length / 6) - 1);
+    const bounds = getChartBounds(values, fixedBounds);
+
+    return {
+      dataZoom: [
+        { type: 'inside', xAxisIndex: 0, filterMode: 'none', minSpan: 10 },
+      ],
+      grid: { top: 24, right: 24, bottom: 32, left: 56 },
+      xAxis: {
+        type: 'category',
+        data: sourceSeries.map(d => d.time),
+        axisLabel: {
+          fontSize: 11,
+          color: chartColors.text,
+          interval,
+          formatter: value => formatTimestamp(Number(value), spanSeconds, fallbackFrequencySeconds)
+        },
+        axisLine: { lineStyle: { color: chartColors.border } },
+        axisTick: { show: false }
+      },
+      yAxis: {
+        type: 'value',
+        min: bounds.min,
+        max: bounds.max,
+        axisLabel: {
+          fontSize: 11,
+          color: chartColors.text,
+          formatter: showPercentAxis ? '{value}%' : undefined,
+        },
+        splitLine: { lineStyle: { color: chartColors.border, type: 'dashed' } }
+      },
+      series: [{
+        data: values,
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        lineStyle: { color: chartColors.primaryLight, width: 2.5 },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
+            { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
+          ])
+        }
+      }],
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: 'rgba(255, 255, 255, 0.96)',
+        borderColor: chartColors.border,
+        borderWidth: 1,
+        textStyle: { color: chartColors.primary, fontSize: 13 },
+        formatter: params => {
+          const point = params[0];
+          if (!point) return '';
+          const valueText = showPercentAxis ? `${point.value.toFixed(1)}%` : point.value;
+          return `<strong>${formatTimestamp(Number(point.axisValue), spanSeconds, fallbackFrequencySeconds, 'tooltip')}</strong><br/>${previewLabel}: ${valueText}`;
+        }
+      }
+    };
+  }
+
+  const history = resultData.history || [];
+  const prediction = resultData.prediction || [];
+  const allData = [...history, ...prediction];
+  const allValues = allData.map(d => d.value);
+  const bounds = getChartBounds(allValues);
+  const interval = Math.max(1, Math.floor(allData.length / 6));
+  const spanSeconds = allData.length > 1 ? allData[allData.length - 1].time - allData[0].time : 0;
+  const effectiveFrequencySeconds = detectSeriesFrequencySeconds(allData) || fallbackFrequencySeconds;
+  const historyValues = history.map(d => d.value);
+  const overlapPadding = new Array(Math.max(0, history.length - 1)).fill(null);
+  const overlapPrediction = [
+    history[history.length - 1]?.value ?? null,
+    ...prediction.map(d => d.value),
+  ];
+
+  return {
+    dataZoom: [
+      { type: 'inside', xAxisIndex: 0, filterMode: 'none', minSpan: 10 },
+    ],
+    grid: { top: 48, right: 24, bottom: 40, left: 56 },
+    legend: {
+      data: ['历史数据', '预测数据'],
+      top: 8,
+      textStyle: { fontSize: 12, color: chartColors.text }
+    },
+    xAxis: {
+      type: 'category',
+      data: allData.map(d => d.time),
+      axisLabel: {
+        fontSize: 11,
+        color: chartColors.text,
+        interval,
+        formatter: value => formatTimestamp(Number(value), spanSeconds, effectiveFrequencySeconds)
+      },
+      axisLine: { lineStyle: { color: chartColors.border } },
+      axisTick: { show: false }
+    },
+    yAxis: {
+      type: 'value',
+      min: bounds.min,
+      max: bounds.max,
+      axisLabel: { fontSize: 11, color: chartColors.text },
+      splitLine: { lineStyle: { color: chartColors.border, type: 'dashed' } }
+    },
+    series: [
+      {
+        name: '历史数据',
+        data: historyValues,
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        lineStyle: { color: chartColors.primaryLight, width: 2.5 },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
+            { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
+          ])
+        }
+      },
+      {
+        name: '预测数据',
+        data: [...overlapPadding, ...overlapPrediction],
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        lineStyle: { color: '#F59E0B', width: 2.5, type: 'dashed' },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(245, 158, 11, 0.18)' },
+            { offset: 1, color: 'rgba(245, 158, 11, 0.02)' }
+          ])
+        }
+      }
+    ],
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(255, 255, 255, 0.96)',
+      borderColor: chartColors.border,
+      borderWidth: 1,
+      textStyle: { fontSize: 13 },
+      formatter: params => {
+        const point = params[0] || params[1];
+        if (!point) return '';
+        let html = `<strong>${formatTimestamp(Number(point.axisValue), spanSeconds, effectiveFrequencySeconds, 'tooltip')}</strong>`;
+        params.forEach(p => {
+          if (p.value != null) {
+            const color = p.seriesName === '预测数据' ? '#F59E0B' : chartColors.primaryLight;
+            html += `<br/><span style="color:${color}">${p.seriesName}: ${p.value.toFixed(1)}</span>`;
+          }
+        });
+        return html;
+      }
+    }
+  };
+}
+
 const minPredictionSteps = 1;
 const maxPredictionSteps = 12;
 
@@ -177,9 +359,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
   const [formError, setFormError] = useState('');
 
   const sampleChartRef = useRef(null);
-  const resultChartRef = useRef(null);
   const sampleChartInstance = useRef(null);
-  const resultChartInstance = useRef(null);
   const fileInputRef = useRef(null);
   const uploadChartRef = useRef(null);
   const uploadChartInstance = useRef(null);
@@ -188,29 +368,36 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
   const hasSampleData = Boolean(sampleData?.length);
   const detectedFrequencySeconds = detectSeriesFrequencySeconds(activeSeries);
   const frequencyLabel = detectedFrequencySeconds ? formatDurationLabel(detectedFrequencySeconds) : '5分钟';
-  const resultSeries = resultData ? [...resultData.history, ...resultData.prediction] : null;
-  const resultFrequencySeconds = detectSeriesFrequencySeconds(resultSeries) || detectedFrequencySeconds;
+  const hasResult = Boolean(resultData && !loading);
 
   const getPredictionTimeLabel = (steps) => {
     const baseFrequency = detectedFrequencySeconds || 5 * 60;
     return formatDurationLabel(baseFrequency * steps);
   };
 
+  const handleResetResult = () => {
+    setResultData(null);
+    setInferenceTime(null);
+    setFormError('');
+  };
+
+  const handleReplaceUpload = () => {
+    handleResetResult();
+    setUploadData(null);
+    setUploadFileName('');
+    setUploadError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   // ==================== 图表 ====================
 
-  // 示例数据图表
+  // 示例数据加载
   useEffect(() => {
     let cancelled = false;
-    let chart = null;
-    let handleResize = null;
 
     const loadSampleData = async () => {
-      if (dataSource !== 'sample' || !sampleChartRef.current) {
+      if (dataSource !== 'sample' || sampleData?.length) {
         return;
-      }
-
-      if (sampleChartInstance.current) {
-        sampleChartInstance.current.dispose();
       }
 
       try {
@@ -225,70 +412,12 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
           throw new Error('示例数据文件为空或格式错误');
         }
 
-        if (cancelled || !sampleChartRef.current) {
+        if (cancelled) {
           return;
         }
 
         setFormError('');
         setSampleData(data);
-
-        chart = echarts.init(sampleChartRef.current);
-        sampleChartInstance.current = chart;
-
-        const sampleSpanSeconds = data.length > 1 ? data[data.length - 1].time - data[0].time : 0;
-        const sampleFrequencySeconds = detectSeriesFrequencySeconds(data) || 5 * 60;
-
-        const option = {
-          dataZoom: [
-            { type: 'inside', xAxisIndex: 0, filterMode: 'none', minSpan: 10 },
-          ],
-          grid: { top: 24, right: 24, bottom: 32, left: 56 },
-          xAxis: {
-            type: 'category',
-            data: data.map(d => d.time),
-            axisLabel: {
-              fontSize: 11,
-              color: chartColors.text,
-              interval: Math.max(0, Math.floor(data.length / 6) - 1),
-              formatter: value => formatTimestamp(Number(value), sampleSpanSeconds, sampleFrequencySeconds)
-            },
-            axisLine: { lineStyle: { color: chartColors.border } },
-            axisTick: { show: false }
-          },
-          yAxis: {
-            type: 'value',
-            min: 0,
-            max: 100,
-            axisLabel: { fontSize: 11, color: chartColors.text, formatter: '{value}%' },
-            splitLine: { lineStyle: { color: chartColors.border, type: 'dashed' } }
-          },
-          series: [{
-            data: data.map(d => d.value),
-            type: 'line',
-            smooth: true,
-            symbol: 'none',
-            lineStyle: { color: chartColors.primaryLight, width: 2.5 },
-            areaStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
-                { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
-              ])
-            }
-          }],
-          tooltip: {
-            trigger: 'axis',
-            backgroundColor: 'rgba(255, 255, 255, 0.96)',
-            borderColor: chartColors.border,
-            borderWidth: 1,
-            textStyle: { color: chartColors.primary, fontSize: 13 },
-            formatter: params => `<strong>${formatTimestamp(Number(params[0].axisValue), sampleSpanSeconds, sampleFrequencySeconds, 'tooltip')}</strong><br/>CPU: ${params[0].value.toFixed(1)}%`
-          }
-        };
-
-        chart.setOption(option);
-
-        handleResize = () => chart.resize();
-        window.addEventListener('resize', handleResize);
       } catch (err) {
         console.error('示例数据加载失败:', err);
         if (!cancelled) {
@@ -302,206 +431,68 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
 
     return () => {
       cancelled = true;
-      if (handleResize) {
-        window.removeEventListener('resize', handleResize);
-      }
-      if (chart) {
-        chart.dispose();
-      }
     };
-  }, [dataSource]);
+  }, [dataSource, sampleData]);
+
+  // 示例数据图表
+  useEffect(() => {
+    if (dataSource !== 'sample' || !sampleData?.length || !sampleChartRef.current) {
+      return;
+    }
+
+    if (sampleChartInstance.current) {
+      sampleChartInstance.current.dispose();
+    }
+
+    const chart = echarts.init(sampleChartRef.current);
+    sampleChartInstance.current = chart;
+
+    chart.setOption(buildForecastChartOption({
+      sourceSeries: sampleData,
+      resultData,
+      fallbackFrequencySeconds: detectSeriesFrequencySeconds(sampleData) || 5 * 60,
+      previewLabel: 'CPU',
+      showPercentAxis: true,
+      fixedBounds: { min: 0, max: 100 },
+    }));
+
+    const handleResize = () => chart.resize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.dispose();
+    };
+  }, [dataSource, sampleData, resultData]);
 
   // 上传数据图表
   useEffect(() => {
-    if (uploadData && uploadChartRef.current) {
-      if (uploadChartInstance.current) {
-        uploadChartInstance.current.dispose();
-      }
-
-      const chart = echarts.init(uploadChartRef.current);
-      uploadChartInstance.current = chart;
-
-      const interval = Math.max(1, Math.floor(uploadData.length / 6));
-      const values = uploadData.map(d => d.value);
-      const uploadSpanSeconds = uploadData.length > 1 ? uploadData[uploadData.length - 1].time - uploadData[0].time : 0;
-      const minVal = Math.floor(Math.min(...values));
-      const maxVal = Math.ceil(Math.max(...values));
-      const padding = Math.max(1, Math.round((maxVal - minVal) * 0.1));
-
-      const option = {
-        dataZoom: [
-          { type: 'inside', xAxisIndex: 0, filterMode: 'none', minSpan: 10 },
-        ],
-        grid: { top: 24, right: 24, bottom: 32, left: 56 },
-        xAxis: {
-          type: 'category',
-          data: uploadData.map(d => d.time),
-          axisLabel: {
-            fontSize: 11,
-            color: chartColors.text,
-            interval,
-            formatter: value => formatTimestamp(Number(value), uploadSpanSeconds, detectedFrequencySeconds)
-          },
-          axisLine: { lineStyle: { color: chartColors.border } },
-          axisTick: { show: false }
-        },
-        yAxis: {
-          type: 'value',
-          min: minVal - padding,
-          max: maxVal + padding,
-          axisLabel: { fontSize: 11, color: chartColors.text },
-          splitLine: { lineStyle: { color: chartColors.border, type: 'dashed' } }
-        },
-        series: [{
-          data: values,
-          type: 'line',
-          smooth: true,
-          symbol: 'none',
-          lineStyle: { color: chartColors.primaryLight, width: 2.5 },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
-              { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
-            ])
-          }
-        }],
-        tooltip: {
-          trigger: 'axis',
-          backgroundColor: 'rgba(255, 255, 255, 0.96)',
-          borderColor: chartColors.border,
-          borderWidth: 1,
-          textStyle: { color: chartColors.primary, fontSize: 13 },
-          formatter: params => `<strong>${formatTimestamp(Number(params[0].axisValue), uploadSpanSeconds, detectedFrequencySeconds, 'tooltip')}</strong><br/>数值: ${params[0].value}`
-        }
-      };
-
-      chart.setOption(option);
-
-      const handleResize = () => chart.resize();
-      window.addEventListener('resize', handleResize);
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        chart.dispose();
-      };
+    if (dataSource !== 'upload' || !uploadData?.length || !uploadChartRef.current) {
+      return;
     }
-  }, [uploadData]);
 
-  // 结果图表 — 时序预测：历史实线 + 预测虚线
-  useEffect(() => {
-    if (resultData && resultChartRef.current) {
-      if (resultChartInstance.current) {
-        resultChartInstance.current.dispose();
-      }
-
-      const chart = echarts.init(resultChartRef.current);
-      resultChartInstance.current = chart;
-
-      const allData = [...resultData.history, ...resultData.prediction];
-      const allValues = allData.map(d => d.value);
-      const allMin = Math.floor(Math.min(...allValues));
-      const allMax = Math.ceil(Math.max(...allValues));
-      const allPadding = Math.max(1, Math.round((allMax - allMin) * 0.1));
-      const allInterval = Math.max(1, Math.floor(allData.length / 6));
-      const allSpanSeconds = allData.length > 1 ? allData[allData.length - 1].time - allData[0].time : 0;
-      const effectiveResultFrequencySeconds = resultFrequencySeconds || detectSeriesFrequencySeconds(allData);
-
-      const historyValues = resultData.history.map(d => d.value);
-      const overlapPadding = new Array(Math.max(0, resultData.history.length - 1)).fill(null);
-      const overlapPrediction = [
-        resultData.history[resultData.history.length - 1]?.value ?? null,
-        ...resultData.prediction.map(d => d.value),
-      ];
-
-      const option = {
-        dataZoom: [
-          { type: 'inside', xAxisIndex: 0, filterMode: 'none', minSpan: 10 },
-        ],
-        grid: { top: 48, right: 24, bottom: 40, left: 56 },
-        legend: {
-          data: ['历史数据', '预测数据'],
-          top: 8,
-          textStyle: { fontSize: 12, color: chartColors.text }
-        },
-        xAxis: {
-          type: 'category',
-          data: allData.map(d => d.time),
-          axisLabel: {
-            fontSize: 11,
-            color: chartColors.text,
-            interval: allInterval,
-            formatter: value => formatTimestamp(Number(value), allSpanSeconds, effectiveResultFrequencySeconds)
-          },
-          axisLine: { lineStyle: { color: chartColors.border } },
-          axisTick: { show: false }
-        },
-        yAxis: {
-          type: 'value',
-          min: allMin - allPadding,
-          max: allMax + allPadding,
-          axisLabel: { fontSize: 11, color: chartColors.text },
-          splitLine: { lineStyle: { color: chartColors.border, type: 'dashed' } }
-        },
-        series: [
-          {
-            name: '历史数据',
-            data: historyValues,
-            type: 'line',
-            smooth: true,
-            symbol: 'none',
-            lineStyle: { color: chartColors.primaryLight, width: 2.5 },
-            areaStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
-                { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
-              ])
-            }
-          },
-          {
-            name: '预测数据',
-            data: [...overlapPadding, ...overlapPrediction],
-            type: 'line',
-            smooth: true,
-            symbol: 'none',
-            lineStyle: { color: '#F59E0B', width: 2.5, type: 'dashed' },
-            areaStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: 'rgba(245, 158, 11, 0.18)' },
-                { offset: 1, color: 'rgba(245, 158, 11, 0.02)' }
-              ])
-            }
-          }
-        ],
-        tooltip: {
-          trigger: 'axis',
-          backgroundColor: 'rgba(255, 255, 255, 0.96)',
-          borderColor: chartColors.border,
-          borderWidth: 1,
-          textStyle: { fontSize: 13 },
-          formatter: params => {
-            const point = params[0] || params[1];
-            if (!point) return '';
-            let html = `<strong>${formatTimestamp(Number(point.axisValue), allSpanSeconds, effectiveResultFrequencySeconds, 'tooltip')}</strong>`;
-            params.forEach(p => {
-              if (p.value != null) {
-                const color = p.seriesName === '预测数据' ? '#F59E0B' : chartColors.primaryLight;
-                html += `<br/><span style="color:${color}">${p.seriesName}: ${p.value.toFixed(1)}</span>`;
-              }
-            });
-            return html;
-          }
-        }
-      };
-
-      chart.setOption(option);
-
-      const handleResize = () => chart.resize();
-      window.addEventListener('resize', handleResize);
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        chart.dispose();
-      };
+    if (uploadChartInstance.current) {
+      uploadChartInstance.current.dispose();
     }
-  }, [resultData]);
+
+    const chart = echarts.init(uploadChartRef.current);
+    uploadChartInstance.current = chart;
+
+    chart.setOption(buildForecastChartOption({
+      sourceSeries: uploadData,
+      resultData,
+      fallbackFrequencySeconds: detectSeriesFrequencySeconds(uploadData) || detectedFrequencySeconds || 5 * 60,
+      previewLabel: '数值',
+    }));
+
+    const handleResize = () => chart.resize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.dispose();
+    };
+  }, [dataSource, uploadData, resultData, detectedFrequencySeconds]);
 
   // ==================== 推理 ====================
 
@@ -553,7 +544,6 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
       }
 
       const json = await result.response.json();
-      // 时序预测响应格式：{ data: { success, history[], prediction[], metadata } }
       const inner = json.data || {};
       const history = (inner.history || []).map(item => ({
         time: item.timestamp,
@@ -583,6 +573,8 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    handleResetResult();
     setUploadFileName(file.name);
     setUploadError('');
     setUploadData(null);
@@ -641,17 +633,72 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
     URL.revokeObjectURL(link.href);
   };
 
+  const renderResultHeader = () => (
+    <div className={styles.resultHeader}>
+      <div className={styles.resultHeaderMain}>
+        <span className={styles.resultIndicator} aria-hidden="true">
+          <FiTrendingUp />
+        </span>
+        <span className={styles.resultHeaderTitle}>
+          {dataSource === 'upload' ? uploadFileName : '服务器 CPU 使用率监控数据'}
+        </span>
+      </div>
+      <div className={styles.resultHeaderActions}>
+        {dataSource === 'upload' && uploadData && (
+          <button type="button" className={clsx(styles.resultAction, styles.resultActionSubtle)} onClick={handleReplaceUpload}>
+            重新上传
+          </button>
+        )}
+        <button type="button" className={styles.resultAction} onClick={handleResetResult}>
+          重置结果
+        </button>
+        <span className={styles.resultStatus}>
+          <FiCheck />
+          预测完成
+        </span>
+      </div>
+    </div>
+  );
+
+  const renderSummary = () => (
+    <div className={styles.resultSummary}>
+      <div className={styles.resultStat}>
+        <span className={styles.resultStatLabel}>输入数据点</span>
+        <span className={styles.resultStatValue}>
+          {resultData?.metadata?.input_data_points || resultData?.history?.length || 0}
+        </span>
+      </div>
+      <div className={styles.resultStat}>
+        <span className={styles.resultStatLabel}>预测时间</span>
+        <span className={styles.resultStatValue}>
+          {getPredictionTimeLabel(resultData?.metadata?.prediction_steps || selectedSteps || resultData?.prediction?.length || 0)}
+        </span>
+      </div>
+      <div className={styles.resultStat}>
+        <span className={styles.resultStatLabel}>预测频率</span>
+        <span className={styles.resultStatValue}>
+          {resultData?.metadata?.input_frequency || '-'}
+        </span>
+      </div>
+      <div className={styles.resultStat}>
+        <span className={styles.resultStatLabel}>推理耗时</span>
+        <span className={styles.resultStatValue}>{inferenceTime != null ? (inferenceTime / 1000).toFixed(2) + 's' : '-'}</span>
+      </div>
+    </div>
+  );
+
   // ==================== JSX ====================
 
   return (
     <div className={styles.scenarioContent}>
-      {/* 数据源 */}
       <div className={styles.formGroup}>
-        <label className={styles.formLabel}>数据源</label>
+        <div className={styles.formLabel}>数据源</div>
         <div className={styles.dataSourceTabs}>
           <button
+            type="button"
             className={clsx(styles.dataSourceTab, dataSource === 'sample' && styles.active)}
             onClick={() => {
+              handleResetResult();
               setDataSource('sample');
               setUploadFileName('');
               setUploadData(null);
@@ -661,8 +708,12 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
             示例数据
           </button>
           <button
+            type="button"
             className={clsx(styles.dataSourceTab, dataSource === 'upload' && styles.active)}
-            onClick={() => setDataSource('upload')}
+            onClick={() => {
+              handleResetResult();
+              setDataSource('upload');
+            }}
           >
             上传文件
           </button>
@@ -670,32 +721,38 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
 
         {dataSource === 'sample' && (
           <div className={styles.sampleDataSection}>
-            <div className={styles.sampleDataCard}>
-              <div className={styles.sampleDataHeader}>
-                <span className={styles.sampleDataTitle}>
-                  <FiActivity />
-                  服务器 CPU 使用率监控数据
-                </span>
-                <span className={styles.sampleDataInfo}>{getSampleMetaText(sampleData)}</span>
-              </div>
-              <div className={styles.sampleDataChart} ref={sampleChartRef}></div>
+            <div className={clsx(styles.sampleDataCard, hasResult && styles.sampleDataCardResult)}>
+              {hasResult ? renderResultHeader() : (
+                <div className={styles.sampleDataHeader}>
+                  <span className={styles.sampleDataTitle}>
+                    <FiActivity />
+                    服务器 CPU 使用率监控数据
+                  </span>
+                  <span className={styles.sampleDataInfo}>{getSampleMetaText(sampleData)}</span>
+                </div>
+              )}
+              <div className={clsx(styles.sampleDataChart, hasResult && styles.sampleDataChartResult)} ref={sampleChartRef}></div>
+              {hasResult && renderSummary()}
             </div>
           </div>
         )}
 
         {dataSource === 'upload' && !uploadData && (
           <div>
-            <div
-              className={clsx(styles.uploadArea, styles.active, uploadError && styles.uploadAreaError)}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <div className={styles.uploadAreaIcon}>
-                <FiUploadCloud />
-              </div>
-              <p className={styles.uploadAreaText}>
-                {uploadFileName ? `已选择: ${uploadFileName}` : '点击或拖拽上传文件'}
-              </p>
-              <p className={styles.uploadAreaHint}>支持 CSV, JSON 格式，时间戳支持 Unix 整数或日期字符串</p>
+            <div className={clsx(styles.uploadArea, styles.active, uploadError && styles.uploadAreaError)}>
+              <button
+                type="button"
+                className={styles.uploadTrigger}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className={styles.uploadAreaIcon}>
+                  <FiUploadCloud />
+                </div>
+                <p className={styles.uploadAreaText}>
+                  {uploadFileName ? `已选择: ${uploadFileName}` : '点击或拖拽上传文件'}
+                </p>
+                <p className={styles.uploadAreaHint}>支持 CSV, JSON 格式，时间戳支持 Unix 整数或日期字符串</p>
+              </button>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -703,7 +760,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
                 accept=".csv,.json"
                 onChange={handleFileUpload}
               />
-              <button className={styles.templateDownload} onClick={handleDownloadTemplate}>
+              <button type="button" className={styles.templateDownload} onClick={handleDownloadTemplate}>
                 <FiDownload />
                 下载数据模板
               </button>
@@ -716,36 +773,34 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
 
         {dataSource === 'upload' && uploadData && (
           <div className={styles.sampleDataSection}>
-            <div className={styles.sampleDataCard}>
-              <div className={styles.sampleDataHeader}>
-                <span className={styles.sampleDataTitle}>
-                  <FiActivity />
-                  {uploadFileName}
-                </span>
-                <span className={styles.sampleDataInfo}>{uploadData.length} points</span>
-              </div>
-              <div className={styles.sampleDataChart} ref={uploadChartRef}></div>
-              <div className={styles.uploadChartActions}>
-                <button
-                  className={styles.uploadReplace}
-                  onClick={() => {
-                    setUploadData(null);
-                    setUploadFileName('');
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
-                >
-                  <FiUploadCloud />
-                  重新上传
-                </button>
-              </div>
+            <div className={clsx(styles.sampleDataCard, hasResult && styles.sampleDataCardResult)}>
+              {hasResult ? renderResultHeader() : (
+                <div className={styles.sampleDataHeader}>
+                  <div className={styles.sampleDataHeaderMain}>
+                    <span className={styles.sampleDataTitle}>
+                      <FiActivity />
+                      {uploadFileName}
+                    </span>
+                    <span className={styles.sampleDataInfo}>{uploadData.length} points</span>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.uploadReplaceTop}
+                    onClick={handleReplaceUpload}
+                  >
+                    重新上传
+                  </button>
+                </div>
+              )}
+              <div className={clsx(styles.sampleDataChart, hasResult && styles.sampleDataChartResult)} ref={uploadChartRef}></div>
+              {hasResult && renderSummary()}
             </div>
           </div>
         )}
       </div>
 
-      {/* 预测时间 */}
       <div className={styles.formGroup}>
-        <label className={styles.formLabel}>预测时间</label>
+        <div className={styles.formLabel}>预测时间</div>
         <div className={styles.stepsCard}>
           <div className={styles.stepsHeader}>
             <p className={styles.stepsHint}>拖动下方滑块可调整未来预测时长，当前每个数据点约为 {frequencyLabel}。</p>
@@ -775,7 +830,6 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
         </div>
       </div>
 
-      {/* 错误提示 */}
       {formError && (
         <div className={styles.formErrorMsg}>
           <FiAlertTriangle />
@@ -783,9 +837,9 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
         </div>
       )}
 
-      {/* 执行按钮 */}
       <div className={styles.actionButtons}>
         <button
+          type="button"
           className={clsx(styles.btn, styles.btnPrimary)}
           onClick={handleRunInference}
           disabled={loading || !selectedModel || (dataSource === 'sample' ? !hasSampleData : !uploadData?.length)}
@@ -795,51 +849,9 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
         </button>
       </div>
 
-      {/* Loading */}
       <div className={clsx(styles.loading, loading && styles.active)}>
         <div className={styles.loadingSpinner}></div>
         <span>模型推理中...</span>
-      </div>
-
-      {/* 结果 */}
-      <div className={clsx(styles.resultSection, resultData && !loading && styles.active)}>
-        <div className={styles.resultCard}>
-          <div className={styles.resultHeader}>
-            <span className={styles.resultTitle}>
-              <FiTrendingUp />
-              推理结果
-            </span>
-            <span className={styles.resultStatus}>
-              <FiCheck />
-              预测完成
-            </span>
-          </div>
-          <div className={styles.resultChart} ref={resultChartRef}></div>
-          <div className={styles.resultSummary}>
-            <div className={styles.resultStat}>
-              <span className={styles.resultStatLabel}>输入数据点</span>
-              <span className={styles.resultStatValue}>
-                {resultData?.metadata?.input_data_points || resultData?.history?.length || 0}
-              </span>
-            </div>
-            <div className={styles.resultStat}>
-              <span className={styles.resultStatLabel}>预测时间</span>
-              <span className={styles.resultStatValue}>
-                {getPredictionTimeLabel(resultData?.metadata?.prediction_steps || selectedSteps || resultData?.prediction?.length || 0)}
-              </span>
-            </div>
-            <div className={styles.resultStat}>
-              <span className={styles.resultStatLabel}>预测频率</span>
-              <span className={styles.resultStatValue}>
-                {resultData?.metadata?.input_frequency || '-'}
-              </span>
-            </div>
-            <div className={styles.resultStat}>
-              <span className={styles.resultStatLabel}>推理耗时</span>
-              <span className={styles.resultStatValue}>{inferenceTime != null ? (inferenceTime / 1000).toFixed(2) + 's' : '-'}</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

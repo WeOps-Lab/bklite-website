@@ -5,18 +5,14 @@
 }
 
 .accountButton {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   padding: 0;
-  border: 1px solid rgba(148, 163, 184, 0.24);
+  border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.86);
-  color: #64748b;
-  box-shadow:
-    0 4px 14px rgba(15, 23, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72);
-  -webkit-backdrop-filter: blur(12px) saturate(160%);
-  backdrop-filter: blur(12px) saturate(160%);
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -25,20 +21,28 @@
 }
 
 .accountAvatar {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.12);
-  color: #2563eb;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
+.accountAvatarLoggedOut {
+  background: rgba(148, 163, 184, 0.14);
+  color: #94a3b8;
+}
+
+.accountAvatarLoggedIn {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+}
+
 .accountButton svg {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
 }
 
 .menuTitle,
@@ -52,21 +56,20 @@
 
 .accountButton:hover {
   transform: translateY(-1px);
-  color: #1d4ed8;
-  border-color: rgba(59, 130, 246, 0.24);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow:
-    0 10px 24px rgba(59, 130, 246, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+  color: #0f172a;
+  background: #ffffff;
 }
 
 .accountButtonOpen {
-  color: #1d4ed8;
-  border-color: rgba(59, 130, 246, 0.28);
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow:
-    0 12px 28px rgba(59, 130, 246, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.84);
+  color: #0f172a;
+  background: #ffffff;
+}
+
+.accountButton:focus-visible,
+.mobileLoginButton:focus-visible,
+.mobileLogoutButton:focus-visible {
+  outline: 2px solid rgba(37, 99, 235, 0.38);
+  outline-offset: 2px;
 }
 
 .menuPanel {
@@ -126,6 +129,14 @@
   color: #94a3b8;
 }
 
+.menuDescription {
+  display: block;
+  max-width: 100%;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
 .menuBadgeRow {
   display: flex;
   align-items: center;
@@ -170,6 +181,15 @@
   color: #dc2626;
 }
 
+.loginMenuItem {
+  color: #0f172a;
+}
+
+.loginMenuItem:hover {
+  background: rgba(248, 250, 252, 0.96);
+  color: #2563eb;
+}
+
 .mobileLogoutButton {
   width: 100%;
   display: inline-flex;
@@ -184,21 +204,41 @@
   font-weight: 500;
 }
 
+.mobileLoginButton {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-top: 6px;
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.88);
+  color: #475569;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.mobileLoginButton:hover {
+  background: rgba(59, 130, 246, 0.08);
+  color: #2563eb;
+}
+
 .mobileLogoutButton:hover {
   background: rgba(239, 68, 68, 0.08);
   color: #dc2626;
 }
 
 [data-theme='dark'] .accountButton {
-  color: #cbd5e1;
-  background: rgba(15, 23, 42, 0.72);
-  border-color: rgba(148, 163, 184, 0.2);
-  box-shadow:
-    0 6px 18px rgba(2, 6, 23, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  color: #f8fafc;
+  background: rgba(15, 23, 42, 0.92);
 }
 
-[data-theme='dark'] .accountAvatar {
+[data-theme='dark'] .accountAvatarLoggedOut {
+  background: rgba(148, 163, 184, 0.14);
+  color: #cbd5e1;
+}
+
+[data-theme='dark'] .accountAvatarLoggedIn {
   background: rgba(96, 165, 250, 0.16);
   color: #93c5fd;
 }
@@ -209,17 +249,12 @@
 
 [data-theme='dark'] .accountButton:hover {
   color: #f8fafc;
-  background: rgba(30, 41, 59, 0.92);
-  border-color: rgba(96, 165, 250, 0.3);
-  box-shadow:
-    0 10px 24px rgba(59, 130, 246, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: rgba(30, 41, 59, 0.96);
 }
 
 [data-theme='dark'] .accountButtonOpen {
   color: #f8fafc;
   background: rgba(30, 41, 59, 0.94);
-  border-color: rgba(96, 165, 250, 0.34);
 }
 
 [data-theme='dark'] .menuPanel {
@@ -242,6 +277,10 @@
   color: #94a3b8;
 }
 
+[data-theme='dark'] .menuDescription {
+  color: #cbd5e1;
+}
+
 [data-theme='dark'] .identityBadge {
   background: rgba(96, 165, 250, 0.16);
   color: #dbeafe;
@@ -256,18 +295,31 @@
   color: #fda4af;
 }
 
+[data-theme='dark'] .loginMenuItem {
+  color: #f8fafc;
+}
+
+[data-theme='dark'] .loginMenuItem:hover {
+  background: rgba(30, 41, 59, 0.92);
+  color: #93c5fd;
+}
+
 [data-theme='dark'] .mobileLogoutButton {
   background: rgba(30, 41, 59, 0.92);
   color: #f8fafc;
 }
 
+[data-theme='dark'] .mobileLoginButton {
+  background: rgba(30, 41, 59, 0.92);
+  color: #cbd5e1;
+}
+
+[data-theme='dark'] .mobileLoginButton:hover {
+  background: rgba(37, 99, 235, 0.18);
+  color: #93c5fd;
+}
+
 [data-theme='dark'] .mobileLogoutButton:hover {
   background: rgba(127, 29, 29, 0.24);
   color: #fecaca;
-}
-
-@media (max-width: 996px) {
-  .accountButton {
-    display: none;
-  }
 }

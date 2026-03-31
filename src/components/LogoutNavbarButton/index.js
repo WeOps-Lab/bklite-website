@@ -2,9 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import clsx from 'clsx';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import { FiLogOut, FiUser } from 'react-icons/fi';
+import { FiLogIn, FiLogOut, FiUser } from 'react-icons/fi';
 
-import { fetchLoginInfo, getCachedLoginInfo, logout } from '@site/src/lib/playgroundAuth';
+import { fetchLoginInfo, getCachedLoginInfo, logout, redirectToLogin } from '@site/src/lib/playgroundAuth';
 import useAuthStateSync from '@site/src/lib/useAuthStateSync';
 
 import styles from './styles.module.css';
@@ -27,6 +27,7 @@ function getAccountRoleLabel(loginInfo) {
 
 export default function LogoutNavbarButton({ mobile = false, label = '账号' }) {
   const { siteConfig } = useDocusaurusContext();
+  const loginBaseUrl = siteConfig.customFields.loginBaseUrl;
   const loginInfoUrl = siteConfig.customFields.loginInfoUrl;
   const isLoggedIn = useAuthStateSync();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -111,16 +112,29 @@ export default function LogoutNavbarButton({ mobile = false, label = '账号' })
     };
   }, [menuOpen, mobile]);
 
-  if (!isLoggedIn) {
-    return null;
-  }
-
   const handleLogout = () => {
     setMenuOpen(false);
     logout();
   };
 
+  const handleLogin = () => {
+    redirectToLogin(loginBaseUrl);
+  };
+
   if (mobile) {
+    if (!isLoggedIn) {
+      return (
+        <button
+          type="button"
+          className={clsx(styles.mobileLoginButton, 'clean-btn')}
+          onClick={handleLogin}
+        >
+          <FiUser />
+          <span>登录</span>
+        </button>
+      );
+    }
+
     return (
       <button
         type="button"
@@ -130,8 +144,11 @@ export default function LogoutNavbarButton({ mobile = false, label = '账号' })
         <FiLogOut />
         <span>退出登录</span>
       </button>
-    );
+      );
   }
+
+  const buttonTitle = isLoggedIn ? accountTitle : '登录';
+  const menuAriaLabel = isLoggedIn ? `${normalizedLabel}菜单` : '登录入口';
 
   return (
     <div className={styles.accountMenu} ref={menuRef}>
@@ -140,38 +157,68 @@ export default function LogoutNavbarButton({ mobile = false, label = '账号' })
         className={clsx(styles.accountButton, menuOpen && styles.accountButtonOpen)}
         aria-haspopup="menu"
         aria-expanded={menuOpen}
-        aria-label={accountTitle}
+        aria-label={buttonTitle}
+        title={buttonTitle}
         onClick={() => setMenuOpen((open) => !open)}
       >
-        <span className={styles.accountAvatar}>
+        <span
+          className={clsx(
+            styles.accountAvatar,
+            isLoggedIn ? styles.accountAvatarLoggedIn : styles.accountAvatarLoggedOut,
+          )}
+        >
           <FiUser />
         </span>
       </button>
 
       {menuOpen && (
-        <div className={styles.menuPanel} role="menu" aria-label={`${normalizedLabel}菜单`}>
-          <div className={styles.menuHeader}>
-            <div className={styles.menuTitleRow}>
-              <span className={styles.menuTitle} title={accountTitle}>{accountTitle}</span>
-              {accountIdentityLabel ? (
-                <span className={styles.identityBadge}>{accountIdentityLabel}</span>
-              ) : null}
-            </div>
-            {loginInfo?.username ? (
-              <span className={styles.menuUsername} title={`用户名：@${loginInfo.username}`}>
-                用户名：@{loginInfo.username}
-              </span>
-            ) : null}
-          </div>
-          <button
-            type="button"
-            className={styles.menuItem}
-            role="menuitem"
-            onClick={handleLogout}
-          >
-            <FiLogOut />
-            <span>退出登录</span>
-          </button>
+        <div className={styles.menuPanel} role="menu" aria-label={menuAriaLabel}>
+          {isLoggedIn ? (
+            <>
+              <div className={styles.menuHeader}>
+                <div className={styles.menuTitleRow}>
+                  <span className={styles.menuTitle} title={accountTitle}>{accountTitle}</span>
+                  {accountIdentityLabel ? (
+                    <span className={styles.identityBadge}>{accountIdentityLabel}</span>
+                  ) : null}
+                </div>
+                {loginInfo?.username ? (
+                  <span className={styles.menuUsername} title={`用户名：@${loginInfo.username}`}>
+                    用户名：@{loginInfo.username}
+                  </span>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className={styles.menuItem}
+                role="menuitem"
+                onClick={handleLogout}
+              >
+                <FiLogOut />
+                <span>退出登录</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <div className={styles.menuHeader}>
+                <div className={styles.menuTitleRow}>
+                  <span className={styles.menuTitle}>登录账号</span>
+                </div>
+                <span className={styles.menuDescription}>
+                  登录以体验 AI 能力，解锁模型选择、在线推理与更多功能。
+                </span>
+              </div>
+              <button
+                type="button"
+                className={clsx(styles.menuItem, styles.loginMenuItem)}
+                role="menuitem"
+                onClick={handleLogin}
+              >
+                <FiLogIn />
+                <span>登录</span>
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

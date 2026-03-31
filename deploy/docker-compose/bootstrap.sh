@@ -5,6 +5,7 @@ set -euo pipefail
 # 常量定义
 #=============================================================================
 readonly DEFAULT_MIRROR="bk-lite.tencentcloudcr.com/bklite"
+readonly ENTERPRISE_MIRROR="docker-bkrepo.cwoa.net/ce1b09/bklite/weopsx"
 readonly REQUIRED_DOCKER_VERSION="20.10.23"
 readonly REQUIRED_COMPOSE_VERSION="2.27.0"
 readonly DEFAULT_PORT=443
@@ -118,6 +119,12 @@ check_nvidia_gpu() {
 load_mirror_config() {
     if [ -f "$COMMON_ENV_FILE" ]; then
         source "$COMMON_ENV_FILE"
+    fi
+
+    if [[ "${ENTERPRISE_ENABLED:-false}" == "true" ]]; then
+        MIRROR="$ENTERPRISE_MIRROR"
+        export MIRROR
+        return
     fi
     
     # 用户环境变量优先级最高
@@ -845,7 +852,7 @@ init_sidecar_token() {
 update_common_env_flags() {
     [ -f "$COMMON_ENV_FILE" ] || return
     
-    for var in OPSPILOT_ENABLED VLLM_ENABLED; do
+    for var in OPSPILOT_ENABLED VLLM_ENABLED MIRROR; do
         if grep -q "^export $var=" "$COMMON_ENV_FILE"; then
             sed -i.bak "s/^export $var=.*/export $var=${!var}/" "$COMMON_ENV_FILE"
             rm -f "${COMMON_ENV_FILE}.bak"
@@ -854,7 +861,7 @@ update_common_env_flags() {
         fi
     done
     
-    log "SUCCESS" "已保存参数配置: OPSPILOT_ENABLED=$OPSPILOT_ENABLED, VLLM_ENABLED=$VLLM_ENABLED"
+    log "SUCCESS" "已保存参数配置: OPSPILOT_ENABLED=$OPSPILOT_ENABLED, VLLM_ENABLED=$VLLM_ENABLED, MIRROR=$MIRROR"
 }
 
 #=============================================================================
@@ -869,10 +876,9 @@ do_install() {
         source "$COMMON_ENV_FILE"
     fi
     
-    load_mirror_config
-    
     export OPSPILOT_ENABLED="${OPSPILOT_ENABLED:-false}"
     export VLLM_ENABLED="${VLLM_ENABLED:-false}"
+    export ENTERPRISE_ENABLED="${ENTERPRISE_ENABLED:-false}"
     
     for arg in "$@"; do
         case "$arg" in
@@ -883,6 +889,10 @@ do_install() {
             --opspilot)
                 export OPSPILOT_ENABLED=true
                 log "INFO" "命令行指定 --opspilot，启用 OpsPilot"
+                ;;
+            --enterprise)
+                export ENTERPRISE_ENABLED=true
+                log "INFO" "命令行指定 --enterprise，切换企业版镜像仓库"
                 ;;
             --vllm)
                 if check_nvidia_gpu; then
@@ -895,6 +905,8 @@ do_install() {
                 ;;
         esac
     done
+
+    load_mirror_config
     
     if [ "$clean_install" = true ]; then
         log "WARNING" "正在停止并清理现有容器和数据卷..."
@@ -963,9 +975,8 @@ do_install() {
 # package 命令
 #=============================================================================
 do_package() {
-    load_mirror_config
-    
     local skip_opspilot=true skip_vllm=true
+    export ENTERPRISE_ENABLED="${ENTERPRISE_ENABLED:-false}"
     
     for arg in "$@"; do
         case "$arg" in
@@ -973,12 +984,18 @@ do_package() {
                 skip_opspilot=false
                 log "INFO" "检测到 --opspilot，将下载 OpsPilot 镜像"
                 ;;
+            --enterprise)
+                export ENTERPRISE_ENABLED=true
+                log "INFO" "检测到 --enterprise，将切换企业版镜像仓库"
+                ;;
             --vllm)
                 skip_vllm=false
                 log "INFO" "检测到 --vllm，将下载 vLLM 镜像"
                 ;;
         esac
     done
+
+    load_mirror_config
     
     [[ "$skip_opspilot" == "true" ]] && log "INFO" "跳过 OpsPilot 镜像（使用 --opspilot 下载）"
     [[ "$skip_vllm" == "true" ]] && log "INFO" "跳过 vLLM 镜像（使用 --vllm 下载）"

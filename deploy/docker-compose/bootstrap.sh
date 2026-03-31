@@ -60,6 +60,10 @@ version_gte() {
     [ "$(printf '%s\n' "$ver2" "$ver1" | sort -V | head -n1)" = "$ver2" ]
 }
 
+escape_sed_replacement() {
+    printf '%s' "$1" | sed 's/[&|\\]/\\&/g'
+}
+
 #=============================================================================
 # 环境检查
 #=============================================================================
@@ -837,7 +841,9 @@ init_sidecar_token() {
     if ! grep -q "^SIDECAR_INIT_TOKEN=" "$COMMON_ENV_FILE" 2>/dev/null; then
         echo "export SIDECAR_INIT_TOKEN=$SIDECAR_INIT_TOKEN" >> "$COMMON_ENV_FILE"
     else
-        sed -i.bak "s/^export SIDECAR_INIT_TOKEN=.*$/export SIDECAR_INIT_TOKEN=\"$SIDECAR_INIT_TOKEN\"/g" "$COMMON_ENV_FILE"
+        local escaped_token
+        escaped_token=$(escape_sed_replacement "$SIDECAR_INIT_TOKEN")
+        sed -i.bak "s|^export SIDECAR_INIT_TOKEN=.*$|export SIDECAR_INIT_TOKEN=\"$escaped_token\"|g" "$COMMON_ENV_FILE"
         rm -f "${COMMON_ENV_FILE}.bak"
     fi
     echo "export SIDECAR_NODE_ID=$SIDECAR_NODE_ID" >> "$COMMON_ENV_FILE"
@@ -853,8 +859,11 @@ update_common_env_flags() {
     [ -f "$COMMON_ENV_FILE" ] || return
     
     for var in OPSPILOT_ENABLED VLLM_ENABLED MIRROR; do
+        local escaped_value
+        escaped_value=$(escape_sed_replacement "${!var}")
+
         if grep -q "^export $var=" "$COMMON_ENV_FILE"; then
-            sed -i.bak "s/^export $var=.*/export $var=${!var}/" "$COMMON_ENV_FILE"
+            sed -i.bak "s|^export $var=.*$|export $var=$escaped_value|" "$COMMON_ENV_FILE"
             rm -f "${COMMON_ENV_FILE}.bak"
         else
             echo "export $var=${!var}" >> "$COMMON_ENV_FILE"

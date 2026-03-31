@@ -22,6 +22,7 @@ const config = {
   customFields: {
     apiBaseUrl: 'https://bklite.canway.net/api/mlops',
     loginBaseUrl: 'https://bklite.canway.net/auth/signin',
+    loginInfoUrl: 'https://bklite.canway.net/api/proxy/core/api/login_info/',
   },
 
   i18n: {
@@ -125,8 +126,17 @@ const config = {
             "to": "/pricing"
           },
           {
-            label: '在线体验',
-            href: 'https://bklite.canway.net/',
+            type: 'custom-icon-link',
+            href: 'https://github.com/TencentBlueKing/bk-lite',
+            label: 'GitHub',
+            icon: 'github',
+            position: 'right',
+          },
+          {
+            type: 'custom-icon-link',
+            href: 'https://deepwiki.com/TencentBlueKing/bk-lite',
+            label: 'DeepWiki',
+            icon: 'deepwiki',
             position: 'right',
           },
           {
@@ -135,13 +145,13 @@ const config = {
             position: 'right',
           },
           {
-            href: 'https://deepwiki.com/TencentBlueKing/bk-lite',
-            label: 'DeepWiki',
+            label: '在线体验',
+            href: 'https://bklite.canway.net/',
             position: 'right',
           },
           {
-            href: 'https://github.com/TencentBlueKing/bk-lite',
-            label: 'GitHub',
+            type: 'custom-logout',
+            label: '账号',
             position: 'right',
           },
         ],

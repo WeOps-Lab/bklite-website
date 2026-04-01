@@ -375,11 +375,10 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
   };
 
   const handleReplaceUpload = () => {
-    handleResetResult();
-    setUploadData(null);
-    setUploadFileName('');
-    setUploadError('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
   };
 
   // ==================== 图表 ====================
@@ -709,6 +708,16 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
           </button>
         </div>
 
+        {dataSource === 'upload' && (
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            accept=".csv,.json"
+            onChange={handleFileUpload}
+          />
+        )}
+
         {dataSource === 'sample' && (
           <div className={styles.sampleDataSection}>
             <div className={clsx(styles.sampleDataCard, hasResult && styles.sampleDataCardResult)}>
@@ -743,13 +752,6 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
                 </p>
                 <p className={styles.uploadAreaHint}>支持 CSV, JSON 格式，时间戳支持 Unix 整数或日期字符串</p>
               </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                style={{ display: 'none' }}
-                accept=".csv,.json"
-                onChange={handleFileUpload}
-              />
               <button type="button" className={styles.templateDownload} onClick={handleDownloadTemplate}>
                 <FiDownload />
                 下载数据模板

@@ -254,6 +254,8 @@ function buildForecastChartOption({
   const spanSeconds = allData.length > 1 ? allData[allData.length - 1].time - allData[0].time : 0;
   const effectiveFrequencySeconds = detectSeriesFrequencySeconds(allData) || fallbackFrequencySeconds;
   const historyValues = history.map(d => d.value);
+  const predictionStartIndex = Math.max(0, history.length - 1);
+  const predictionEndIndex = Math.max(predictionStartIndex, allData.length - 1);
   const overlapPadding = new Array(Math.max(0, history.length - 1)).fill(null);
   const overlapPrediction = [
     history[history.length - 1]?.value ?? null,
@@ -317,6 +319,34 @@ function buildForecastChartOption({
             { offset: 1, color: 'rgba(245, 158, 11, 0.02)' }
           ])
         }
+      },
+      {
+        type: 'scatter',
+        data: [],
+        symbol: 'none',
+        silent: true,
+        tooltip: { show: false },
+        emphasis: { disabled: true },
+        markArea: {
+          silent: true,
+          label: { show: false },
+          itemStyle: {
+            color: 'rgba(245, 158, 11, 0.08)',
+            borderWidth: 0,
+          },
+          data: prediction.length > 0
+            ? [[
+              {
+                xAxis: predictionStartIndex,
+                yAxis: 'min',
+              },
+              {
+                xAxis: predictionEndIndex,
+                yAxis: 'max',
+              }
+            ]]
+            : []
+        }
       }
     ],
     tooltip: {
@@ -348,7 +378,7 @@ const maxPredictionSteps = 12;
 
 export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, selectedModel, scenarioConfig }) {
   const [dataSource, setDataSource] = useState('sample');
-  const [selectedSteps, setSelectedSteps] = useState(minPredictionSteps);
+  const [selectedSteps, setSelectedSteps] = useState(maxPredictionSteps);
   const [loading, setLoading] = useState(false);
   const [resultData, setResultData] = useState(null);
   const [inferenceTime, setInferenceTime] = useState(null);
@@ -382,11 +412,10 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
   };
 
   const handleReplaceUpload = () => {
-    handleResetResult();
-    setUploadData(null);
-    setUploadFileName('');
-    setUploadError('');
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
   };
 
   // ==================== 图表 ====================
@@ -719,6 +748,16 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
           </button>
         </div>
 
+        {dataSource === 'upload' && (
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            accept=".csv,.json"
+            onChange={handleFileUpload}
+          />
+        )}
+
         {dataSource === 'sample' && (
           <div className={styles.sampleDataSection}>
             <div className={clsx(styles.sampleDataCard, hasResult && styles.sampleDataCardResult)}>
@@ -753,13 +792,6 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
                 </p>
                 <p className={styles.uploadAreaHint}>支持 CSV, JSON 格式，时间戳支持 Unix 整数或日期字符串</p>
               </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                style={{ display: 'none' }}
-                accept=".csv,.json"
-                onChange={handleFileUpload}
-              />
               <button type="button" className={styles.templateDownload} onClick={handleDownloadTemplate}>
                 <FiDownload />
                 下载数据模板

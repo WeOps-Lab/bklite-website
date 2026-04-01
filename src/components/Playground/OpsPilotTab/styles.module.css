@@ -1,0 +1,70 @@
+/* OpsPilot tab — variables inherited from .demoPage in index.module.css */
+.opsPilotTab {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  min-height: calc(100vh - 60px);
+}
+
+.placeholderWrap {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 48px 24px 64px;
+}
+
+.placeholderCard {
+  min-height: 520px;
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at top, rgba(59, 130, 246, 0.08), transparent 36%),
+    var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.placeholderBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(30, 64, 175, 0.08);
+  color: var(--color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.placeholderTitle {
+  margin: 0;
+  font-size: clamp(32px, 3vw, 44px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: var(--color-text-primary);
+}
+
+.placeholderDescription {
+  max-width: 560px;
+  margin: 16px 0 0;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 640px) {
+  .placeholderWrap {
+    padding: 32px 16px 48px;
+  }
+
+  .placeholderCard {
+    min-height: 420px;
+    border-radius: 20px;
+    padding: 36px 20px;
+  }
+}

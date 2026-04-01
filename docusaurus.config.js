@@ -19,6 +19,12 @@ const config = {
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
 
+  customFields: {
+    apiBaseUrl: 'https://bklite.canway.net/api/mlops',
+    loginBaseUrl: 'https://bklite.canway.net/auth/signin',
+    loginInfoUrl: 'https://bklite.canway.net/api/proxy/core/api/login_info/',
+  },
+
   i18n: {
     defaultLocale: 'zh-Hans',
     locales: ['zh-Hans', 'en'],
@@ -37,6 +43,14 @@ const config = {
           s.parentNode.insertBefore(hm, s);
         })();
       `,
+    },
+  ],
+
+  scripts: [
+    {
+      src: 'https://bklite.canway.net/umami/script.js',
+      defer: true,
+      'data-website-id': '00046c9f-e7dd-4b6f-8dd2-ab38174792c6',
     },
   ],
 
@@ -103,8 +117,32 @@ const config = {
             "to": "/docs/dev"
           },
           {
+            label: 'AI体验',
+            to: '/playground',
+            position: 'left',
+          },
+          {
             "label": "价格",
             "to": "/pricing"
+          },
+          {
+            type: 'custom-icon-link',
+            href: 'https://github.com/TencentBlueKing/bk-lite',
+            label: 'GitHub',
+            icon: 'github',
+            position: 'right',
+          },
+          {
+            type: 'custom-icon-link',
+            href: 'https://deepwiki.com/TencentBlueKing/bk-lite',
+            label: 'DeepWiki',
+            icon: 'deepwiki',
+            position: 'right',
+          },
+          {
+            type: 'custom-join-community',
+            label: '加入社区',
+            position: 'right',
           },
           {
             label: '在线体验',
@@ -112,13 +150,8 @@ const config = {
             position: 'right',
           },
           {
-            href: 'https://deepwiki.com/TencentBlueKing/bk-lite',
-            label: 'DeepWiki',
-            position: 'right',
-          },
-          {
-            href: 'https://github.com/TencentBlueKing/bk-lite',
-            label: 'GitHub',
+            type: 'custom-logout',
+            label: '账号',
             position: 'right',
           },
         ],

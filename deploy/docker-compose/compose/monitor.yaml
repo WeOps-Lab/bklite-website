@@ -10,6 +10,8 @@ services:
       METRIC_NATS_PASSWORD: ${NATS_ADMIN_PASSWORD}
       METRIC_OUTPUT_URL: http://victoria-metrics:8428
       METRIC_NATS_SERVERS: tls://nats:4222
+    ports:
+      - 33000:33000
     volumes:
       - ../conf/telegraf/telegraf.conf:/apps/telegraf.conf:ro
       - ../conf/certs:/etc/certs:ro
@@ -19,7 +21,6 @@ services:
     depends_on:
       server:
         condition: service_healthy
-
 
   fusion-collector:
     image: ${DOCKER_IMAGE_FUSION_COLLECTOR}

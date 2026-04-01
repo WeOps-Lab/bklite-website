@@ -14,9 +14,8 @@ import {
 } from 'react-icons/fi';
 
 import {
-  getToken,
-  hasToken,
-  invalidateAuth,
+  authFetch,
+  getAndClearAuthHint,
   redirectToLogin,
 } from '@site/src/lib/playgroundAuth';
 import useAuthStateSync from '@site/src/lib/useAuthStateSync';
@@ -105,22 +104,13 @@ export default function MLOpsTab() {
   const [servingsLoaded, setServingsLoaded] = useState(false);
   const [servingsLoading, setServingsLoading] = useState(false);
   const [servingsErrorMap, setServingsErrorMap] = useState({});
+  const [authExpiredNotice, setAuthExpiredNotice] = useState('');
   const isLoggedIn = useAuthStateSync();
 
   const modelDropdownRef = useRef(null);
 
   const preloadAllServings = useCallback(async () => {
-    const token = getToken();
     const scenariosToLoad = Object.keys(scenarioConfig);
-
-    if (!token) {
-      setServings({});
-      setServingsLoaded(false);
-      setServingsLoading(false);
-      setServingsErrorMap({});
-      setSelectedModel('');
-      return;
-    }
 
     setServingsLoading(true);
     setServingsLoaded(false);
@@ -130,25 +120,18 @@ export default function MLOpsTab() {
     const results = await Promise.allSettled(
       scenariosToLoad.map(async (scenario) => {
         const config = scenarioConfig[scenario];
-        const response = await fetch(`${apiBase}/servings/${config.algorithmType}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const result = await authFetch(
+          `${apiBase}/servings/${config.algorithmType}`,
+          { method: 'GET', headers: { 'Content-Type': 'application/json' } },
+          { redirectOnMissingToken: false },
+        );
 
-        if (response.status === 401) {
-          invalidateAuth();
-          throw new Error('AUTH_INVALIDATED');
+        if (!result.ok) {
+          return { scenario, authReason: result.reason };
         }
 
-        if (!response.ok) {
-          throw new Error(`获取模型列表失败: ${response.status}`);
-        }
-
-        const json = await response.json();
-        const items = json.data?.items || json.data || json.results || [];
+        const json = await result.response.json();
+        const items = Array.isArray(json.data) ? json.data : [];
         const list = items
           .filter(item => item.container_info?.state === 'running')
           .map(item => ({
@@ -156,28 +139,34 @@ export default function MLOpsTab() {
             name: item.name || `Serving #${item.id}`,
           }));
 
-        return [scenario, list];
+        return { scenario, list };
       })
     );
 
-    const nextServings = {};
-    const nextErrors = {};
-    const authInvalidated = results.some(
-      (result) => result.status === 'rejected' && result.reason?.message === 'AUTH_INVALIDATED'
+    // If any request hit missing-token or auth-expired, stop the preload
+    // and let the existing isLoggedIn effect handle UI reset
+    const authFailed = results.some(
+      (r) => r.status === 'fulfilled' &&
+        (r.value.authReason === 'missing-token' || r.value.authReason === 'auth-expired')
     );
 
-    if (authInvalidated || !hasToken()) {
+    if (authFailed) {
       setServingsLoading(false);
       return;
     }
 
+    const nextServings = {};
+    const nextErrors = {};
+
     results.forEach((result, index) => {
       const scenario = scenariosToLoad[index];
-      if (result.status === 'fulfilled') {
-        const [scenarioKey, list] = result.value;
-        nextServings[scenarioKey] = list;
+      if (result.status === 'fulfilled' && result.value.list) {
+        nextServings[result.value.scenario] = result.value.list;
       } else {
-        console.error(`获取 ${scenario} serving 列表失败:`, result.reason);
+        const reason = result.status === 'fulfilled'
+          ? result.value.authReason
+          : result.reason;
+        console.error(`获取 ${scenario} serving 列表失败:`, reason);
         nextServings[scenario] = [];
         nextErrors[scenario] = true;
       }
@@ -191,9 +180,13 @@ export default function MLOpsTab() {
 
   useEffect(() => {
     if (isLoggedIn) {
+      setAuthExpiredNotice('');
       preloadAllServings();
       return;
     }
+
+    const authHint = getAndClearAuthHint();
+    setAuthExpiredNotice(authHint?.reason === 'auth-expired' ? '登录已过期，请重新登录后继续体验。' : '');
 
     setServings({});
     setServingsLoaded(false);
@@ -212,10 +205,13 @@ export default function MLOpsTab() {
 
   const getScenarioCountText = (scenarioKey) => {
     if (isLoggedIn === false) {
+      if (authExpiredNotice) {
+        return '登录已过期';
+      }
       return '登录后查看模型';
     }
 
-    if (isLoggedIn === null || (isLoggedIn && !servingsLoaded && servingsLoading)) {
+    if (isLoggedIn && !servingsLoaded && servingsLoading) {
       return '加载中...';
     }
 
@@ -231,7 +227,7 @@ export default function MLOpsTab() {
   };
 
   useEffect(() => {
-    if (!isLoggedIn || isComingSoon) {
+    if (isLoggedIn === false || isComingSoon) {
       setSelectedModel('');
       setModelDropdownOpen(false);
       return;
@@ -299,14 +295,10 @@ export default function MLOpsTab() {
               {!isComingSoon && (
               <div className={styles.formGroup}>
                 <label className={styles.formLabel}>选择模型</label>
-                {isLoggedIn === null ? (
-                  <div className={styles.selectTrigger} style={{ cursor: 'wait' }}>
-                    <span className={styles.selectValue}>检查登录状态中...</span>
-                  </div>
-                ) : !isLoggedIn ? (
+                {isLoggedIn === false ? (
                   <div className={styles.loginHint} onClick={() => redirectToLogin(loginBaseUrl)}>
                     <FiLock />
-                    <span>请先登录后选择模型</span>
+                    <span>{authExpiredNotice || '请先登录后选择模型'}</span>
                   </div>
                 ) : (isLoggedIn && !servingsLoaded && servingsLoading) ? (
                   <div className={styles.selectTrigger} style={{ cursor: 'wait' }}>
@@ -368,8 +360,10 @@ export default function MLOpsTab() {
                           <FiLock />
                         </div>
                         <div className={styles.lockedOverlayText}>
-                          <strong>登录后解锁模型体验</strong>
-                          <span>选择模型后可使用示例数据、上传数据并开始在线推理。</span>
+                          <strong>{authExpiredNotice ? '登录已过期' : '登录后解锁模型体验'}</strong>
+                          <span>
+                            {authExpiredNotice || '选择模型后可使用示例数据、上传数据并开始在线推理。'}
+                          </span>
                         </div>
                         <button
                           type="button"

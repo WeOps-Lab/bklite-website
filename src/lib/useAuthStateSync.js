@@ -6,14 +6,11 @@ import { AUTH_STATE_CHANGE_EVENT, hasToken } from '@site/src/lib/playgroundAuth'
 // - 页面上只绑定一套全局 auth 事件监听
 // - 各组件通过 hook 订阅同一个 isLoggedIn 快照
 // - 避免导航栏、页面等多个 consumer 各自重复注册 window/document 监听器
-let authStateSnapshot = null;
+let authStateSnapshot = hasToken();
 let listenersBound = false;
 const authStateListeners = new Set();
 
 function getAuthStateSnapshot() {
-  if (authStateSnapshot === null) {
-    authStateSnapshot = hasToken();
-  }
   return authStateSnapshot;
 }
 

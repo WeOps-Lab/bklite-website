@@ -12,7 +12,7 @@ import {
   FiAlertTriangle,
 } from 'react-icons/fi';
 
-import { getToken, invalidateAuth, requireAuth } from '@site/src/lib/playgroundAuth';
+import { authFetch } from '@site/src/lib/playgroundAuth';
 
 import styles from './index.module.css';
 
@@ -159,6 +159,191 @@ const chartColors = {
   surface: '#F8FAFC'
 };
 
+function getChartBounds(values, fixedBounds) {
+  if (fixedBounds) return fixedBounds;
+
+  const minVal = Math.floor(Math.min(...values));
+  const maxVal = Math.ceil(Math.max(...values));
+  const padding = Math.max(1, Math.round((maxVal - minVal) * 0.1));
+
+  return {
+    min: minVal - padding,
+    max: maxVal + padding,
+  };
+}
+
+function buildAnomalyChartOption({
+  sourceSeries,
+  resultData,
+  fallbackFrequencySeconds,
+  previewLabel,
+  showPercentAxis = false,
+  fixedBounds = null,
+}) {
+  const hasResult = Boolean(resultData?.data?.length);
+
+  if (!hasResult) {
+    const values = sourceSeries.map(d => d.value);
+    const spanSeconds = sourceSeries.length > 1 ? sourceSeries[sourceSeries.length - 1].time - sourceSeries[0].time : 0;
+    const interval = Math.max(0, Math.floor(sourceSeries.length / 6) - 1);
+    const bounds = getChartBounds(values, fixedBounds);
+
+    return {
+      dataZoom: [
+        { type: 'inside', xAxisIndex: 0, filterMode: 'none', minSpan: 10 },
+      ],
+      grid: { top: 24, right: 24, bottom: 32, left: 56 },
+      xAxis: {
+        type: 'category',
+        data: sourceSeries.map(d => d.time),
+        axisLabel: {
+          fontSize: 11,
+          color: chartColors.text,
+          interval,
+          formatter: value => formatTimestamp(Number(value), spanSeconds, fallbackFrequencySeconds)
+        },
+        axisLine: { lineStyle: { color: chartColors.border } },
+        axisTick: { show: false }
+      },
+      yAxis: {
+        type: 'value',
+        min: bounds.min,
+        max: bounds.max,
+        axisLabel: {
+          fontSize: 11,
+          color: chartColors.text,
+          formatter: showPercentAxis ? '{value}%' : undefined,
+        },
+        splitLine: { lineStyle: { color: chartColors.border, type: 'dashed' } }
+      },
+      series: [{
+        data: values,
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        lineStyle: { color: chartColors.primaryLight, width: 2.5 },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
+            { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
+          ])
+        }
+      }],
+      tooltip: {
+        trigger: 'axis',
+        backgroundColor: 'rgba(255, 255, 255, 0.96)',
+        borderColor: chartColors.border,
+        borderWidth: 1,
+        textStyle: { color: chartColors.primary, fontSize: 13 },
+        formatter: params => {
+          const point = params[0];
+          if (!point) return '';
+          const valueText = showPercentAxis ? `${point.value.toFixed(1)}%` : point.value;
+          return `<strong>${formatTimestamp(Number(point.axisValue), spanSeconds, fallbackFrequencySeconds, 'tooltip')}</strong><br/>${previewLabel}: ${valueText}`;
+        }
+      }
+    };
+  }
+
+  const anomalyData = resultData.data || [];
+  const anomalyPoints = anomalyData
+    .map((d, i) => d.isAnomaly ? { xAxis: i, yAxis: d.value, value: d.value } : null)
+    .filter(p => p !== null);
+  const values = anomalyData.map(d => d.value);
+  const bounds = getChartBounds(values, fixedBounds);
+  const interval = Math.max(1, Math.floor(anomalyData.length / 6));
+  const spanSeconds = anomalyData.length > 1 ? anomalyData[anomalyData.length - 1].time - anomalyData[0].time : 0;
+  const effectiveFrequencySeconds = detectSeriesFrequencySeconds(anomalyData) || fallbackFrequencySeconds;
+
+  return {
+    dataZoom: [
+      { type: 'inside', xAxisIndex: 0, filterMode: 'none', minSpan: 10 },
+    ],
+    grid: { top: 48, right: 24, bottom: 40, left: 56 },
+    legend: {
+      data: ['时序数据', '异常点'],
+      top: 8,
+      textStyle: { fontSize: 12, color: chartColors.text }
+    },
+    xAxis: {
+      type: 'category',
+      data: anomalyData.map(d => d.time),
+      axisLabel: {
+        fontSize: 11,
+        color: chartColors.text,
+        interval,
+        formatter: value => formatTimestamp(Number(value), spanSeconds, effectiveFrequencySeconds)
+      },
+      axisLine: { lineStyle: { color: chartColors.border } },
+      axisTick: { show: false }
+    },
+    yAxis: {
+      type: 'value',
+      min: bounds.min,
+      max: bounds.max,
+      axisLabel: {
+        fontSize: 11,
+        color: chartColors.text,
+        formatter: showPercentAxis ? '{value}%' : undefined,
+      },
+      splitLine: { lineStyle: { color: chartColors.border, type: 'dashed' } }
+    },
+    series: [
+      {
+        name: '时序数据',
+        data: values,
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        lineStyle: { color: chartColors.primaryLight, width: 2.5 },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
+            { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
+          ])
+        },
+        markPoint: {
+          symbol: 'circle',
+          symbolSize: 7,
+          itemStyle: {
+            color: chartColors.danger,
+            borderColor: '#fff',
+            borderWidth: 2,
+            shadowColor: 'rgba(239, 68, 68, 0.5)',
+            shadowBlur: 8
+          },
+          label: { show: false },
+          data: anomalyPoints
+        }
+      },
+      {
+        name: '异常点',
+        type: 'scatter',
+        data: [],
+        itemStyle: { color: chartColors.danger }
+      }
+    ],
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: 'rgba(255, 255, 255, 0.96)',
+      borderColor: chartColors.border,
+      borderWidth: 1,
+      textStyle: { fontSize: 13 },
+      formatter: params => {
+        const point = params[0];
+        if (!point) return '';
+        const idx = point.dataIndex;
+        const datum = anomalyData[idx];
+        const valueText = showPercentAxis ? `${point.value.toFixed(1)}%` : point.value.toFixed(1);
+        let html = `<strong>${formatTimestamp(Number(point.axisValue), spanSeconds, effectiveFrequencySeconds, 'tooltip')}</strong><br/>${previewLabel}: ${valueText}`;
+        if (datum?.anomalyProbability != null) html += `<br/>异常概率: ${(datum.anomalyProbability * 100).toFixed(2)}%`;
+        if (datum?.isAnomaly) html += `<br/><span style="color:#EF4444;font-weight:600">⚠ 检测到异常</span>`;
+        return html;
+      }
+    }
+  };
+}
+
 // ==================== 组件 ====================
 
 export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, selectedModel, scenarioConfig }) {
@@ -173,9 +358,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
   const [formError, setFormError] = useState('');
 
   const sampleChartRef = useRef(null);
-  const resultChartRef = useRef(null);
   const sampleChartInstance = useRef(null);
-  const resultChartInstance = useRef(null);
   const fileInputRef = useRef(null);
   const uploadChartRef = useRef(null);
   const uploadChartInstance = useRef(null);
@@ -183,23 +366,30 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
   const activeSeries = dataSource === 'upload' && uploadData?.length ? uploadData : sampleData;
   const hasSampleData = Boolean(sampleData?.length);
   const detectedFrequencySeconds = detectSeriesFrequencySeconds(activeSeries);
-  const resultFrequencySeconds = detectSeriesFrequencySeconds(resultData?.data);
+  const hasResult = Boolean(resultData && !loading);
+
+  const handleResetResult = () => {
+    setResultData(null);
+    setInferenceTime(null);
+    setFormError('');
+  };
+
+  const handleReplaceUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+      fileInputRef.current.click();
+    }
+  };
 
   // ==================== 图表 ====================
 
-  // 示例数据图表
+  // 示例数据加载
   useEffect(() => {
     let cancelled = false;
-    let chart = null;
-    let handleResize = null;
 
     const loadSampleData = async () => {
-      if (dataSource !== 'sample' || !sampleChartRef.current) {
+      if (dataSource !== 'sample' || sampleData?.length) {
         return;
-      }
-
-      if (sampleChartInstance.current) {
-        sampleChartInstance.current.dispose();
       }
 
       try {
@@ -214,70 +404,12 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
           throw new Error('示例数据文件为空或格式错误');
         }
 
-        if (cancelled || !sampleChartRef.current) {
+        if (cancelled) {
           return;
         }
 
         setFormError('');
         setSampleData(data);
-
-        chart = echarts.init(sampleChartRef.current);
-        sampleChartInstance.current = chart;
-
-        const sampleSpanSeconds = data.length > 1 ? data[data.length - 1].time - data[0].time : 0;
-        const sampleFrequencySeconds = detectSeriesFrequencySeconds(data) || 5 * 60;
-
-        const option = {
-          dataZoom: [
-            { type: 'inside', xAxisIndex: 0, filterMode: 'none', minSpan: 10 },
-          ],
-          grid: { top: 24, right: 24, bottom: 32, left: 56 },
-          xAxis: {
-            type: 'category',
-            data: data.map(d => d.time),
-            axisLabel: {
-              fontSize: 11,
-              color: chartColors.text,
-              interval: Math.max(0, Math.floor(data.length / 6) - 1),
-              formatter: value => formatTimestamp(Number(value), sampleSpanSeconds, sampleFrequencySeconds)
-            },
-            axisLine: { lineStyle: { color: chartColors.border } },
-            axisTick: { show: false }
-          },
-          yAxis: {
-            type: 'value',
-            min: 0,
-            max: 100,
-            axisLabel: { fontSize: 11, color: chartColors.text, formatter: '{value}%' },
-            splitLine: { lineStyle: { color: chartColors.border, type: 'dashed' } }
-          },
-          series: [{
-            data: data.map(d => d.value),
-            type: 'line',
-            smooth: true,
-            symbol: 'none',
-            lineStyle: { color: chartColors.primaryLight, width: 2.5 },
-            areaStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
-                { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
-              ])
-            }
-          }],
-          tooltip: {
-            trigger: 'axis',
-            backgroundColor: 'rgba(255, 255, 255, 0.96)',
-            borderColor: chartColors.border,
-            borderWidth: 1,
-            textStyle: { color: chartColors.primary, fontSize: 13 },
-            formatter: params => `<strong>${formatTimestamp(Number(params[0].axisValue), sampleSpanSeconds, sampleFrequencySeconds, 'tooltip')}</strong><br/>CPU: ${params[0].value.toFixed(1)}%`
-          }
-        };
-
-        chart.setOption(option);
-
-        handleResize = () => chart.resize();
-        window.addEventListener('resize', handleResize);
       } catch (err) {
         console.error('示例数据加载失败:', err);
         if (!cancelled) {
@@ -291,212 +423,72 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
 
     return () => {
       cancelled = true;
-      if (handleResize) {
-        window.removeEventListener('resize', handleResize);
-      }
-      if (chart) {
-        chart.dispose();
-      }
     };
-  }, [dataSource]);
+  }, [dataSource, sampleData]);
+
+  // 示例数据图表
+  useEffect(() => {
+    if (dataSource !== 'sample' || !sampleData?.length || !sampleChartRef.current) {
+      return;
+    }
+
+    if (sampleChartInstance.current) {
+      sampleChartInstance.current.dispose();
+    }
+
+    const chart = echarts.init(sampleChartRef.current);
+    sampleChartInstance.current = chart;
+
+    chart.setOption(buildAnomalyChartOption({
+      sourceSeries: sampleData,
+      resultData,
+      fallbackFrequencySeconds: detectSeriesFrequencySeconds(sampleData) || 5 * 60,
+      previewLabel: 'CPU',
+      showPercentAxis: true,
+      fixedBounds: { min: 0, max: 100 },
+    }));
+
+    const handleResize = () => chart.resize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.dispose();
+    };
+  }, [dataSource, sampleData, resultData]);
 
   // 上传数据图表
   useEffect(() => {
-    if (uploadData && uploadChartRef.current) {
-      if (uploadChartInstance.current) {
-        uploadChartInstance.current.dispose();
-      }
-
-      const chart = echarts.init(uploadChartRef.current);
-      uploadChartInstance.current = chart;
-
-      const interval = Math.max(1, Math.floor(uploadData.length / 6));
-      const uploadSpanSeconds = uploadData.length > 1 ? uploadData[uploadData.length - 1].time - uploadData[0].time : 0;
-      const values = uploadData.map(d => d.value);
-      const minVal = Math.floor(Math.min(...values));
-      const maxVal = Math.ceil(Math.max(...values));
-      const padding = Math.max(1, Math.round((maxVal - minVal) * 0.1));
-
-      const option = {
-        dataZoom: [
-          { type: 'inside', xAxisIndex: 0, filterMode: 'none', minSpan: 10 },
-        ],
-        grid: { top: 24, right: 24, bottom: 32, left: 56 },
-        xAxis: {
-          type: 'category',
-          data: uploadData.map(d => d.time),
-          axisLabel: {
-            fontSize: 11,
-            color: chartColors.text,
-            interval,
-            formatter: value => formatTimestamp(Number(value), uploadSpanSeconds, detectedFrequencySeconds)
-          },
-          axisLine: { lineStyle: { color: chartColors.border } },
-          axisTick: { show: false }
-        },
-        yAxis: {
-          type: 'value',
-          min: minVal - padding,
-          max: maxVal + padding,
-          axisLabel: { fontSize: 11, color: chartColors.text },
-          splitLine: { lineStyle: { color: chartColors.border, type: 'dashed' } }
-        },
-        series: [{
-          data: values,
-          type: 'line',
-          smooth: true,
-          symbol: 'none',
-          lineStyle: { color: chartColors.primaryLight, width: 2.5 },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
-              { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
-            ])
-          }
-        }],
-        tooltip: {
-          trigger: 'axis',
-          backgroundColor: 'rgba(255, 255, 255, 0.96)',
-          borderColor: chartColors.border,
-          borderWidth: 1,
-          textStyle: { color: chartColors.primary, fontSize: 13 },
-          formatter: params => `<strong>${formatTimestamp(Number(params[0].axisValue), uploadSpanSeconds, detectedFrequencySeconds, 'tooltip')}</strong><br/>数值: ${params[0].value}`
-        }
-      };
-
-      chart.setOption(option);
-
-      const handleResize = () => chart.resize();
-      window.addEventListener('resize', handleResize);
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        chart.dispose();
-      };
+    if (dataSource !== 'upload' || !uploadData?.length || !uploadChartRef.current) {
+      return;
     }
-  }, [uploadData]);
 
-  // 结果图表 — 异常检测
-  useEffect(() => {
-    if (resultData && resultChartRef.current) {
-      if (resultChartInstance.current) {
-        resultChartInstance.current.dispose();
-      }
-
-      const chart = echarts.init(resultChartRef.current);
-      resultChartInstance.current = chart;
-
-      const anomalyData = resultData.data || [];
-      const anomalyPoints = anomalyData
-        .map((d, i) => d.isAnomaly ? { xAxis: i, yAxis: d.value, value: d.value } : null)
-        .filter(p => p !== null);
-
-      const resultValues = anomalyData.map(d => d.value);
-      const resultMin = Math.floor(Math.min(...resultValues));
-      const resultMax = Math.ceil(Math.max(...resultValues));
-      const resultPadding = Math.max(1, Math.round((resultMax - resultMin) * 0.1));
-      const resultInterval = Math.max(1, Math.floor(anomalyData.length / 6));
-      const resultSpanSeconds = anomalyData.length > 1 ? anomalyData[anomalyData.length - 1].time - anomalyData[0].time : 0;
-      const effectiveResultFrequencySeconds = resultFrequencySeconds || detectedFrequencySeconds;
-
-      const option = {
-        dataZoom: [
-          { type: 'inside', xAxisIndex: 0, filterMode: 'none', minSpan: 10 },
-        ],
-        grid: { top: 48, right: 24, bottom: 40, left: 56 },
-        legend: {
-          data: ['时序数据', '异常点'],
-          top: 8,
-          textStyle: { fontSize: 12, color: chartColors.text }
-        },
-        xAxis: {
-          type: 'category',
-          data: anomalyData.map(d => d.time),
-          axisLabel: {
-            fontSize: 11,
-            color: chartColors.text,
-            interval: resultInterval,
-            formatter: value => formatTimestamp(Number(value), resultSpanSeconds, effectiveResultFrequencySeconds)
-          },
-          axisLine: { lineStyle: { color: chartColors.border } },
-          axisTick: { show: false }
-        },
-        yAxis: {
-          type: 'value',
-          min: resultMin - resultPadding,
-          max: resultMax + resultPadding,
-          axisLabel: { fontSize: 11, color: chartColors.text },
-          splitLine: { lineStyle: { color: chartColors.border, type: 'dashed' } }
-        },
-        series: [
-          {
-            name: '时序数据',
-            data: anomalyData.map(d => d.value),
-            type: 'line',
-            smooth: true,
-            symbol: 'none',
-            lineStyle: { color: chartColors.primaryLight, width: 2.5 },
-            areaStyle: {
-              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: 'rgba(59, 130, 246, 0.25)' },
-                { offset: 1, color: 'rgba(59, 130, 246, 0.02)' }
-              ])
-            },
-            markPoint: {
-              symbol: 'circle',
-              symbolSize: 7,
-              itemStyle: {
-                color: chartColors.danger,
-                borderColor: '#fff',
-                borderWidth: 2,
-                shadowColor: 'rgba(239, 68, 68, 0.5)',
-                shadowBlur: 8
-              },
-              label: { show: false },
-              data: anomalyPoints
-            }
-          },
-          {
-            name: '异常点',
-            type: 'scatter',
-            data: [],
-            itemStyle: { color: chartColors.danger }
-          }
-        ],
-        tooltip: {
-          trigger: 'axis',
-          backgroundColor: 'rgba(255, 255, 255, 0.96)',
-          borderColor: chartColors.border,
-          borderWidth: 1,
-          textStyle: { fontSize: 13 },
-          formatter: params => {
-            const point = params[0];
-            if (!point) return '';
-            const idx = point.dataIndex;
-            const d = anomalyData[idx];
-            let html = `<strong>${formatTimestamp(Number(point.axisValue), resultSpanSeconds, effectiveResultFrequencySeconds, 'tooltip')}</strong><br/>数值: ${point.value.toFixed(1)}`;
-            if (d?.anomalyProbability != null) html += `<br/>异常概率: ${(d.anomalyProbability * 100).toFixed(2)}%`;
-            if (d?.isAnomaly) html += `<br/><span style="color:#EF4444;font-weight:600">⚠ 检测到异常</span>`;
-            return html;
-          }
-        }
-      };
-
-      chart.setOption(option);
-
-      const handleResize = () => chart.resize();
-      window.addEventListener('resize', handleResize);
-      return () => {
-        window.removeEventListener('resize', handleResize);
-        chart.dispose();
-      };
+    if (uploadChartInstance.current) {
+      uploadChartInstance.current.dispose();
     }
-  }, [resultData]);
+
+    const chart = echarts.init(uploadChartRef.current);
+    uploadChartInstance.current = chart;
+
+    chart.setOption(buildAnomalyChartOption({
+      sourceSeries: uploadData,
+      resultData,
+      fallbackFrequencySeconds: detectSeriesFrequencySeconds(uploadData) || detectedFrequencySeconds || 5 * 60,
+      previewLabel: '数值',
+    }));
+
+    const handleResize = () => chart.resize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.dispose();
+    };
+  }, [dataSource, uploadData, resultData, detectedFrequencySeconds]);
 
   // ==================== 推理 ====================
 
   const handleRunInference = async () => {
-    if (!requireAuth(loginBaseUrl)) return;
-
     if (!selectedModel) {
       setFormError('请选择一个模型');
       return;
@@ -518,38 +510,38 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
     try {
       const source = dataSource === 'upload' ? uploadData : sampleData;
       const payload = source.map(d => ({ timestamp: d.time, value: d.value }));
-      const token = getToken();
 
-      const response = await fetch(
+      const result = await authFetch(
         `${apiBase}/predict/${scenarioConfig.algorithmType}/${selectedModel}`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ data: payload, config: {} }),
-        }
+        },
+        { redirectOnMissingToken: true, loginBaseUrl },
       );
 
-      if (response.status === 401) {
-        invalidateAuth();
+      if (result.reason === 'missing-token') {
         return;
       }
-
-      if (!response.ok) {
-        throw new Error(`推理请求失败: ${response.status}`);
+      if (result.reason === 'auth-expired') {
+        setFormError('登录已过期，请重新登录后重试');
+        return;
+      }
+      if (result.reason === 'http-error') {
+        throw new Error(`推理请求失败: ${result.status}`);
+      }
+      if (result.reason === 'network-error') {
+        throw result.error || new Error('网络请求失败');
       }
 
-      const json = await response.json();
-      // 异常检测响应格式：{ data: { results[], metadata } }
+      const json = await result.response.json();
       const results = json.data?.results || [];
       const adapted = results.map(item => ({
         time: item.timestamp,
         value: item.value,
         isAnomaly: item.label === 1,
         anomalyScore: item.anomaly_score,
-        // anomalyProbability: item.anomaly_probability,
       }));
       setResultData({
         type: 'timeseries-anomaly',
@@ -570,6 +562,8 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    handleResetResult();
     setUploadFileName(file.name);
     setUploadError('');
     setUploadData(null);
@@ -628,17 +622,72 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
     URL.revokeObjectURL(link.href);
   };
 
+  const renderResultHeader = () => (
+    <div className={styles.resultHeader}>
+      <div className={styles.resultHeaderMain}>
+        <span className={styles.resultIndicator} aria-hidden="true">
+          <FiTrendingUp />
+        </span>
+        <span className={styles.resultHeaderTitle}>
+          {dataSource === 'upload' ? uploadFileName : '服务器 CPU 使用率监控数据'}
+        </span>
+      </div>
+      <div className={styles.resultHeaderActions}>
+        {dataSource === 'upload' && uploadData && (
+          <button type="button" className={clsx(styles.resultAction, styles.resultActionSubtle)} onClick={handleReplaceUpload}>
+            重新上传
+          </button>
+        )}
+        <button type="button" className={styles.resultAction} onClick={handleResetResult}>
+          重置结果
+        </button>
+        <span className={styles.resultStatus}>
+          <FiCheck />
+          检测完成
+        </span>
+      </div>
+    </div>
+  );
+
+  const renderSummary = () => (
+    <div className={styles.resultSummary}>
+      <div className={styles.resultStat}>
+        <span className={styles.resultStatLabel}>数据点总数</span>
+        <span className={styles.resultStatValue}>
+          {resultData?.data?.length || 0}
+        </span>
+      </div>
+      <div className={styles.resultStat}>
+        <span className={styles.resultStatLabel}>检测到异常</span>
+        <span className={clsx(styles.resultStatValue, styles.resultStatValueAnomaly)}>
+          {resultData?.data?.filter(d => d.isAnomaly).length || 0}
+        </span>
+      </div>
+      <div className={styles.resultStat}>
+        <span className={styles.resultStatLabel}>异常占比</span>
+        <span className={styles.resultStatValue}>
+          {resultData?.data?.length ? `${(resultData.data.filter(d => d.isAnomaly).length / resultData.data.length * 100).toFixed(2)}%` : '0%'}
+        </span>
+      </div>
+      <div className={styles.resultStat}>
+        <span className={styles.resultStatLabel}>推理耗时</span>
+        <span className={styles.resultStatValue}>{inferenceTime != null ? (inferenceTime / 1000).toFixed(2) + 's' : '-'}</span>
+      </div>
+    </div>
+  );
+
   // ==================== JSX ====================
 
   return (
     <div className={styles.scenarioContent}>
-      {/* 数据源 */}
       <div className={styles.formGroup}>
-        <label className={styles.formLabel}>数据源</label>
+        <div className={styles.formLabel}>数据源</div>
         <div className={styles.dataSourceTabs}>
           <button
+            type="button"
             className={clsx(styles.dataSourceTab, dataSource === 'sample' && styles.active)}
             onClick={() => {
+              handleResetResult();
               setDataSource('sample');
               setUploadFileName('');
               setUploadData(null);
@@ -648,49 +697,62 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
             示例数据
           </button>
           <button
+            type="button"
             className={clsx(styles.dataSourceTab, dataSource === 'upload' && styles.active)}
-            onClick={() => setDataSource('upload')}
+            onClick={() => {
+              handleResetResult();
+              setDataSource('upload');
+            }}
           >
             上传文件
           </button>
         </div>
 
+        {dataSource === 'upload' && (
+          <input
+            type="file"
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            accept=".csv,.json"
+            onChange={handleFileUpload}
+          />
+        )}
+
         {dataSource === 'sample' && (
           <div className={styles.sampleDataSection}>
-            <div className={styles.sampleDataCard}>
-              <div className={styles.sampleDataHeader}>
-                <span className={styles.sampleDataTitle}>
-                  <FiActivity />
-                  服务器 CPU 使用率监控数据
-                </span>
-                <span className={styles.sampleDataInfo}>{getSampleMetaText(sampleData)}</span>
-              </div>
-              <div className={styles.sampleDataChart} ref={sampleChartRef}></div>
+            <div className={clsx(styles.sampleDataCard, hasResult && styles.sampleDataCardResult)}>
+              {hasResult ? renderResultHeader() : (
+                <div className={styles.sampleDataHeader}>
+                  <span className={styles.sampleDataTitle}>
+                    <FiActivity />
+                    服务器 CPU 使用率监控数据
+                  </span>
+                  <span className={styles.sampleDataInfo}>{getSampleMetaText(sampleData)}</span>
+                </div>
+              )}
+              <div className={clsx(styles.sampleDataChart, hasResult && styles.sampleDataChartResult)} ref={sampleChartRef}></div>
+              {hasResult && renderSummary()}
             </div>
           </div>
         )}
 
         {dataSource === 'upload' && !uploadData && (
           <div>
-            <div
-              className={clsx(styles.uploadArea, styles.active, uploadError && styles.uploadAreaError)}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <div className={styles.uploadAreaIcon}>
-                <FiUploadCloud />
-              </div>
-              <p className={styles.uploadAreaText}>
-                {uploadFileName ? `已选择: ${uploadFileName}` : '点击或拖拽上传文件'}
-              </p>
-              <p className={styles.uploadAreaHint}>支持 CSV, JSON 格式，时间戳支持 Unix 整数或日期字符串</p>
-              <input
-                type="file"
-                ref={fileInputRef}
-                style={{ display: 'none' }}
-                accept=".csv,.json"
-                onChange={handleFileUpload}
-              />
-              <button className={styles.templateDownload} onClick={handleDownloadTemplate}>
+            <div className={clsx(styles.uploadArea, styles.active, uploadError && styles.uploadAreaError)}>
+              <button
+                type="button"
+                className={styles.uploadTrigger}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <div className={styles.uploadAreaIcon}>
+                  <FiUploadCloud />
+                </div>
+                <p className={styles.uploadAreaText}>
+                  {uploadFileName ? `已选择: ${uploadFileName}` : '点击或拖拽上传文件'}
+                </p>
+                <p className={styles.uploadAreaHint}>支持 CSV, JSON 格式，时间戳支持 Unix 整数或日期字符串</p>
+              </button>
+              <button type="button" className={styles.templateDownload} onClick={handleDownloadTemplate}>
                 <FiDownload />
                 下载数据模板
               </button>
@@ -703,34 +765,32 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
 
         {dataSource === 'upload' && uploadData && (
           <div className={styles.sampleDataSection}>
-            <div className={styles.sampleDataCard}>
-              <div className={styles.sampleDataHeader}>
-                <span className={styles.sampleDataTitle}>
-                  <FiActivity />
-                  {uploadFileName}
-                </span>
-                <span className={styles.sampleDataInfo}>{uploadData.length} points</span>
-              </div>
-              <div className={styles.sampleDataChart} ref={uploadChartRef}></div>
-              <div className={styles.uploadChartActions}>
-                <button
-                  className={styles.uploadReplace}
-                  onClick={() => {
-                    setUploadData(null);
-                    setUploadFileName('');
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
-                >
-                  <FiUploadCloud />
-                  重新上传
-                </button>
-              </div>
+            <div className={clsx(styles.sampleDataCard, hasResult && styles.sampleDataCardResult)}>
+              {hasResult ? renderResultHeader() : (
+                <div className={styles.sampleDataHeader}>
+                  <div className={styles.sampleDataHeaderMain}>
+                    <span className={styles.sampleDataTitle}>
+                      <FiActivity />
+                      {uploadFileName}
+                    </span>
+                    <span className={styles.sampleDataInfo}>{uploadData.length} points</span>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.uploadReplaceTop}
+                    onClick={handleReplaceUpload}
+                  >
+                    重新上传
+                  </button>
+                </div>
+              )}
+              <div className={clsx(styles.sampleDataChart, hasResult && styles.sampleDataChartResult)} ref={uploadChartRef}></div>
+              {hasResult && renderSummary()}
             </div>
           </div>
         )}
       </div>
 
-      {/* 错误提示 */}
       {formError && (
         <div className={styles.formErrorMsg}>
           <FiAlertTriangle />
@@ -738,9 +798,9 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
         </div>
       )}
 
-      {/* 执行按钮 */}
       <div className={styles.actionButtons}>
         <button
+          type="button"
           className={clsx(styles.btn, styles.btnPrimary)}
           onClick={handleRunInference}
           disabled={loading || !selectedModel || (dataSource === 'sample' ? !hasSampleData : !uploadData?.length)}
@@ -750,51 +810,9 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
         </button>
       </div>
 
-      {/* Loading */}
       <div className={clsx(styles.loading, loading && styles.active)}>
         <div className={styles.loadingSpinner}></div>
         <span>模型推理中...</span>
-      </div>
-
-      {/* 结果 */}
-      <div className={clsx(styles.resultSection, resultData && !loading && styles.active)}>
-        <div className={styles.resultCard}>
-          <div className={styles.resultHeader}>
-            <span className={styles.resultTitle}>
-              <FiTrendingUp />
-              推理结果
-            </span>
-            <span className={styles.resultStatus}>
-              <FiCheck />
-              检测完成
-            </span>
-          </div>
-          <div className={styles.resultChart} ref={resultChartRef}></div>
-          <div className={styles.resultSummary}>
-            <div className={styles.resultStat}>
-              <span className={styles.resultStatLabel}>数据点总数</span>
-              <span className={styles.resultStatValue}>
-                {resultData?.data?.length || 0}
-              </span>
-            </div>
-            <div className={styles.resultStat}>
-              <span className={styles.resultStatLabel}>检测到异常</span>
-              <span className={clsx(styles.resultStatValue, styles.resultStatValueAnomaly)}>
-                {resultData?.data?.filter(d => d.isAnomaly).length || 0}
-              </span>
-            </div>
-            <div className={styles.resultStat}>
-              <span className={styles.resultStatLabel}>异常占比</span>
-              <span className={styles.resultStatValue}>
-                {resultData?.data?.length ? (resultData.data.filter(d => d.isAnomaly).length / resultData.data.length * 100).toFixed(2) + '%' : '0%'}
-              </span>
-            </div>
-            <div className={styles.resultStat}>
-              <span className={styles.resultStatLabel}>推理耗时</span>
-              <span className={styles.resultStatValue}>{inferenceTime != null ? (inferenceTime / 1000).toFixed(2) + 's' : '-'}</span>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

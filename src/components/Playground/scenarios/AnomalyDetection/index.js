@@ -159,6 +159,17 @@ const chartColors = {
   surface: '#F8FAFC'
 };
 
+function LoadingOverlay() {
+  return (
+    <div className={styles.loadingOverlay}>
+      <div className={styles.loadingOverlayContent}>
+        <div className={styles.loadingSpinner}></div>
+        <span>模型推理中...</span>
+      </div>
+    </div>
+  );
+}
+
 function getChartBounds(values, fixedBounds) {
   if (fixedBounds) return fixedBounds;
 
@@ -732,6 +743,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
               )}
               <div className={clsx(styles.sampleDataChart, hasResult && styles.sampleDataChartResult)} ref={sampleChartRef}></div>
               {hasResult && renderSummary()}
+              {loading && <LoadingOverlay />}
             </div>
           </div>
         )}
@@ -786,6 +798,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
               )}
               <div className={clsx(styles.sampleDataChart, hasResult && styles.sampleDataChartResult)} ref={uploadChartRef}></div>
               {hasResult && renderSummary()}
+              {loading && <LoadingOverlay />}
             </div>
           </div>
         )}
@@ -810,10 +823,6 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
         </button>
       </div>
 
-      <div className={clsx(styles.loading, loading && styles.active)}>
-        <div className={styles.loadingSpinner}></div>
-        <span>模型推理中...</span>
-      </div>
     </div>
   );
 }

@@ -63,6 +63,7 @@
   border-radius: 12px;
   overflow: hidden;
   background: var(--color-surface);
+  position: relative;
 }
 
 .sampleDataCardResult {
@@ -451,18 +452,31 @@
 }
 
 /* ==================== Loading ==================== */
-.loading {
-  display: none;
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(2px);
+  z-index: 10;
+}
+
+.loadingOverlayContent {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 24px;
+  min-height: 52px;
+  padding: 0 18px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
   color: var(--color-text-secondary);
   font-size: 14px;
-}
-
-.loading.active {
-  display: flex;
+  box-shadow: 0 12px 28px -18px rgba(15, 23, 42, 0.35);
 }
 
 .loadingSpinner {
@@ -617,6 +631,44 @@
 .resultChart {
   height: 300px;
   background: var(--color-surface);
+}
+
+.chartLegend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 10px 16px 0;
+  background: var(--color-surface);
+}
+
+.chartLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  line-height: 1;
+}
+
+.chartLegendLine {
+  display: inline-block;
+  width: 18px;
+  height: 0;
+  border-top-width: 3px;
+  border-top-style: solid;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.chartLegendLineHistory {
+  border-top-color: #3B82F6;
+}
+
+.chartLegendLinePrediction {
+  border-top-color: #F59E0B;
+  border-top-style: dashed;
 }
 
 .resultSummary {

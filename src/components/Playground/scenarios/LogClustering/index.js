@@ -72,6 +72,10 @@ function parseTextLogs(text) {
   };
 }
 
+function isTxtFile(file) {
+  return typeof file?.name === 'string' && /\.txt$/i.test(file.name);
+}
+
 function normalizeResponse(json) {
   const inner = json?.data || json || {};
   const summary = inner.summary || {};
@@ -320,6 +324,18 @@ export default function LogClustering({
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (!isTxtFile(file)) {
+      setUploadError('仅支持上传 .txt 文本文件');
+      setUploadLogs(null);
+      setUploadStats(null);
+      setUploadFileName('');
+      setUploadFileSize('');
+      if (e.target) {
+        e.target.value = '';
+      }
+      return;
+    }
 
     handleResetResult();
     setUploadFileName(file.name);
@@ -758,7 +774,7 @@ export default function LogClustering({
             type="file"
             ref={fileInputRef}
             style={{ display: 'none' }}
-            accept=".txt,.log,text/plain"
+            accept=".txt,text/plain"
             onChange={handleFileUpload}
           />
         )}
@@ -777,7 +793,7 @@ export default function LogClustering({
                 <p className={styles.uploadAreaText}>
                   {uploadFileName ? `已选择: ${uploadFileName}` : '点击或拖拽上传日志文件'}
                 </p>
-                <p className={styles.uploadAreaHint}>支持 TXT / LOG 格式，按行解析，一行视为一条日志。</p>
+                <p className={styles.uploadAreaHint}>仅支持 TXT 文件，按行解析，一行视为一条日志。</p>
               </button>
               <button type="button" className={styles.templateDownload} onClick={handleDownloadTemplate}>
                 <FiDownload />

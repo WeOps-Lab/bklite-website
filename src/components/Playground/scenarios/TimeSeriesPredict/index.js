@@ -159,6 +159,17 @@ const chartColors = {
   surface: '#F8FAFC'
 };
 
+function LoadingOverlay() {
+  return (
+    <div className={styles.loadingOverlay}>
+      <div className={styles.loadingOverlayContent}>
+        <div className={styles.loadingSpinner}></div>
+        <span>模型推理中...</span>
+      </div>
+    </div>
+  );
+}
+
 function getChartBounds(values, fixedBounds) {
   if (fixedBounds) return fixedBounds;
 
@@ -266,12 +277,8 @@ function buildForecastChartOption({
     dataZoom: [
       { type: 'inside', xAxisIndex: 0, filterMode: 'none', minSpan: 10 },
     ],
-    grid: { top: 48, right: 24, bottom: 40, left: 56 },
-    legend: {
-      data: ['历史数据', '预测数据'],
-      top: 8,
-      textStyle: { fontSize: 12, color: chartColors.text }
-    },
+    grid: { top: 24, right: 24, bottom: 40, left: 56 },
+    legend: { show: false },
     xAxis: {
       type: 'category',
       data: allData.map(d => d.time),
@@ -298,6 +305,7 @@ function buildForecastChartOption({
         type: 'line',
         smooth: true,
         symbol: 'none',
+        showSymbol: false,
         lineStyle: { color: chartColors.primaryLight, width: 2.5 },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -312,6 +320,7 @@ function buildForecastChartOption({
         type: 'line',
         smooth: true,
         symbol: 'none',
+        showSymbol: false,
         lineStyle: { color: '#F59E0B', width: 2.5, type: 'dashed' },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -689,6 +698,19 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
     </div>
   );
 
+  const renderChartLegend = () => (
+    <div className={styles.chartLegend}>
+      <span className={styles.chartLegendItem}>
+        <span className={clsx(styles.chartLegendLine, styles.chartLegendLineHistory)} aria-hidden="true"></span>
+        历史数据
+      </span>
+      <span className={styles.chartLegendItem}>
+        <span className={clsx(styles.chartLegendLine, styles.chartLegendLinePrediction)} aria-hidden="true"></span>
+        预测数据
+      </span>
+    </div>
+  );
+
   const renderSummary = () => (
     <div className={styles.resultSummary}>
       <div className={styles.resultStat}>
@@ -770,8 +792,10 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
                   <span className={styles.sampleDataInfo}>{getSampleMetaText(sampleData)}</span>
                 </div>
               )}
+              {hasResult && renderChartLegend()}
               <div className={clsx(styles.sampleDataChart, hasResult && styles.sampleDataChartResult)} ref={sampleChartRef}></div>
               {hasResult && renderSummary()}
+              {loading && <LoadingOverlay />}
             </div>
           </div>
         )}
@@ -824,8 +848,10 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
                   </button>
                 </div>
               )}
+              {hasResult && renderChartLegend()}
               <div className={clsx(styles.sampleDataChart, hasResult && styles.sampleDataChartResult)} ref={uploadChartRef}></div>
               {hasResult && renderSummary()}
+              {loading && <LoadingOverlay />}
             </div>
           </div>
         )}
@@ -881,10 +907,6 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
         </button>
       </div>
 
-      <div className={clsx(styles.loading, loading && styles.active)}>
-        <div className={styles.loadingSpinner}></div>
-        <span>模型推理中...</span>
-      </div>
     </div>
   );
 }

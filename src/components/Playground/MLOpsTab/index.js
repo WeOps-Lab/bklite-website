@@ -20,6 +20,8 @@ import {
 } from '@site/src/lib/playgroundAuth';
 import useAuthStateSync from '@site/src/lib/useAuthStateSync';
 import AnomalyDetection from '@site/src/components/Playground/scenarios/AnomalyDetection';
+import LogClustering from '@site/src/components/Playground/scenarios/LogClustering';
+import TextClassification from '@site/src/components/Playground/scenarios/TextClassification';
 import TimeSeriesPredict from '@site/src/components/Playground/scenarios/TimeSeriesPredict';
 import ComingSoon from '@site/src/components/Playground/scenarios/ComingSoon';
 
@@ -46,20 +48,18 @@ const scenarioConfig = {
   'log-analysis': {
     name: '日志聚类',
     description: '对日志内容进行聚类与归类，帮助识别相似问题和异常日志模式。',
-    guide: '适合批量日志理解与问题归类场景，后续将开放在线体验能力。',
+    guide: '适合批量日志理解与问题归类场景，可直接使用示例日志或上传文本日志进行体验。',
     icon: FiFileText,
     algorithmType: 'log_clustering',
-    servingName: 'log_clustering_servings',
-    comingSoon: true
+    servingName: 'log_clustering_servings'
   },
   'text-classification': {
     name: '文本分类',
     description: '对文本内容进行自动分类，适合工单、告警说明和文本标签场景。',
-    guide: '适合标准化文本归类场景，后续将开放模型体验与示例数据流程。',
+    guide: '适合标准化文本归类场景，可直接使用示例文本、粘贴批量内容或上传文本文件进行体验。',
     icon: FiType,
     algorithmType: 'classification',
-    servingName: 'classification_servings',
-    comingSoon: true
+    servingName: 'classification_servings'
   },
   'image-classification': {
     name: '图片分类',
@@ -85,8 +85,8 @@ const scenarioConfig = {
 const scenarioComponents = {
   'anomaly-detection': AnomalyDetection,
   'time-series': TimeSeriesPredict,
-  'log-analysis': ComingSoon,
-  'text-classification': ComingSoon,
+  'log-analysis': LogClustering,
+  'text-classification': TextClassification,
   'image-classification': ComingSoon,
   'object-detection': ComingSoon,
 };
@@ -260,8 +260,9 @@ export default function MLOpsTab() {
             {Object.entries(scenarioConfig).map(([key, config]) => {
               const Icon = config.icon;
               return (
-                <div
+                <button
                   key={key}
+                  type="button"
                   className={clsx(styles.scenarioItem, selectedScenario === key && styles.selected)}
                   onClick={() => {
                     setSelectedScenario(key);
@@ -274,7 +275,7 @@ export default function MLOpsTab() {
                     <div className={styles.scenarioItemName}>{config.name}</div>
                     <div className={styles.scenarioItemCount}>{getScenarioCountText(key)}</div>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -294,12 +295,12 @@ export default function MLOpsTab() {
               {/* Model Selection — 仅非 comingSoon 场景显示 */}
               {!isComingSoon && (
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>选择模型</label>
+                <div className={styles.formLabel}>选择模型</div>
                 {isLoggedIn === false ? (
-                  <div className={styles.loginHint} onClick={() => redirectToLogin(loginBaseUrl)}>
+                  <button type="button" className={styles.loginHint} onClick={() => redirectToLogin(loginBaseUrl)}>
                     <FiLock />
                     <span>{authExpiredNotice || '请先登录后选择模型'}</span>
-                  </div>
+                  </button>
                 ) : (isLoggedIn && !servingsLoaded && servingsLoading) ? (
                   <div className={styles.selectTrigger} style={{ cursor: 'wait' }}>
                     <span className={styles.selectValue}>加载模型列表中...</span>
@@ -322,15 +323,17 @@ export default function MLOpsTab() {
                     {modelDropdownOpen && currentServings.length > 0 && (
                       <ul className={styles.selectDropdown}>
                         {currentServings.map((m) => (
-                          <li
-                            key={m.id}
-                            className={clsx(styles.selectOption, selectedModel === m.id && styles.selectOptionActive)}
-                            onClick={() => {
-                              setSelectedModel(m.id);
-                              setModelDropdownOpen(false);
-                            }}
-                          >
-                            <span className={styles.selectOptionName}>{m.name}</span>
+                          <li key={m.id}>
+                            <button
+                              type="button"
+                              className={clsx(styles.selectOption, selectedModel === m.id && styles.selectOptionActive)}
+                              onClick={() => {
+                                setSelectedModel(m.id);
+                                setModelDropdownOpen(false);
+                              }}
+                            >
+                              <span className={styles.selectOptionName}>{m.name}</span>
+                            </button>
                           </li>
                         ))}
                       </ul>

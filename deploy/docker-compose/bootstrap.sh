@@ -440,10 +440,6 @@ generate_common_env() {
     export OFFLINE_IMAGES_PATH="${OFFLINE_IMAGES_PATH:-./images}"
     export OPSPILOT_ENABLED="${OPSPILOT_ENABLED:-false}"
     export VLLM_ENABLED="${VLLM_ENABLED:-false}"
-    export DB_ENGINE="${DB_ENGINE:-postgresql}"
-    export DB_NAME="${DB_NAME:-bklite}"
-    export DB_HOST="${DB_HOST:-postgres}"
-    export DB_PORT="${DB_PORT:-5432}"
     export VLLM_BCE_EMBEDDING_MODEL_NAME="maidalun/bce-embedding-base_v1"
     export VLLM_OLMOCR_MODEL_NAME="allenai/OlmOCR-7B-0725"
     export VLLM_BCE_RERANK_MODEL_NAME="maidalun/bce-reranker-base_v1"
@@ -460,10 +456,6 @@ ensure_common_env_vars() {
         "VLLM_ENABLED:false"
         "OFFLINE:false"
         "OFFLINE_IMAGES_PATH:./images"
-        "DB_ENGINE:postgresql"
-        "DB_NAME:bklite"
-        "DB_HOST:postgres"
-        "DB_PORT:5432"
         "VLLM_BCE_EMBEDDING_MODEL_NAME:maidalun/bce-embedding-base_v1"
         "VLLM_OLMOCR_MODEL_NAME:allenai/OlmOCR-7B-0725"
         "VLLM_BCE_RERANK_MODEL_NAME:maidalun/bce-reranker-base_v1"
@@ -506,10 +498,6 @@ export OFFLINE=$OFFLINE
 export OFFLINE_IMAGES_PATH=$OFFLINE_IMAGES_PATH
 export OPSPILOT_ENABLED=$OPSPILOT_ENABLED
 export VLLM_ENABLED=$VLLM_ENABLED
-export DB_ENGINE=$DB_ENGINE
-export DB_NAME=$DB_NAME
-export DB_HOST=$DB_HOST
-export DB_PORT=$DB_PORT
 export VLLM_BCE_EMBEDDING_MODEL_NAME=$VLLM_BCE_EMBEDDING_MODEL_NAME
 export VLLM_OLMOCR_MODEL_NAME=$VLLM_OLMOCR_MODEL_NAME
 export VLLM_BCE_RERANK_MODEL_NAME=$VLLM_BCE_RERANK_MODEL_NAME
@@ -517,22 +505,51 @@ export VLLM_BGE_EMBEDDING_MODEL_NAME=$VLLM_BGE_EMBEDDING_MODEL_NAME
 EOF
 }
 
-generate_db_env() {
+ensure_db_env_vars() {
     export DB_ENGINE="${DB_ENGINE:-postgresql}"
     export DB_NAME="${DB_NAME:-bklite}"
-    export DB_USER="${POSTGRES_USERNAME:-postgres}"
+    export DB_USER="${DB_USER:-${POSTGRES_USERNAME:-postgres}}"
     export DB_HOST="${DB_HOST:-postgres}"
-    export DB_PASSWORD="${POSTGRES_PASSWORD}"
+    export DB_PASSWORD="${DB_PASSWORD:-${POSTGRES_PASSWORD}}"
     export DB_PORT="${DB_PORT:-5432}"
 
+    local db_vars=(DB_ENGINE DB_NAME DB_USER DB_HOST DB_PASSWORD DB_PORT)
+    for var_name in "${db_vars[@]}"; do
+        if ! grep -q "^export ${var_name}=" "$DB_ENV_FILE"; then
+            log "INFO" "将缺失的环境变量 ${var_name} 添加到 $DB_ENV_FILE"
+            echo "export ${var_name}=${!var_name}" >> "$DB_ENV_FILE"
+        fi
+    done
+
+    export POSTGRES_USERNAME="$DB_USER"
+    export POSTGRES_PASSWORD="$DB_PASSWORD"
+}
+
+save_db_env() {
     cat > "$DB_ENV_FILE" <<EOF
-export DB_ENGINE=${DB_ENGINE}
-export DB_NAME=${DB_NAME}
-export DB_USER=${DB_USER}
-export DB_HOST=${DB_HOST}
-export DB_PASSWORD=${DB_PASSWORD}
-export DB_PORT=${DB_PORT}
+# 自动生成的数据库环境变量配置
+# 生成日期: $(date +'%Y-%m-%d %H:%M:%S')
+export DB_ENGINE=$DB_ENGINE
+export DB_NAME=$DB_NAME
+export DB_USER=$DB_USER
+export DB_HOST=$DB_HOST
+export DB_PASSWORD=$DB_PASSWORD
+export DB_PORT=$DB_PORT
 EOF
+}
+
+generate_db_env() {
+    if [ -f "$DB_ENV_FILE" ]; then
+        log "SUCCESS" "发现 $DB_ENV_FILE 配置文件，加载已保存的数据库环境变量..."
+        source "$DB_ENV_FILE"
+        ensure_db_env_vars
+        return
+    fi
+
+    log "INFO" "未发现 $DB_ENV_FILE 配置文件，生成数据库环境变量..."
+    ensure_db_env_vars
+    save_db_env
+    log "SUCCESS" "数据库环境变量已生成并保存到 $DB_ENV_FILE"
 }
 
 generate_postgres_initdb() {
@@ -736,6 +753,14 @@ EOF
 generate_dotenv() {
     log "INFO" "生成 .env 文件..."
     [ -f "$DB_ENV_FILE" ] && source "$DB_ENV_FILE"
+    export DB_ENGINE="${DB_ENGINE:-postgresql}"
+    export DB_NAME="${DB_NAME:-bklite}"
+    export DB_USER="${DB_USER:-${POSTGRES_USERNAME:-postgres}}"
+    export DB_HOST="${DB_HOST:-postgres}"
+    export DB_PASSWORD="${DB_PASSWORD:-${POSTGRES_PASSWORD}}"
+    export DB_PORT="${DB_PORT:-5432}"
+    export POSTGRES_USERNAME="${DB_USER}"
+    export POSTGRES_PASSWORD="${DB_PASSWORD}"
     
     cat > .env <<EOF
 HOST_IP=${HOST_IP}
@@ -1001,9 +1026,9 @@ do_install() {
     # 生成配置
     generate_ports_env
     generate_common_env
+    generate_db_env
     init_docker_images
     update_common_env_flags
-    generate_db_env
     generate_postgres_initdb
     generate_tls_certs
     

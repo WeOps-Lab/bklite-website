@@ -154,7 +154,7 @@ services:
       - --port
       - "15000"
       - --backend-store-uri
-      - postgresql+psycopg2://postgres:${POSTGRES_PASSWORD}@postgres:5432/mlflow
+      - postgresql+psycopg2://${POSTGRES_USERNAME}:${POSTGRES_PASSWORD}@postgres:5432/mlflow
       - --artifacts-destination
       - s3://mlflow-artifacts/
       - --serve-artifacts

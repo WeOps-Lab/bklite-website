@@ -96,7 +96,7 @@ services:
     container_name: postgres
     image: ${DOCKER_IMAGE_POSTGRES}
     environment:
-      POSTGRES_USER: postgres
+      POSTGRES_USER: ${POSTGRES_USERNAME}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       PGDATA: /data/postgres
     ports:

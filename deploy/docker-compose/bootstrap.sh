@@ -12,6 +12,7 @@ readonly DEFAULT_PORT=443
 readonly CERT_SERVER_DAYS=825
 readonly CERT_CA_DAYS=3650
 readonly COMMON_ENV_FILE="common.env"
+readonly DB_ENV_FILE="db.env"
 readonly PORT_ENV_FILE="port.env"
 
 #=============================================================================
@@ -209,7 +210,7 @@ init_docker_images() {
     # 固定配置
     export DOCKER_NETWORK=prod
     export DIST_ARCH=amd64
-    export POSTGRES_USERNAME=postgres
+    export POSTGRES_USERNAME="${POSTGRES_USERNAME:-postgres}"
     export TRAEFIK_ENABLE_DASHBOARD=false
     export DEFAULT_REQUEST_TIMEOUT=10
     
@@ -424,6 +425,7 @@ generate_common_env() {
     export REDIS_PASSWORD=$(generate_password 32)
     export SECRET_KEY=$(generate_password 32)
     export NEXTAUTH_SECRET=$(generate_password 12)
+    export POSTGRES_USERNAME="${POSTGRES_USERNAME:-postgres}"
     export NATS_ADMIN_USERNAME=admin
     export NATS_ADMIN_PASSWORD=$(generate_password 32)
     export NATS_MONITOR_USERNAME=monitor
@@ -438,6 +440,10 @@ generate_common_env() {
     export OFFLINE_IMAGES_PATH="${OFFLINE_IMAGES_PATH:-./images}"
     export OPSPILOT_ENABLED="${OPSPILOT_ENABLED:-false}"
     export VLLM_ENABLED="${VLLM_ENABLED:-false}"
+    export DB_ENGINE="${DB_ENGINE:-postgresql}"
+    export DB_NAME="${DB_NAME:-bklite}"
+    export DB_HOST="${DB_HOST:-postgres}"
+    export DB_PORT="${DB_PORT:-5432}"
     export VLLM_BCE_EMBEDDING_MODEL_NAME="maidalun/bce-embedding-base_v1"
     export VLLM_OLMOCR_MODEL_NAME="allenai/OlmOCR-7B-0725"
     export VLLM_BCE_RERANK_MODEL_NAME="maidalun/bce-reranker-base_v1"
@@ -449,10 +455,15 @@ generate_common_env() {
 
 ensure_common_env_vars() {
     local vars_to_check=(
+        "POSTGRES_USERNAME:postgres"
         "OPSPILOT_ENABLED:false"
         "VLLM_ENABLED:false"
         "OFFLINE:false"
         "OFFLINE_IMAGES_PATH:./images"
+        "DB_ENGINE:postgresql"
+        "DB_NAME:bklite"
+        "DB_HOST:postgres"
+        "DB_PORT:5432"
         "VLLM_BCE_EMBEDDING_MODEL_NAME:maidalun/bce-embedding-base_v1"
         "VLLM_OLMOCR_MODEL_NAME:allenai/OlmOCR-7B-0725"
         "VLLM_BCE_RERANK_MODEL_NAME:maidalun/bce-reranker-base_v1"
@@ -479,6 +490,7 @@ save_common_env() {
 # 自动生成的环境变量配置
 # 生成日期: $(date +'%Y-%m-%d %H:%M:%S')
 export POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+export POSTGRES_USERNAME=$POSTGRES_USERNAME
 export REDIS_PASSWORD=$REDIS_PASSWORD
 export SECRET_KEY=$SECRET_KEY
 export NEXTAUTH_SECRET=$NEXTAUTH_SECRET
@@ -494,11 +506,47 @@ export OFFLINE=$OFFLINE
 export OFFLINE_IMAGES_PATH=$OFFLINE_IMAGES_PATH
 export OPSPILOT_ENABLED=$OPSPILOT_ENABLED
 export VLLM_ENABLED=$VLLM_ENABLED
+export DB_ENGINE=$DB_ENGINE
+export DB_NAME=$DB_NAME
+export DB_HOST=$DB_HOST
+export DB_PORT=$DB_PORT
 export VLLM_BCE_EMBEDDING_MODEL_NAME=$VLLM_BCE_EMBEDDING_MODEL_NAME
 export VLLM_OLMOCR_MODEL_NAME=$VLLM_OLMOCR_MODEL_NAME
 export VLLM_BCE_RERANK_MODEL_NAME=$VLLM_BCE_RERANK_MODEL_NAME
 export VLLM_BGE_EMBEDDING_MODEL_NAME=$VLLM_BGE_EMBEDDING_MODEL_NAME
 EOF
+}
+
+generate_db_env() {
+    export DB_ENGINE="${DB_ENGINE:-postgresql}"
+    export DB_NAME="${DB_NAME:-bklite}"
+    export DB_USER="${POSTGRES_USERNAME:-postgres}"
+    export DB_HOST="${DB_HOST:-postgres}"
+    export DB_PASSWORD="${POSTGRES_PASSWORD}"
+    export DB_PORT="${DB_PORT:-5432}"
+
+    cat > "$DB_ENV_FILE" <<EOF
+export DB_ENGINE=${DB_ENGINE}
+export DB_NAME=${DB_NAME}
+export DB_USER=${DB_USER}
+export DB_HOST=${DB_HOST}
+export DB_PASSWORD=${DB_PASSWORD}
+export DB_PORT=${DB_PORT}
+EOF
+}
+
+generate_postgres_initdb() {
+    mkdir -p ./conf/postgres
+
+    cat > ./conf/postgres/initdb.sql <<EOF
+CREATE DATABASE ${DB_NAME};
+EOF
+
+    if [ "$DB_NAME" != "mlflow" ]; then
+        cat >> ./conf/postgres/initdb.sql <<EOF
+CREATE DATABASE mlflow;
+EOF
+    fi
 }
 
 #=============================================================================
@@ -687,10 +735,17 @@ EOF
 #=============================================================================
 generate_dotenv() {
     log "INFO" "生成 .env 文件..."
+    [ -f "$DB_ENV_FILE" ] && source "$DB_ENV_FILE"
     
     cat > .env <<EOF
 HOST_IP=${HOST_IP}
 TRAEFIK_WEB_PORT=${TRAEFIK_WEB_PORT}
+DB_ENGINE=${DB_ENGINE}
+DB_NAME=${DB_NAME}
+DB_USER=${DB_USER}
+DB_HOST=${DB_HOST}
+DB_PASSWORD=${DB_PASSWORD}
+DB_PORT=${DB_PORT}
 POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 REDIS_PASSWORD=${REDIS_PASSWORD}
 SECRET_KEY=${SECRET_KEY}
@@ -920,7 +975,7 @@ do_install() {
     if [ "$clean_install" = true ]; then
         log "WARNING" "正在停止并清理现有容器和数据卷..."
         $DOCKER_COMPOSE_CMD down -v 2>/dev/null || true
-        rm -f "$COMMON_ENV_FILE" "$PORT_ENV_FILE" .env 2>/dev/null || true
+        rm -f "$COMMON_ENV_FILE" "$DB_ENV_FILE" "$PORT_ENV_FILE" .env 2>/dev/null || true
         log "SUCCESS" "清理完成，开始全新部署"
     fi
     
@@ -948,6 +1003,8 @@ do_install() {
     generate_common_env
     init_docker_images
     update_common_env_flags
+    generate_db_env
+    generate_postgres_initdb
     generate_tls_certs
     
     # 生成 docker-compose.yaml

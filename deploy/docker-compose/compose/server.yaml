@@ -38,6 +38,7 @@ services:
       - DEFAULT_ZONE_VAR_NATS_TLS_CA_FILE=/opt/fusion-collectors/certs/ca.crt
       - DEFAULT_ZONE_VAR_NATS_TLS_CA=${NATS_TLS_CA}
       - DEFAULT_ZONE_VAR_WEBHOOK_SERVER_URL=http://webhookd:8080
+      - DEFAULT_ZONE_VAR_TELEGRAF_HTTP_LISTENER_URL=19090
       - VICTORIAMETRICS_HOST=http://victoria-metrics:8428
       - TOP_GROUP=Default
       - DEFAULT_GROUP_NAME=Guest

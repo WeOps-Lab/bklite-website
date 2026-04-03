@@ -645,7 +645,7 @@
   gap: 8px;
 }
 
-.filterChipActive {
+.filterChip.filterChipActive {
   color: var(--color-primary);
   border-color: rgba(30, 64, 175, 0.22);
   background: rgba(30, 64, 175, 0.06);

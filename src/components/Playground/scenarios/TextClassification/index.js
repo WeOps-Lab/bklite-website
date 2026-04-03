@@ -236,6 +236,10 @@ function getTextSourceLabel(dataSource, uploadFileName) {
   return '内置文本样例';
 }
 
+function isTxtFile(file) {
+  return typeof file?.name === 'string' && /\.txt$/i.test(file.name);
+}
+
 function getMetadataEntries(metadata) {
   if (!metadata || typeof metadata !== 'object') {
     return [];
@@ -245,7 +249,6 @@ function getMetadataEntries(metadata) {
     ['model_name', '模型名称'],
     ['model_version', '模型版本'],
     ['request_id', '请求 ID'],
-    ['execution_time_ms', '执行耗时'],
     ['input_count', '输入条数'],
     ['truncated_count', '截断文本'],
   ];
@@ -255,9 +258,7 @@ function getMetadataEntries(metadata) {
     .map(([key, label]) => ({
       key,
       label,
-      value: key === 'execution_time_ms'
-        ? `${(Number(metadata[key]) / 1000).toFixed(2)}s`
-        : String(metadata[key]),
+      value: String(metadata[key]),
     }));
 }
 
@@ -409,6 +410,16 @@ export default function TextClassification({
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) {
+      return;
+    }
+
+    if (!isTxtFile(file)) {
+      setUploadError('仅支持上传 .txt 文本文件');
+      setUploadTexts(null);
+      setUploadFileName('');
+      if (e.target) {
+        e.target.value = '';
+      }
       return;
     }
 
@@ -775,7 +786,7 @@ export default function TextClassification({
             type="file"
             ref={fileInputRef}
             style={{ display: 'none' }}
-            accept=".txt,.csv,text/plain"
+            accept=".txt,text/plain"
             onChange={handleFileUpload}
           />
         ) : null}
@@ -794,7 +805,7 @@ export default function TextClassification({
                 <p className={styles.uploadAreaText}>
                   {uploadFileName ? `已选择: ${uploadFileName}` : '点击上传文本文件'}
                 </p>
-                <p className={styles.uploadAreaHint}>支持 TXT / CSV，按行解析，一行视为一条文本。</p>
+                <p className={styles.uploadAreaHint}>仅支持 TXT 文件，按行解析，一行视为一条文本。</p>
               </button>
               <button type="button" className={styles.templateDownload} onClick={handleDownloadTemplate}>
                 <FiDownload />

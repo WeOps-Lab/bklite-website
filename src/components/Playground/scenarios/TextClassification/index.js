@@ -4,6 +4,8 @@ import clsx from 'clsx';
 import {
   FiAlertTriangle,
   FiCheck,
+  FiChevronLeft,
+  FiChevronRight,
   FiDownload,
   FiFileText,
   FiPlay,
@@ -26,6 +28,46 @@ function clampPage(page, totalPages) {
   return Math.min(Math.max(page, 1), totalPages);
 }
 
+function getPaginationItems(currentPage, totalPages) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => ({
+      type: 'page',
+      page: index + 1,
+    }));
+  }
+
+  const items = [{ type: 'page', page: 1 }];
+  const siblingCount = totalPages <= 10 ? 1 : 2;
+  let startPage = Math.max(2, currentPage - siblingCount);
+  let endPage = Math.min(totalPages - 1, currentPage + siblingCount);
+
+  if (currentPage <= 1 + siblingCount * 2 + 1) {
+    startPage = 2;
+    endPage = Math.min(totalPages - 1, 2 + siblingCount * 2 + 1);
+  }
+
+  if (currentPage >= totalPages - (siblingCount * 2 + 1)) {
+    startPage = Math.max(2, totalPages - (siblingCount * 2 + 1));
+    endPage = totalPages - 1;
+  }
+
+  if (startPage > 2) {
+    items.push({ type: 'ellipsis', key: 'ellipsis-start' });
+  }
+
+  for (let page = startPage; page <= endPage; page += 1) {
+    items.push({ type: 'page', page });
+  }
+
+  if (endPage < totalPages - 1) {
+    items.push({ type: 'ellipsis', key: 'ellipsis-end' });
+  }
+
+  items.push({ type: 'page', page: totalPages });
+
+  return items;
+}
+
 function LoadingOverlay() {
   return (
     <div className={styles.loadingOverlay}>
@@ -39,31 +81,63 @@ function LoadingOverlay() {
 
 function PaginationControls({ currentPage, totalCount, pageSize, onPageChange }) {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const paginationItems = getPaginationItems(currentPage, totalPages);
 
   return (
-    <div className={styles.paginationBar}>
+    <nav className={styles.paginationBar} aria-label="分页导航">
       <span className={styles.paginationInfo}>
-        第 {currentPage} / {totalPages} 页 · 共 {totalCount} 项
+        第&nbsp;<strong>{currentPage}</strong><em>/</em><strong>{totalPages}</strong>&nbsp;页
+        <em>·</em>
+        共&nbsp;<strong>{totalCount}</strong>&nbsp;项
       </span>
-      <div className={styles.paginationButtons}>
+      <div className={styles.paginationControls}>
         <button
           type="button"
-          className={styles.paginationButton}
+          className={clsx(styles.paginationButton, styles.paginationNavButton)}
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
+          aria-label="上一页"
+          title="上一页"
         >
-          上一页
+          <FiChevronLeft aria-hidden="true" />
         </button>
+        <div className={styles.paginationPages}>
+          {paginationItems.map((item) => {
+            if (item.type === 'ellipsis') {
+              return <span key={item.key} className={styles.paginationEllipsis}>…</span>;
+            }
+
+            return (
+              <button
+                key={item.page}
+                type="button"
+                className={clsx(
+                  styles.paginationButton,
+                  styles.paginationPageButton,
+                  item.page === currentPage && styles.paginationButtonActive,
+                )}
+                onClick={() => onPageChange(item.page)}
+                disabled={item.page === currentPage}
+                aria-current={item.page === currentPage ? 'page' : undefined}
+                aria-label={`第 ${item.page} 页`}
+              >
+                {item.page}
+              </button>
+            );
+          })}
+        </div>
         <button
           type="button"
-          className={styles.paginationButton}
+          className={clsx(styles.paginationButton, styles.paginationNavButton)}
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
+          aria-label="下一页"
+          title="下一页"
         >
-          下一页
+          <FiChevronRight aria-hidden="true" />
         </button>
       </div>
-    </div>
+    </nav>
   );
 }
 
@@ -379,13 +453,6 @@ export default function TextClassification({
     ];
   }, [distributionItems, resultData]);
 
-  const warningCount = useMemo(() => {
-    return toSafeNumber(
-      resultData?.summary?.warnings_count,
-      (resultData?.results || []).reduce((sum, item) => sum + (item.warnings?.length || 0), 0),
-    );
-  }, [resultData]);
-
   const metadataEntries = useMemo(() => getMetadataEntries(resultData?.metadata), [resultData]);
 
   const handleResetResult = () => {
@@ -588,10 +655,6 @@ export default function TextClassification({
             ? `${(resultData.summary.processing_time_ms / 1000).toFixed(2)}s`
             : '-'}
         </span>
-      </div>
-      <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>警告数量</span>
-        <span className={styles.resultStatValue}>{warningCount}</span>
       </div>
     </div>
   );

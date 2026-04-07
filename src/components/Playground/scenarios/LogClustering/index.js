@@ -40,6 +40,46 @@ function clampPage(page, totalPages) {
   return Math.min(Math.max(page, 1), totalPages);
 }
 
+function getPaginationItems(currentPage, totalPages) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => ({
+      type: 'page',
+      page: index + 1,
+    }));
+  }
+
+  const items = [{ type: 'page', page: 1 }];
+  const siblingCount = totalPages <= 10 ? 1 : 2;
+  let startPage = Math.max(2, currentPage - siblingCount);
+  let endPage = Math.min(totalPages - 1, currentPage + siblingCount);
+
+  if (currentPage <= 1 + siblingCount * 2 + 1) {
+    startPage = 2;
+    endPage = Math.min(totalPages - 1, 2 + siblingCount * 2 + 1);
+  }
+
+  if (currentPage >= totalPages - (siblingCount * 2 + 1)) {
+    startPage = Math.max(2, totalPages - (siblingCount * 2 + 1));
+    endPage = totalPages - 1;
+  }
+
+  if (startPage > 2) {
+    items.push({ type: 'ellipsis', key: 'ellipsis-start' });
+  }
+
+  for (let page = startPage; page <= endPage; page += 1) {
+    items.push({ type: 'page', page });
+  }
+
+  if (endPage < totalPages - 1) {
+    items.push({ type: 'ellipsis', key: 'ellipsis-end' });
+  }
+
+  items.push({ type: 'page', page: totalPages });
+
+  return items;
+}
+
 function slicePage(items, page, pageSize) {
   const start = (page - 1) * pageSize;
   return items.slice(start, start + pageSize);
@@ -116,33 +156,59 @@ function normalizeResponse(json) {
 
 function PaginationControls({ currentPage, totalCount, pageSize, onPageChange }) {
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+  const paginationItems = getPaginationItems(currentPage, totalPages);
 
   return (
-    <div className={styles.paginationBar}>
+    <nav className={styles.paginationBar} aria-label="分页导航">
       <span className={styles.paginationInfo}>
-        第 {currentPage} / {totalPages} 页 · 共 {totalCount} 项
+        第&nbsp;<strong>{currentPage}</strong><em>/</em><strong>{totalPages}</strong>&nbsp;页
+        <em>·</em>
+        共&nbsp;<strong>{totalCount}</strong>&nbsp;项
       </span>
-      <div className={styles.paginationButtons}>
+      <div className={styles.paginationControls}>
         <button
           type="button"
-          className={styles.paginationButton}
+          className={clsx(styles.paginationButton, styles.paginationNavButton)}
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
+          aria-label="上一页"
+          title="上一页"
         >
-          <FiChevronLeft />
-          上一页
+          <FiChevronLeft aria-hidden="true" />
         </button>
+        <div className={styles.paginationPages}>
+          {paginationItems.map((item) => {
+            if (item.type === 'ellipsis') {
+              return <span key={item.key} className={styles.paginationEllipsis}>…</span>;
+            }
+
+            return (
+              <button
+                key={item.page}
+                type="button"
+                className={clsx(styles.paginationButton, styles.paginationPageButton, item.page === currentPage && styles.paginationButtonActive)}
+                onClick={() => onPageChange(item.page)}
+                disabled={item.page === currentPage}
+                aria-current={item.page === currentPage ? 'page' : undefined}
+                aria-label={`第 ${item.page} 页`}
+              >
+                {item.page}
+              </button>
+            );
+          })}
+        </div>
         <button
           type="button"
-          className={styles.paginationButton}
+          className={clsx(styles.paginationButton, styles.paginationNavButton)}
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
+          aria-label="下一页"
+          title="下一页"
         >
-          下一页
-          <FiChevronRight />
+          <FiChevronRight aria-hidden="true" />
         </button>
       </div>
-    </div>
+    </nav>
   );
 }
 
@@ -595,13 +661,6 @@ export default function LogClustering({
                 <div className={styles.emptyState}>未找到匹配的模板结果</div>
               )}
             </div>
-
-            <PaginationControls
-              currentPage={clusterPage}
-              pageSize={CLUSTER_PAGE_SIZE}
-              totalCount={filteredClusters.length}
-              onPageChange={(page) => setClusterPage(clampPage(page, Math.ceil(filteredClusters.length / CLUSTER_PAGE_SIZE)))}
-            />
           </div>
 
           <div className={styles.detailColumn}>
@@ -644,6 +703,15 @@ export default function LogClustering({
               <div className={styles.emptyState}>请选择左侧模板查看详情</div>
             )}
           </div>
+
+          <div className={styles.browserPaginationRow}>
+            <PaginationControls
+              currentPage={clusterPage}
+              pageSize={CLUSTER_PAGE_SIZE}
+              totalCount={filteredClusters.length}
+              onPageChange={(page) => setClusterPage(clampPage(page, Math.ceil(filteredClusters.length / CLUSTER_PAGE_SIZE)))}
+            />
+          </div>
         </div>
       ) : (
         <div className={styles.unknownPanelWrap}>
@@ -666,7 +734,9 @@ export default function LogClustering({
                 <div className={styles.emptyState}>当前没有未归类日志</div>
               )}
             </div>
+          </div>
 
+          <div className={styles.unknownPaginationRow}>
             <PaginationControls
               currentPage={unknownPage}
               pageSize={UNKNOWN_PAGE_SIZE}

@@ -1,0 +1,1714 @@
+{
+  "hero.version.basic.name": {
+    "message": "Basic"
+  },
+  "hero.version.basic.desc": {
+    "message": "Core features, easy deploy"
+  },
+  "hero.version.ai.name": {
+    "message": "Smart"
+  },
+  "hero.version.ai.desc": {
+    "message": "AI-driven, intelligent ops"
+  },
+  "hero.subtitle": {
+    "message": "Full-stack, Lightweight"
+  },
+  "hero.stat.ai": {
+    "message": "AI Native"
+  },
+  "hero.stat.deploy": {
+    "message": "Easy Deploy"
+  },
+  "hero.stat.ondemand": {
+    "message": "On-demand"
+  },
+  "hero.copy.title": {
+    "message": "Copy Script"
+  },
+  "homepage.title": {
+    "message": "Lightweight Operations Platform"
+  },
+  "pricing.plan.community.name": {
+    "message": "Community"
+  },
+  "pricing.plan.community.price": {
+    "message": "Free"
+  },
+  "pricing.plan.community.desc": {
+    "message": "Ready-to-use lightweight basic capabilities, ideal for individuals or small teams to quickly get started."
+  },
+  "pricing.plan.community.feature.1": {
+    "message": "Basic monitoring and visual dashboard"
+  },
+  "pricing.plan.community.feature.2": {
+    "message": "Basic health status for applications and hosts"
+  },
+  "pricing.plan.community.feature.3": {
+    "message": "Basic alert notifications via email/WeCom"
+  },
+  "pricing.plan.community.feature.4": {
+    "message": "ChatOps basic Q&A and assistance"
+  },
+  "pricing.plan.community.feature.5": {
+    "message": "Quick single-node lightweight deployment"
+  },
+  "pricing.plan.community.feature.6": {
+    "message": "Basic log search and viewing"
+  },
+  "pricing.plan.community.feature.7": {
+    "message": "Community docs and examples for quick start"
+  },
+  "pricing.plan.community.feature.8": {
+    "message": "Community support and discussions"
+  },
+  "pricing.plan.community.button": {
+    "message": "Free Trial"
+  },
+  "pricing.plan.standard.name": {
+    "message": "Standard"
+  },
+  "pricing.plan.standard.desc": {
+    "message": "Complete solution covering core operations and AI capabilities for small to medium teams."
+  },
+  "pricing.plan.standard.feature.1": {
+    "message": "Full monitoring, metrics analysis, and visualization"
+  },
+  "pricing.plan.standard.feature.2": {
+    "message": "Multi-channel alerts with convergence and escalation"
+  },
+  "pricing.plan.standard.feature.3": {
+    "message": "Chatflow visual workflow and task orchestration"
+  },
+  "pricing.plan.standard.feature.4": {
+    "message": "OpsPilot intelligent diagnostics and recommendations"
+  },
+  "pricing.plan.standard.feature.5": {
+    "message": "Complete role and permission management"
+  },
+  "pricing.plan.standard.feature.6": {
+    "message": "Multi-environment, multi-region, multi-node management"
+  },
+  "pricing.plan.standard.feature.7": {
+    "message": "Enhanced log observability capabilities"
+  },
+  "pricing.plan.standard.feature.8": {
+    "message": "Auto-generated SLA, weekly reports, and trend analysis"
+  },
+  "pricing.plan.standard.feature.9": {
+    "message": "Official technical support and update assurance"
+  },
+  "pricing.plan.standard.button": {
+    "message": "Buy Now"
+  },
+  "pricing.plan.enterprise.name": {
+    "message": "Enterprise"
+  },
+  "pricing.plan.enterprise.desc": {
+    "message": "Full-stack intelligent operations platform for large organizations with advanced capabilities and enterprise-grade support."
+  },
+  "pricing.plan.enterprise.feature.1": {
+    "message": "Enterprise organization, role, and permission hierarchy"
+  },
+  "pricing.plan.enterprise.feature.2": {
+    "message": "Centralized management for large-scale complex clusters"
+  },
+  "pricing.plan.enterprise.feature.3": {
+    "message": "Intelligent root cause analysis and full-chain diagnosis"
+  },
+  "pricing.plan.enterprise.feature.4": {
+    "message": "Automated remediation for closed-loop alerting"
+  },
+  "pricing.plan.enterprise.feature.5": {
+    "message": "Integration with enterprise tools and workflow systems"
+  },
+  "pricing.plan.enterprise.feature.6": {
+    "message": "Private deployment with local LLM support"
+  },
+  "pricing.plan.enterprise.feature.7": {
+    "message": "Audit, encryption, HA, and security capabilities"
+  },
+  "pricing.plan.enterprise.feature.8": {
+    "message": "SSO/LDAP enterprise unified authentication"
+  },
+  "pricing.plan.enterprise.feature.9": {
+    "message": "Canary release, isolation, and priority strategies"
+  },
+  "pricing.plan.enterprise.feature.10": {
+    "message": "Dedicated technical advisor and enterprise service"
+  },
+  "pricing.plan.enterprise.button": {
+    "message": "Contact Sales"
+  },
+  "pricing.badge.recommended": {
+    "message": "Recommended"
+  },
+  "pricing.featureList.title": {
+    "message": "Feature List"
+  },
+  "pricing.page.title": {
+    "message": "Pricing"
+  },
+  "pricing.page.desc": {
+    "message": "BlueKing Lite Pricing Plans - Choose the right edition for you"
+  },
+  "pricing.subtitle": {
+    "message": "AI-native lightweight operations platform, reimagining intelligent ops"
+  },
+  "playground.error.loginIncomplete": {
+    "message": "Login incomplete. Please log in again."
+  },
+  "playground.error.loginFailed": {
+    "message": "Login verification failed. Please log in again."
+  },
+  "playground.page.title": {
+    "message": "AI Playground"
+  },
+  "playground.error.title": {
+    "message": "Login Incomplete"
+  },
+  "playground.button.relogin": {
+    "message": "Re-login"
+  },
+  "showcase.security.title": {
+    "message": "Classified Environment"
+  },
+  "showcase.security.desc": {
+    "message": "End-to-end security architecture meeting Level 3 protection requirements, providing trusted runtime for critical systems"
+  },
+  "showcase.security.badge": {
+    "message": "Secure & Trusted"
+  },
+  "showcase.security.metric": {
+    "message": "Level 3"
+  },
+  "showcase.security.highlight1": {
+    "message": "National Crypto"
+  },
+  "showcase.security.highlight2": {
+    "message": "Data Isolation"
+  },
+  "showcase.lightweight.title": {
+    "message": "Ultra Lightweight"
+  },
+  "showcase.lightweight.desc": {
+    "message": "Optimized architecture and resource scheduling, significantly reducing energy consumption while maintaining capabilities"
+  },
+  "showcase.lightweight.badge": {
+    "message": "Energy Efficient"
+  },
+  "showcase.lightweight.metric": {
+    "message": "50%↓ Energy"
+  },
+  "showcase.lightweight.highlight1": {
+    "message": "Smart Scheduling"
+  },
+  "showcase.lightweight.highlight2": {
+    "message": "Green Ops"
+  },
+  "showcase.cost.title": {
+    "message": "Cost Optimization"
+  },
+  "showcase.cost.desc": {
+    "message": "Simplified deployment and operations, significantly reducing TCO through automation"
+  },
+  "showcase.cost.badge": {
+    "message": "TCO Optimized"
+  },
+  "showcase.cost.metric": {
+    "message": "60%↓ Cost"
+  },
+  "showcase.cost.highlight1": {
+    "message": "Auto Ops"
+  },
+  "showcase.cost.highlight2": {
+    "message": "Scale On-demand"
+  },
+  "showcase.edge.title": {
+    "message": "Edge Autonomy"
+  },
+  "showcase.edge.desc": {
+    "message": "Independent edge operation with offline resilience and self-healing capabilities"
+  },
+  "showcase.edge.badge": {
+    "message": "Edge Computing"
+  },
+  "showcase.edge.metric": {
+    "message": "Offline Ready"
+  },
+  "showcase.edge.highlight1": {
+    "message": "Auto Recovery"
+  },
+  "showcase.edge.highlight2": {
+    "message": "Smart Decision"
+  },
+  "showcase.ai.title": {
+    "message": "AI Native"
+  },
+  "showcase.ai.desc": {
+    "message": "Deep LLM integration for intelligent diagnostics, decision support, and automated remediation"
+  },
+  "showcase.ai.badge": {
+    "message": "AI-Driven"
+  },
+  "showcase.ai.metric": {
+    "message": "Predictive"
+  },
+  "showcase.ai.highlight1": {
+    "message": "Smart Diagnosis"
+  },
+  "showcase.ai.highlight2": {
+    "message": "Auto Remediation"
+  },
+  "showcase.scaling.title": {
+    "message": "Seamless Scaling"
+  },
+  "showcase.scaling.desc": {
+    "message": "Plug-and-play appliance mode, new nodes auto-discovered and managed for smooth cluster expansion"
+  },
+  "showcase.scaling.badge": {
+    "message": "Elastic Scaling"
+  },
+  "showcase.scaling.metric": {
+    "message": "Plug & Play"
+  },
+  "showcase.scaling.highlight1": {
+    "message": "Zero Config"
+  },
+  "showcase.scaling.highlight2": {
+    "message": "Smooth Scale"
+  },
+  "showcase.i18n.title": {
+    "message": "Internationalization"
+  },
+  "showcase.i18n.desc": {
+    "message": "Multi-language interface with multi-region compliance, meeting global deployment requirements"
+  },
+  "showcase.i18n.badge": {
+    "message": "Global"
+  },
+  "showcase.i18n.metric": {
+    "message": "Multi-language"
+  },
+  "showcase.i18n.highlight1": {
+    "message": "Compliance"
+  },
+  "showcase.i18n.highlight2": {
+    "message": "Global Deploy"
+  },
+  "showcase.ecosystem.title": {
+    "message": "Open Ecosystem"
+  },
+  "showcase.ecosystem.desc": {
+    "message": "Complete plugin system and open APIs for deep third-party integration"
+  },
+  "showcase.ecosystem.badge": {
+    "message": "Open Ecosystem"
+  },
+  "showcase.ecosystem.metric": {
+    "message": "Open API"
+  },
+  "showcase.ecosystem.highlight1": {
+    "message": "Plugin System"
+  },
+  "showcase.ecosystem.highlight2": {
+    "message": "Ecosystem"
+  },
+  "showcase.sectionTitle": {
+    "message": "Key Features"
+  },
+  "cta.title": {
+    "message": "Get Started with Lightweight Intelligent Ops"
+  },
+  "cta.description": {
+    "message": "A complete open-source operations capability system with flexible modular architecture and AI-driven intelligent decisions. Deploy quickly, get started easily, and build the next-generation operations platform with the community."
+  },
+  "cta.button.support": {
+    "message": "Support Us"
+  },
+  "cta.button.community": {
+    "message": "Join Community"
+  },
+  "cta.feature.quickstart": {
+    "message": "5-min Quick Start"
+  },
+  "cta.feature.modular": {
+    "message": "Modular Design"
+  },
+  "cta.feature.opensource": {
+    "message": "Open Source Community"
+  },
+  "cta.qr.title": {
+    "message": "Scan to Join Community"
+  },
+  "cta.qr.alt": {
+    "message": "Community QR Code"
+  },
+  "cta.qr.description": {
+    "message": "Scan the QR code to join the BlueKing Lite open source community and discuss with developers"
+  },
+  "features.classic.title": {
+    "message": "Classic Ops"
+  },
+  "features.classic.subtitle": {
+    "message": "Mature and stable operations capabilities"
+  },
+  "features.monitor.title": {
+    "message": "Monitoring"
+  },
+  "features.monitor.badge": {
+    "message": "Full Monitoring"
+  },
+  "features.monitor.highlight1": {
+    "message": "Second-level"
+  },
+  "features.monitor.highlight2": {
+    "message": "Elastic Collection"
+  },
+  "features.monitor.highlight3": {
+    "message": "Precise Alerts"
+  },
+  "features.monitor.description": {
+    "message": "Full monitoring system with second-level collection and precise alerting to ensure system stability"
+  },
+  "features.log.title": {
+    "message": "Log Center"
+  },
+  "features.log.badge": {
+    "message": "Log Analytics"
+  },
+  "features.log.highlight1": {
+    "message": "Fault Location"
+  },
+  "features.log.highlight2": {
+    "message": "Compliance"
+  },
+  "features.log.highlight3": {
+    "message": "Log Insights"
+  },
+  "features.log.description": {
+    "message": "Compliant log retention with fast search, providing reliable evidence for troubleshooting and audit"
+  },
+  "features.cmdb.title": {
+    "message": "CMDB"
+  },
+  "features.cmdb.badge": {
+    "message": "Asset Map"
+  },
+  "features.cmdb.highlight1": {
+    "message": "Asset Visibility"
+  },
+  "features.cmdb.highlight2": {
+    "message": "Clear Architecture"
+  },
+  "features.cmdb.highlight3": {
+    "message": "Trusted Data"
+  },
+  "features.cmdb.description": {
+    "message": "Build a trusted IT asset map with comprehensive discovery and architecture restoration for operations decisions and compliance"
+  },
+  "features.alert.title": {
+    "message": "Alert Center"
+  },
+  "features.alert.badge": {
+    "message": "Alert Response"
+  },
+  "features.alert.highlight1": {
+    "message": "Noise Reduction"
+  },
+  "features.alert.highlight2": {
+    "message": "Smart Routing"
+  },
+  "features.alert.highlight3": {
+    "message": "Fast Resolution"
+  },
+  "features.alert.description": {
+    "message": "Aggregate multi-source alerts with intelligent noise reduction and precise routing for fast resolution"
+  },
+  "features.itsm.title": {
+    "message": "ITSM"
+  },
+  "features.itsm.badge": {
+    "message": "Process Standard"
+  },
+  "features.itsm.highlight1": {
+    "message": "Standard Execution"
+  },
+  "features.itsm.highlight2": {
+    "message": "Transparent Control"
+  },
+  "features.itsm.highlight3": {
+    "message": "Compliance"
+  },
+  "features.itsm.description": {
+    "message": "Standardize tickets, changes, and incident workflows for traceable and compliant operations"
+  },
+  "features.job.title": {
+    "message": "Job Management"
+  },
+  "features.job.badge": {
+    "message": "Automation"
+  },
+  "features.job.highlight1": {
+    "message": "Batch Execution"
+  },
+  "features.job.highlight2": {
+    "message": "File Distribution"
+  },
+  "features.job.highlight3": {
+    "message": "Scheduled Tasks"
+  },
+  "features.job.description": {
+    "message": "Unified task execution platform supporting scripts, file distribution, and scheduling for batch operations"
+  },
+  "features.analysis.title": {
+    "message": "Analytics"
+  },
+  "features.analysis.badge": {
+    "message": "Insight Analytics"
+  },
+  "features.analysis.highlight1": {
+    "message": "Data Fusion"
+  },
+  "features.analysis.highlight2": {
+    "message": "Smart Analysis"
+  },
+  "features.analysis.highlight3": {
+    "message": "Value Delivery"
+  },
+  "features.analysis.description": {
+    "message": "Fuse multi-source operations data and transform insights into business value through intelligent analysis"
+  },
+  "features.platform.title": {
+    "message": "Platform Foundation"
+  },
+  "features.platform.subtitle": {
+    "message": "Unified foundational capabilities"
+  },
+  "features.console.title": {
+    "message": "Console"
+  },
+  "features.console.badge": {
+    "message": "Work Portal"
+  },
+  "features.console.highlight1": {
+    "message": "One-stop Access"
+  },
+  "features.console.highlight2": {
+    "message": "Notification Hub"
+  },
+  "features.console.highlight3": {
+    "message": "Smart Recommend"
+  },
+  "features.console.description": {
+    "message": "Unified work portal aggregating notifications with smart entry and personalized configuration for team collaboration"
+  },
+  "features.system.title": {
+    "message": "System Admin"
+  },
+  "features.system.badge": {
+    "message": "Security & Compliance"
+  },
+  "features.system.highlight1": {
+    "message": "Permission Isolation"
+  },
+  "features.system.highlight2": {
+    "message": "Fine Control"
+  },
+  "features.system.highlight3": {
+    "message": "Full Audit"
+  },
+  "features.system.description": {
+    "message": "Multi-tenant permission management and audit tracking for secure and traceable system access"
+  },
+  "features.node.title": {
+    "message": "Node Management"
+  },
+  "features.node.badge": {
+    "message": "Node Governance"
+  },
+  "features.node.highlight1": {
+    "message": "Multi-cloud"
+  },
+  "features.node.highlight2": {
+    "message": "Auto Deploy"
+  },
+  "features.node.highlight3": {
+    "message": "Status Visibility"
+  },
+  "features.node.description": {
+    "message": "Unified multi-cloud node management with auto agent deployment and process hosting for large-scale clusters"
+  },
+  "features.intelligent.title": {
+    "message": "Intelligent Ops"
+  },
+  "features.intelligent.subtitle": {
+    "message": "AI-driven operations innovation"
+  },
+  "features.opspilot.title": {
+    "message": "OpsPilot"
+  },
+  "features.opspilot.badge": {
+    "message": "Ops Navigator"
+  },
+  "features.opspilot.highlight1": {
+    "message": "Auto Diagnosis"
+  },
+  "features.opspilot.highlight2": {
+    "message": "Smart Decision"
+  },
+  "features.opspilot.highlight3": {
+    "message": "Auto Remediation"
+  },
+  "features.opspilot.description": {
+    "message": "LLM and knowledge graph powered guide for rapid problem identification, intelligent decisions, and efficient remediation"
+  },
+  "features.mlops.title": {
+    "message": "MLOps"
+  },
+  "features.mlops.badge": {
+    "message": "Model Factory"
+  },
+  "features.mlops.highlight1": {
+    "message": "Data Labeling"
+  },
+  "features.mlops.highlight2": {
+    "message": "Model Training"
+  },
+  "features.mlops.highlight3": {
+    "message": "Capability Release"
+  },
+  "features.mlops.description": {
+    "message": "Operations-focused platform integrating data labeling, model training, and capability release as a unified model factory"
+  },
+  "features.sectionTitle": {
+    "message": "Product Modules"
+  },
+  "community.qr.title": {
+    "message": "Scan to Join Community"
+  },
+  "community.qr.alt": {
+    "message": "Community QR Code"
+  },
+  "community.qr.description": {
+    "message": "Scan the QR code to join the BlueKing Lite open source community and discuss with developers"
+  },
+  "account.role.admin": {
+    "message": "Admin"
+  },
+  "account.role.guest": {
+    "message": "Guest"
+  },
+  "account.role.user": {
+    "message": "User"
+  },
+  "account.label": {
+    "message": "Account"
+  },
+  "account.login": {
+    "message": "Login"
+  },
+  "account.logout": {
+    "message": "Logout"
+  },
+  "account.menu": {
+    "message": "Menu"
+  },
+  "account.loginEntry": {
+    "message": "Login"
+  },
+  "account.username.label": {
+    "message": "Username"
+  },
+  "account.loginAccount": {
+    "message": "Login Account"
+  },
+  "account.loginDesc": {
+    "message": "Log in to experience AI capabilities, unlock model selection, online inference, and more."
+  },
+  "megamenu.classic.title": {
+    "message": "Classic Ops"
+  },
+  "megamenu.monitor.name": {
+    "message": "Monitoring"
+  },
+  "megamenu.monitor.desc": {
+    "message": "Second-level Monitoring · Precise Alerts · Stability"
+  },
+  "megamenu.log.name": {
+    "message": "Log Center"
+  },
+  "megamenu.log.desc": {
+    "message": "Fast Search · Fault Location · Compliance"
+  },
+  "megamenu.cmdb.name": {
+    "message": "CMDB"
+  },
+  "megamenu.cmdb.desc": {
+    "message": "Asset Visibility · Clear Architecture · Trusted Data"
+  },
+  "megamenu.alert.name": {
+    "message": "Alert Center"
+  },
+  "megamenu.alert.desc": {
+    "message": "Smart Noise Reduction · Precise Routing · Fast Resolution"
+  },
+  "megamenu.itsm.name": {
+    "message": "ITSM"
+  },
+  "megamenu.itsm.desc": {
+    "message": "Standard Execution · Transparent Control · Compliance"
+  },
+  "megamenu.job.name": {
+    "message": "Job Management"
+  },
+  "megamenu.job.desc": {
+    "message": "Batch Execution · File Distribution · Scheduled Tasks"
+  },
+  "megamenu.analysis.name": {
+    "message": "Analytics"
+  },
+  "megamenu.analysis.desc": {
+    "message": "Data Fusion · Smart Analysis · Value Delivery"
+  },
+  "megamenu.platform.title": {
+    "message": "Platform Foundation"
+  },
+  "megamenu.console.name": {
+    "message": "Console"
+  },
+  "megamenu.console.desc": {
+    "message": "One-stop Access · Notification Hub · Smart Recommend"
+  },
+  "megamenu.system.name": {
+    "message": "System Admin"
+  },
+  "megamenu.system.desc": {
+    "message": "Permission Isolation · Fine Control · Full Audit"
+  },
+  "megamenu.node.name": {
+    "message": "Node Management"
+  },
+  "megamenu.node.desc": {
+    "message": "Multi-cloud · Auto Deploy · Status Visibility"
+  },
+  "megamenu.intelligent.title": {
+    "message": "Intelligent Ops"
+  },
+  "megamenu.opspilot.name": {
+    "message": "OpsPilot"
+  },
+  "megamenu.opspilot.desc": {
+    "message": "Auto Diagnosis · Smart Decision · Auto Remediation"
+  },
+  "megamenu.mlops.name": {
+    "message": "MLOps"
+  },
+  "megamenu.mlops.desc": {
+    "message": "Data Labeling · Model Training · Capability Release"
+  },
+  "megamenu.trigger": {
+    "message": "Docs"
+  },
+  "playground.mlops.anomaly.name": {
+    "message": "Anomaly Detection"
+  },
+  "playground.mlops.anomaly.desc": {
+    "message": "Identify anomalous fluctuations in time series to quickly detect spikes, surges, or drops."
+  },
+  "playground.mlops.anomaly.guide": {
+    "message": "Suitable for monitoring metrics and resource utilization data. Use sample data or upload your own time series for validation."
+  },
+  "playground.mlops.time-series.name": {
+    "message": "Time Series Prediction"
+  },
+  "playground.mlops.time-series.desc": {
+    "message": "Predict future data trends based on historical patterns, ideal for capacity and load forecasting."
+  },
+  "playground.mlops.time-series.guide": {
+    "message": "Select a model and try with sample data first, then upload your own metrics to verify prediction results."
+  },
+  "playground.mlops.log-analysis.name": {
+    "message": "Log Clustering"
+  },
+  "playground.mlops.log-analysis.desc": {
+    "message": "Cluster and categorize log content to identify similar issues and anomalous log patterns."
+  },
+  "playground.mlops.log-analysis.guide": {
+    "message": "Suitable for batch log understanding and problem categorization. Use sample logs or upload text logs to try."
+  },
+  "playground.mlops.text-classification.name": {
+    "message": "Text Classification"
+  },
+  "playground.mlops.text-classification.desc": {
+    "message": "Automatically classify text content, suitable for tickets, alert descriptions, and text labeling scenarios."
+  },
+  "playground.mlops.text-classification.guide": {
+    "message": "Suitable for standardized text categorization. Use sample text, paste batch content, or upload text files to try."
+  },
+  "playground.mlops.image-classification.name": {
+    "message": "Image Classification"
+  },
+  "playground.mlops.image-classification.desc": {
+    "message": "Identify image categories, suitable for standardized image recognition and auto-categorization tasks."
+  },
+  "playground.mlops.image-classification.guide": {
+    "message": "Suitable for single-target image classification. Image upload and inference will be available soon."
+  },
+  "playground.mlops.object-detection.name": {
+    "message": "Object Detection"
+  },
+  "playground.mlops.object-detection.desc": {
+    "message": "Detect object locations and categories in images for visual tasks requiring both localization and recognition."
+  },
+  "playground.mlops.object-detection.guide": {
+    "message": "Suitable for multi-target detection in images. Sample images and detection results will be available soon."
+  },
+  "playground.mlops.authExpiredMsg": {
+    "message": "Login has expired. Please log in again to continue."
+  },
+  "playground.mlops.authExpired": {
+    "message": "Login Expired"
+  },
+  "playground.mlops.loginToView": {
+    "message": "Log in to view models"
+  },
+  "playground.mlops.loading": {
+    "message": "Loading..."
+  },
+  "playground.mlops.loadFailed": {
+    "message": "Load Failed"
+  },
+  "playground.mlops.modelsAvailable": {
+    "message": "{count} models available"
+  },
+  "playground.mlops.noModels": {
+    "message": "0 models available"
+  },
+  "playground.mlops.sidebar.title": {
+    "message": "Scenarios"
+  },
+  "playground.mlops.selectScene": {
+    "message": "Select a Scenario"
+  },
+  "playground.mlops.selectSceneHint": {
+    "message": "Select a scenario from the left to get started."
+  },
+  "playground.mlops.selectModel": {
+    "message": "Select Model"
+  },
+  "playground.mlops.loginFirst": {
+    "message": "Please log in first to select a model"
+  },
+  "playground.mlops.loadingModels": {
+    "message": "Loading model list..."
+  },
+  "playground.mlops.pickModel": {
+    "message": "Select a model"
+  },
+  "playground.mlops.noModelAvailable": {
+    "message": "No models available for this scenario"
+  },
+  "playground.mlops.unlockExperience": {
+    "message": "Log in to unlock model experience"
+  },
+  "playground.mlops.unlockDesc": {
+    "message": "After selecting a model, you can use sample data, upload data, and start online inference."
+  },
+  "playground.mlops.loginNow": {
+    "message": "Login Now"
+  },
+  "playground.opspilot.title": {
+    "message": "Coming Soon"
+  },
+  "playground.opspilot.description": {
+    "message": "OpsPilot AI scenario experience is being refined. More intelligent operations capabilities will be available soon."
+  },
+  "theme.ErrorPageContent.title": {
+    "message": "This page crashed.",
+    "description": "The title of the fallback page when the page crashed"
+  },
+  "theme.BackToTopButton.buttonAriaLabel": {
+    "message": "Scroll back to top",
+    "description": "The ARIA label for the back to top button"
+  },
+  "theme.blog.archive.title": {
+    "message": "Archive",
+    "description": "The page & hero title of the blog archive page"
+  },
+  "theme.blog.archive.description": {
+    "message": "Archive",
+    "description": "The page & hero description of the blog archive page"
+  },
+  "theme.blog.paginator.navAriaLabel": {
+    "message": "Blog list page navigation",
+    "description": "The ARIA label for the blog pagination"
+  },
+  "theme.blog.paginator.newerEntries": {
+    "message": "Newer entries",
+    "description": "The label used to navigate to the newer blog posts page (previous page)"
+  },
+  "theme.blog.paginator.olderEntries": {
+    "message": "Older entries",
+    "description": "The label used to navigate to the older blog posts page (next page)"
+  },
+  "theme.blog.post.paginator.navAriaLabel": {
+    "message": "Blog post page navigation",
+    "description": "The ARIA label for the blog posts pagination"
+  },
+  "theme.blog.post.paginator.newerPost": {
+    "message": "Newer post",
+    "description": "The blog post button label to navigate to the newer/previous post"
+  },
+  "theme.blog.post.paginator.olderPost": {
+    "message": "Older post",
+    "description": "The blog post button label to navigate to the older/next post"
+  },
+  "theme.tags.tagsPageLink": {
+    "message": "View all tags",
+    "description": "The label of the link targeting the tag list page"
+  },
+  "theme.colorToggle.ariaLabel.mode.system": {
+    "message": "system mode",
+    "description": "The name for the system color mode"
+  },
+  "theme.colorToggle.ariaLabel.mode.light": {
+    "message": "light mode",
+    "description": "The name for the light color mode"
+  },
+  "theme.colorToggle.ariaLabel.mode.dark": {
+    "message": "dark mode",
+    "description": "The name for the dark color mode"
+  },
+  "theme.colorToggle.ariaLabel": {
+    "message": "Switch between dark and light mode (currently {mode})",
+    "description": "The ARIA label for the color mode toggle"
+  },
+  "theme.docs.DocCard.categoryDescription.plurals": {
+    "message": "1 item|{count} items",
+    "description": "The default description for a category card in the generated index about how many items this category includes"
+  },
+  "theme.docs.breadcrumbs.navAriaLabel": {
+    "message": "Breadcrumbs",
+    "description": "The ARIA label for the breadcrumbs"
+  },
+  "theme.docs.paginator.navAriaLabel": {
+    "message": "Docs pages",
+    "description": "The ARIA label for the docs pagination"
+  },
+  "theme.docs.paginator.previous": {
+    "message": "Previous",
+    "description": "The label used to navigate to the previous doc"
+  },
+  "theme.docs.paginator.next": {
+    "message": "Next",
+    "description": "The label used to navigate to the next doc"
+  },
+  "theme.docs.tagDocListPageTitle.nDocsTagged": {
+    "message": "One doc tagged|{count} docs tagged",
+    "description": "Pluralized label for \"{count} docs tagged\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.docs.tagDocListPageTitle": {
+    "message": "{nDocsTagged} with \"{tagName}\"",
+    "description": "The title of the page for a docs tag"
+  },
+  "theme.docs.versionBadge.label": {
+    "message": "Version: {versionLabel}"
+  },
+  "theme.docs.versions.unreleasedVersionLabel": {
+    "message": "This is unreleased documentation for {siteTitle} {versionLabel} version.",
+    "description": "The label used to tell the user that he's browsing an unreleased doc version"
+  },
+  "theme.docs.versions.unmaintainedVersionLabel": {
+    "message": "This is documentation for {siteTitle} {versionLabel}, which is no longer actively maintained.",
+    "description": "The label used to tell the user that he's browsing an unmaintained doc version"
+  },
+  "theme.docs.versions.latestVersionSuggestionLabel": {
+    "message": "For up-to-date documentation, see the {latestVersionLink} ({versionLabel}).",
+    "description": "The label used to tell the user to check the latest version"
+  },
+  "theme.docs.versions.latestVersionLinkLabel": {
+    "message": "latest version",
+    "description": "The label used for the latest version suggestion link label"
+  },
+  "theme.common.editThisPage": {
+    "message": "Edit this page",
+    "description": "The link label to edit the current page"
+  },
+  "theme.lastUpdated.atDate": {
+    "message": " on {date}",
+    "description": "The words used to describe on which date a page has been last updated"
+  },
+  "theme.lastUpdated.byUser": {
+    "message": " by {user}",
+    "description": "The words used to describe by who the page has been last updated"
+  },
+  "theme.lastUpdated.lastUpdatedAtBy": {
+    "message": "Last updated{atDate}{byUser}",
+    "description": "The sentence used to display when a page has been last updated, and by who"
+  },
+  "theme.common.headingLinkTitle": {
+    "message": "Direct link to {heading}",
+    "description": "Title for link to heading"
+  },
+  "theme.NotFound.title": {
+    "message": "Page Not Found",
+    "description": "The title of the 404 page"
+  },
+  "theme.navbar.mobileVersionsDropdown.label": {
+    "message": "Versions",
+    "description": "The label for the navbar versions dropdown on mobile view"
+  },
+  "theme.tags.tagsListLabel": {
+    "message": "Tags:",
+    "description": "The label alongside a tag list"
+  },
+  "theme.admonition.caution": {
+    "message": "caution",
+    "description": "The default label used for the Caution admonition (:::caution)"
+  },
+  "theme.admonition.danger": {
+    "message": "danger",
+    "description": "The default label used for the Danger admonition (:::danger)"
+  },
+  "theme.admonition.info": {
+    "message": "info",
+    "description": "The default label used for the Info admonition (:::info)"
+  },
+  "theme.admonition.note": {
+    "message": "note",
+    "description": "The default label used for the Note admonition (:::note)"
+  },
+  "theme.admonition.tip": {
+    "message": "tip",
+    "description": "The default label used for the Tip admonition (:::tip)"
+  },
+  "theme.admonition.warning": {
+    "message": "warning",
+    "description": "The default label used for the Warning admonition (:::warning)"
+  },
+  "theme.AnnouncementBar.closeButtonAriaLabel": {
+    "message": "Close",
+    "description": "The ARIA label for close button of announcement bar"
+  },
+  "theme.blog.sidebar.navAriaLabel": {
+    "message": "Blog recent posts navigation",
+    "description": "The ARIA label for recent posts in the blog sidebar"
+  },
+  "theme.DocSidebarItem.expandCategoryAriaLabel": {
+    "message": "Expand sidebar category '{label}'",
+    "description": "The ARIA label to expand the sidebar category"
+  },
+  "theme.DocSidebarItem.collapseCategoryAriaLabel": {
+    "message": "Collapse sidebar category '{label}'",
+    "description": "The ARIA label to collapse the sidebar category"
+  },
+  "theme.NavBar.navAriaLabel": {
+    "message": "Main",
+    "description": "The ARIA label for the main navigation"
+  },
+  "theme.NotFound.p1": {
+    "message": "We could not find what you were looking for.",
+    "description": "The first paragraph of the 404 page"
+  },
+  "theme.NotFound.p2": {
+    "message": "Please contact the owner of the site that linked you to the original URL and let them know their link is broken.",
+    "description": "The 2nd paragraph of the 404 page"
+  },
+  "theme.TOCCollapsible.toggleButtonLabel": {
+    "message": "On this page",
+    "description": "The label used by the button on the collapsible TOC component"
+  },
+  "theme.blog.post.readingTime.plurals": {
+    "message": "One min read|{readingTime} min read",
+    "description": "Pluralized label for \"{readingTime} min read\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.navbar.mobileLanguageDropdown.label": {
+    "message": "Languages",
+    "description": "The label for the mobile language switcher dropdown"
+  },
+  "theme.CodeBlock.copy": {
+    "message": "Copy",
+    "description": "The copy button label on code blocks"
+  },
+  "theme.CodeBlock.copied": {
+    "message": "Copied",
+    "description": "The copied button label on code blocks"
+  },
+  "theme.CodeBlock.copyButtonAriaLabel": {
+    "message": "Copy code to clipboard",
+    "description": "The ARIA label for copy code blocks button"
+  },
+  "theme.CodeBlock.wordWrapToggle": {
+    "message": "Toggle word wrap",
+    "description": "The title attribute for toggle word wrapping button of code block lines"
+  },
+  "theme.blog.post.readMore": {
+    "message": "Read more",
+    "description": "The label used in blog post item excerpts to link to full blog posts"
+  },
+  "theme.blog.post.readMoreLabel": {
+    "message": "Read more about {title}",
+    "description": "The ARIA label for the link to full blog posts from excerpts"
+  },
+  "theme.docs.breadcrumbs.home": {
+    "message": "Home page",
+    "description": "The ARIA label for the home page in the breadcrumbs"
+  },
+  "theme.docs.sidebar.navAriaLabel": {
+    "message": "Docs sidebar",
+    "description": "The ARIA label for the sidebar navigation"
+  },
+  "theme.docs.sidebar.collapseButtonTitle": {
+    "message": "Collapse sidebar",
+    "description": "The title attribute for collapse button of doc sidebar"
+  },
+  "theme.docs.sidebar.collapseButtonAriaLabel": {
+    "message": "Collapse sidebar",
+    "description": "The title attribute for collapse button of doc sidebar"
+  },
+  "theme.navbar.mobileSidebarSecondaryMenu.backButtonLabel": {
+    "message": "← Back to main menu",
+    "description": "The label of the back button to return to main menu, inside the mobile navbar sidebar secondary menu (notably used to display the docs sidebar)"
+  },
+  "theme.docs.sidebar.toggleSidebarButtonAriaLabel": {
+    "message": "Toggle navigation bar",
+    "description": "The ARIA label for hamburger menu button of mobile navigation"
+  },
+  "theme.docs.sidebar.closeSidebarButtonAriaLabel": {
+    "message": "Close navigation bar",
+    "description": "The ARIA label for close button of mobile sidebar"
+  },
+  "theme.docs.sidebar.expandButtonTitle": {
+    "message": "Expand sidebar",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.docs.sidebar.expandButtonAriaLabel": {
+    "message": "Expand sidebar",
+    "description": "The ARIA label and title attribute for expand button of doc sidebar"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.expandAriaLabel": {
+    "message": "Expand the dropdown",
+    "description": "The ARIA label of the button to expand the mobile dropdown navbar item"
+  },
+  "theme.navbar.mobileDropdown.collapseButton.collapseAriaLabel": {
+    "message": "Collapse the dropdown",
+    "description": "The ARIA label of the button to collapse the mobile dropdown navbar item"
+  },
+  "theme.blog.post.plurals": {
+    "message": "One post|{count} posts",
+    "description": "Pluralized label for \"{count} posts\". Use as much plural forms (separated by \"|\") as your language support (see https://www.unicode.org/cldr/cldr-aux/charts/34/supplemental/language_plural_rules.html)"
+  },
+  "theme.blog.tagTitle": {
+    "message": "{nPosts} tagged with \"{tagName}\"",
+    "description": "The title of the page for a blog tag"
+  },
+  "theme.blog.author.pageTitle": {
+    "message": "{authorName} - {nPosts}",
+    "description": "The title of the page for a blog author"
+  },
+  "theme.blog.authorsList.pageTitle": {
+    "message": "Authors",
+    "description": "The title of the authors page"
+  },
+  "theme.blog.authorsList.viewAll": {
+    "message": "View all authors",
+    "description": "The label of the link targeting the blog authors page"
+  },
+  "theme.blog.author.noPosts": {
+    "message": "This author has not written any posts yet.",
+    "description": "The text for authors with 0 blog post"
+  },
+  "theme.contentVisibility.unlistedBanner.title": {
+    "message": "Unlisted page",
+    "description": "The unlisted content banner title"
+  },
+  "theme.contentVisibility.unlistedBanner.message": {
+    "message": "This page is unlisted. Search engines will not index it, and only users having a direct link can access it.",
+    "description": "The unlisted content banner message"
+  },
+  "theme.contentVisibility.draftBanner.title": {
+    "message": "Draft page",
+    "description": "The draft content banner title"
+  },
+  "theme.contentVisibility.draftBanner.message": {
+    "message": "This page is a draft. It will only be visible in dev and be excluded from the production build.",
+    "description": "The draft content banner message"
+  },
+  "theme.ErrorPageContent.tryAgain": {
+    "message": "Try again",
+    "description": "The label of the button to try again rendering when the React error boundary captures an error"
+  },
+  "theme.common.skipToMainContent": {
+    "message": "Skip to main content",
+    "description": "The skip to content label used for accessibility, allowing to rapidly navigate to main content with keyboard tab/enter navigation"
+  },
+  "theme.tags.tagsPageTitle": {
+    "message": "Tags",
+    "description": "The title of the tag list page"
+  },
+  "comingSoon.defaultName": {
+    "message": "New Scenario"
+  },
+  "playground.comingSoon.desc": {
+    "message": "This scenario is under development. Stay tuned!"
+  },
+  "logClustering.inferenceLoading": {
+    "message": "Model inference in progress..."
+  },
+  "logClustering.unknownSize": {
+    "message": "Unknown size"
+  },
+  "logClustering.pagination.ariaLabel": {
+    "message": "Pagination"
+  },
+  "logClustering.pagination.pagePrefix": {
+    "message": "Page "
+  },
+  "logClustering.pagination.pageSuffix": {
+    "message": ""
+  },
+  "logClustering.pagination.totalPrefix": {
+    "message": "Total "
+  },
+  "logClustering.pagination.totalSuffix": {
+    "message": " items"
+  },
+  "logClustering.pagination.prevPage": {
+    "message": "Previous"
+  },
+  "logClustering.pagination.nextPage": {
+    "message": "Next"
+  },
+  "logClustering.preview.truncatedPrefix": {
+    "message": "Only sending the first "
+  },
+  "logClustering.preview.truncatedMiddle": {
+    "message": " valid logs, previewing the first "
+  },
+  "logClustering.preview.truncatedSuffix": {
+    "message": " entries."
+  },
+  "logClustering.preview.normalPrefix": {
+    "message": "Previewing the first "
+  },
+  "logClustering.preview.normalSuffix": {
+    "message": " logs."
+  },
+  "logClustering.preview.noLogs": {
+    "message": "No logs available for preview"
+  },
+  "logClustering.error.sampleLoadFailed": {
+    "message": "Failed to load sample data"
+  },
+  "logClustering.error.sampleEmpty": {
+    "message": "Sample data file is empty or invalid"
+  },
+  "logClustering.error.txtOnly": {
+    "message": "Only .txt text files are supported"
+  },
+  "logClustering.error.noValidLogs": {
+    "message": "No valid logs found. Please check the file content"
+  },
+  "logClustering.error.parseFailed": {
+    "message": "File parsing failed. Please check the file format"
+  },
+  "logClustering.error.selectModel": {
+    "message": "Please select a model"
+  },
+  "logClustering.error.sampleNotLoaded": {
+    "message": "Sample data is still loading"
+  },
+  "logClustering.error.uploadFirst": {
+    "message": "Please upload a log file first"
+  },
+  "logClustering.error.authExpired": {
+    "message": "Login expired. Please log in again"
+  },
+  "logClustering.error.inferenceFailed": {
+    "message": "Inference Failed"
+  },
+  "logClustering.error.networkFailed": {
+    "message": "Network request failed"
+  },
+  "logClustering.builtinSample": {
+    "message": "Built-in Log Sample"
+  },
+  "logClustering.reupload": {
+    "message": "Re-upload"
+  },
+  "logClustering.resetResult": {
+    "message": "Reset Results"
+  },
+  "logClustering.clusteringComplete": {
+    "message": "Clustering Complete"
+  },
+  "logClustering.summary.totalLogs": {
+    "message": "Total Logs"
+  },
+  "logClustering.summary.templateCount": {
+    "message": "Templates"
+  },
+  "logClustering.summary.unknownLogs": {
+    "message": "Uncategorized"
+  },
+  "logClustering.summary.inferenceTime": {
+    "message": "Inference Time"
+  },
+  "logClustering.keyTemplates": {
+    "message": "Key Templates"
+  },
+  "logClustering.unit.items": {
+    "message": " items"
+  },
+  "logClustering.noTemplates": {
+    "message": "No clustering templates yet"
+  },
+  "logClustering.tab.clusterResults": {
+    "message": "Cluster Results"
+  },
+  "logClustering.tab.unknownLogs": {
+    "message": "Uncategorized Logs"
+  },
+  "logClustering.search.placeholder": {
+    "message": "Search by template content or ID"
+  },
+  "logClustering.sort.byCount": {
+    "message": "By Count"
+  },
+  "logClustering.sort.byId": {
+    "message": "By ID"
+  },
+  "logClustering.hitRatio": {
+    "message": "Hit Ratio"
+  },
+  "logClustering.noSampleLogs": {
+    "message": "No sample logs available"
+  },
+  "logClustering.noMatchingTemplates": {
+    "message": "No matching template results found"
+  },
+  "logClustering.detail.templateContent": {
+    "message": "Template Content"
+  },
+  "logClustering.detail.hitRatio": {
+    "message": "Hit Ratio"
+  },
+  "logClustering.detail.indexCount": {
+    "message": "Index Count"
+  },
+  "textClassification.loading.inference": {
+    "message": "Model inference in progress..."
+  },
+  "textClassification.pagination.ariaLabel": {
+    "message": "Pagination"
+  },
+  "textClassification.pagination.pagePrefix": {
+    "message": "Page "
+  },
+  "textClassification.pagination.pageSuffix": {
+    "message": ""
+  },
+  "textClassification.pagination.totalPrefix": {
+    "message": "Total "
+  },
+  "textClassification.pagination.totalSuffix": {
+    "message": " items"
+  },
+  "textClassification.pagination.prevPage": {
+    "message": "Previous"
+  },
+  "textClassification.pagination.nextPage": {
+    "message": "Next"
+  },
+  "textClassification.normalize.serverHint": {
+    "message": "Server processing hint"
+  },
+  "textClassification.normalize.candidate": {
+    "message": "Candidate"
+  },
+  "textClassification.normalize.feature": {
+    "message": "Feature"
+  },
+  "textClassification.normalize.unclassified": {
+    "message": "Unclassified"
+  },
+  "textClassification.source.uploadFile": {
+    "message": "Upload Text File"
+  },
+  "textClassification.source.builtinSample": {
+    "message": "Built-in Text Sample"
+  },
+  "textClassification.metadata.modelName": {
+    "message": "Model Name"
+  },
+  "textClassification.metadata.modelVersion": {
+    "message": "Model Version"
+  },
+  "textClassification.metadata.requestId": {
+    "message": "Request ID"
+  },
+  "textClassification.metadata.inputCount": {
+    "message": "Input Count"
+  },
+  "textClassification.metadata.truncatedCount": {
+    "message": "Truncated Text"
+  },
+  "textClassification.error.sampleLoadFailed": {
+    "message": "Failed to load sample data"
+  },
+  "textClassification.error.sampleEmptyOrInvalid": {
+    "message": "Sample data file is empty or invalid"
+  },
+  "textClassification.filter.allLabels": {
+    "message": "All Labels"
+  },
+  "textClassification.upload.onlyTxt": {
+    "message": "Only .txt text files are supported"
+  },
+  "textClassification.upload.noValidText": {
+    "message": "No valid text found. Please check the file content"
+  },
+  "textClassification.upload.parseFailed": {
+    "message": "File parsing failed"
+  },
+  "textClassification.upload.parseFailedHint": {
+    "message": "File parsing failed. Please check the file format"
+  },
+  "textClassification.template.line1": {
+    "message": "Batch job failed at midnight, return code 137"
+  },
+  "textClassification.template.line2": {
+    "message": "Cache hit rate declining, API response time significantly increased"
+  },
+  "textClassification.template.line3": {
+    "message": "User reports CAPTCHA error on login page with no retry option"
+  },
+  "textClassification.template.line4": {
+    "message": "Inspection task completed successfully, all services healthy"
+  },
+  "textClassification.template.line5": {
+    "message": "Database replication lag exceeded threshold, alert triggered"
+  },
+  "textClassification.template.line6": {
+    "message": "Application release complete, canary traffic switch successful"
+  },
+  "textClassification.form.selectModel": {
+    "message": "Please select a model"
+  },
+  "textClassification.form.provideText": {
+    "message": "Please provide text for classification"
+  },
+  "textClassification.form.maxBatchPrefix": {
+    "message": "Maximum "
+  },
+  "textClassification.form.maxBatchSuffix": {
+    "message": " texts per batch. Please split and retry"
+  },
+  "textClassification.error.authExpired": {
+    "message": "Login expired. Please log in again"
+  },
+  "textClassification.error.inferenceFailed": {
+    "message": "Inference request failed"
+  },
+  "textClassification.error.networkFailed": {
+    "message": "Network request failed"
+  },
+  "textClassification.error.classifyFailed": {
+    "message": "Text classification failed. Please try again later"
+  },
+  "textClassification.error.inferenceFailedShort": {
+    "message": "Inference Failed"
+  },
+  "textClassification.action.reupload": {
+    "message": "Re-upload"
+  },
+  "textClassification.result.reset": {
+    "message": "Reset Results"
+  },
+  "textClassification.result.classifyDone": {
+    "message": "Classification Complete"
+  },
+  "textClassification.summary.totalTexts": {
+    "message": "Total Texts"
+  },
+  "timeSeriesPredict.csvFormatError": {
+    "message": "CSV format error: must contain timestamp and value columns"
+  },
+  "timeSeriesPredict.unknownDuration": {
+    "message": "Unknown duration"
+  },
+  "timeSeriesPredict.unitDays": {
+    "message": " days"
+  },
+  "timeSeriesPredict.unitHours": {
+    "message": " hours"
+  },
+  "timeSeriesPredict.unitMinutes": {
+    "message": " minutes"
+  },
+  "timeSeriesPredict.loading": {
+    "message": "Loading..."
+  },
+  "timeSeriesPredict.modelInferring": {
+    "message": "Model inference in progress..."
+  },
+  "timeSeriesPredict.historicalData": {
+    "message": "Historical Data"
+  },
+  "timeSeriesPredict.predictionData": {
+    "message": "Prediction Data"
+  },
+  "timeSeriesPredict.defaultFrequency": {
+    "message": "5 min"
+  },
+  "timeSeriesPredict.sampleDataLoadFailed": {
+    "message": "Failed to load sample data"
+  },
+  "timeSeriesPredict.sampleDataEmptyOrInvalid": {
+    "message": "Sample data file is empty or invalid"
+  },
+  "timeSeriesPredict.sampleDataLoadFailedLog": {
+    "message": "Failed to load sample data:"
+  },
+  "timeSeriesPredict.numericValue": {
+    "message": "Value"
+  },
+  "timeSeriesPredict.pleaseSelectModel": {
+    "message": "Please select a model"
+  },
+  "timeSeriesPredict.sampleDataNotReady": {
+    "message": "Sample data is still loading"
+  },
+  "timeSeriesPredict.pleaseUploadData": {
+    "message": "Please upload a data file first"
+  },
+  "timeSeriesPredict.loginExpired": {
+    "message": "Login expired. Please log in again"
+  },
+  "timeSeriesPredict.inferenceRequestFailed": {
+    "message": "Inference request failed"
+  },
+  "timeSeriesPredict.networkError": {
+    "message": "Network request failed"
+  },
+  "timeSeriesPredict.inferenceRequestFailedLog": {
+    "message": "Inference request failed:"
+  },
+  "timeSeriesPredict.inferenceFailed": {
+    "message": "Inference Failed"
+  },
+  "timeSeriesPredict.noValidDataParsed": {
+    "message": "No valid data found. Please check the file format"
+  },
+  "timeSeriesPredict.fileParseFailedLog": {
+    "message": "File parsing failed:"
+  },
+  "timeSeriesPredict.fileParseFailed": {
+    "message": "File parsing failed. Please check the file format"
+  },
+  "timeSeriesPredict.templateNote": {
+    "message": "Note"
+  },
+  "timeSeriesPredict.templateTimestampDesc": {
+    "message": "Unix timestamp in seconds (e.g., 1704067200 = 2024-01-01 08:00:00)"
+  },
+  "timeSeriesPredict.templateValueDesc": {
+    "message": "Numeric metric"
+  },
+  "timeSeriesPredict.serverCpuMonitorData": {
+    "message": "Server CPU usage monitoring data"
+  },
+  "timeSeriesPredict.reUpload": {
+    "message": "Re-upload"
+  },
+  "timeSeriesPredict.resetResult": {
+    "message": "Reset Results"
+  },
+  "timeSeriesPredict.predictionComplete": {
+    "message": "Prediction Complete"
+  },
+  "timeSeriesPredict.inputDataPoints": {
+    "message": "Input Data Points"
+  },
+  "timeSeriesPredict.predictionTime": {
+    "message": "Prediction Time"
+  },
+  "timeSeriesPredict.predictionFrequency": {
+    "message": "Prediction Frequency"
+  },
+  "timeSeriesPredict.inferenceTime": {
+    "message": "Inference Time"
+  },
+  "timeSeriesPredict.dataSource": {
+    "message": "Data Source"
+  },
+  "timeSeriesPredict.sampleData": {
+    "message": "Sample Data"
+  },
+  "timeSeriesPredict.uploadFile": {
+    "message": "Upload File"
+  },
+  "timeSeriesPredict.fileSelected": {
+    "message": "Selected"
+  },
+  "timeSeriesPredict.clickOrDragToUpload": {
+    "message": "Click or drag to upload file"
+  },
+  "timeSeriesPredict.supportedFormats": {
+    "message": "Supports CSV, JSON formats. Timestamps can be Unix integers or date strings"
+  },
+  "timeSeriesPredict.downloadTemplate": {
+    "message": "Download Template"
+  },
+  "timeSeriesPredict.predictionTimeLabel": {
+    "message": "Prediction Time"
+  },
+  "timeSeriesPredict.sliderHintPrefix": {
+    "message": "Drag the slider to adjust prediction duration. Each data point is approximately "
+  },
+  "timeSeriesPredict.sliderHintSuffix": {
+    "message": "."
+  },
+  "anomalyDetection.unknownDuration": {
+    "message": "Unknown duration"
+  },
+  "anomalyDetection.durationDays": {
+    "message": "{days} days"
+  },
+  "anomalyDetection.durationHours": {
+    "message": "{hours} hours"
+  },
+  "anomalyDetection.durationHoursMinutes": {
+    "message": "{hours}h {minutes}m"
+  },
+  "anomalyDetection.durationHoursOnly": {
+    "message": "{hours} hours"
+  },
+  "anomalyDetection.durationMinutes": {
+    "message": "{minutes} minutes"
+  },
+  "anomalyDetection.loading": {
+    "message": "Loading..."
+  },
+  "anomalyDetection.csvFormatError": {
+    "message": "CSV format error: must contain timestamp and value columns"
+  },
+  "anomalyDetection.modelInference": {
+    "message": "Model inference in progress..."
+  },
+  "anomalyDetection.timeSeriesData": {
+    "message": "Time Series Data"
+  },
+  "anomalyDetection.anomalyPoints": {
+    "message": "Anomaly Points"
+  },
+  "anomalyDetection.anomalyProbability": {
+    "message": "Anomaly Probability"
+  },
+  "anomalyDetection.anomalyDetected": {
+    "message": "Anomaly Detected"
+  },
+  "anomalyDetection.sampleDataLoadFailed": {
+    "message": "Failed to load sample data: {status}"
+  },
+  "anomalyDetection.sampleDataEmptyOrInvalid": {
+    "message": "Sample data file is empty or invalid"
+  },
+  "anomalyDetection.sampleDataLoadError": {
+    "message": "Failed to load sample data:"
+  },
+  "anomalyDetection.sampleDataLoadFailedWithError": {
+    "message": "Failed to load sample data: {error}"
+  },
+  "anomalyDetection.previewLabelValue": {
+    "message": "Value"
+  },
+  "anomalyDetection.pleaseSelectModel": {
+    "message": "Please select a model"
+  },
+  "anomalyDetection.sampleDataNotReady": {
+    "message": "Sample data is still loading"
+  },
+  "anomalyDetection.pleaseUploadFirst": {
+    "message": "Please upload a data file first"
+  },
+  "anomalyDetection.loginExpired": {
+    "message": "Login expired. Please log in again"
+  },
+  "anomalyDetection.inferenceRequestFailed": {
+    "message": "Inference request failed: {status}"
+  },
+  "anomalyDetection.networkRequestFailed": {
+    "message": "Network request failed"
+  },
+  "anomalyDetection.inferenceError": {
+    "message": "Inference request failed:"
+  },
+  "anomalyDetection.inferenceFailed": {
+    "message": "Inference failed: {error}"
+  },
+  "anomalyDetection.noValidDataParsed": {
+    "message": "No valid data found. Please check the file format"
+  },
+  "anomalyDetection.fileParseError": {
+    "message": "File parsing failed:"
+  },
+  "anomalyDetection.fileParseFailed": {
+    "message": "File parsing failed. Please check the file format"
+  },
+  "anomalyDetection.templateNote": {
+    "message": "Note:"
+  },
+  "anomalyDetection.templateTimestampDesc": {
+    "message": "Unix timestamp in seconds (e.g., 1704067200 = 2024-01-01 08:00:00)"
+  },
+  "anomalyDetection.templateValueDesc": {
+    "message": "Numeric metric"
+  },
+  "anomalyDetection.serverCpuMonitorData": {
+    "message": "Server CPU usage monitoring data"
+  },
+  "anomalyDetection.reUpload": {
+    "message": "Re-upload"
+  },
+  "anomalyDetection.resetResult": {
+    "message": "Reset Results"
+  },
+  "anomalyDetection.detectionComplete": {
+    "message": "Detection Complete"
+  },
+  "anomalyDetection.totalDataPoints": {
+    "message": "Total Data Points"
+  },
+  "anomalyDetection.anomaliesDetected": {
+    "message": "Anomalies Detected"
+  },
+  "anomalyDetection.anomalyRatio": {
+    "message": "Anomaly Ratio"
+  },
+  "anomalyDetection.inferenceTime": {
+    "message": "Inference Time"
+  },
+  "anomalyDetection.dataSource": {
+    "message": "Data Source"
+  },
+  "anomalyDetection.sampleData": {
+    "message": "Sample Data"
+  },
+  "anomalyDetection.uploadFile": {
+    "message": "Upload File"
+  },
+  "anomalyDetection.fileSelected": {
+    "message": "Selected: {fileName}"
+  },
+  "anomalyDetection.clickOrDragUpload": {
+    "message": "Click or drag to upload file"
+  },
+  "anomalyDetection.supportedFormats": {
+    "message": "Supports CSV, JSON formats. Timestamps can be Unix integers or date strings"
+  },
+  "anomalyDetection.downloadTemplate": {
+    "message": "Download Template"
+  }
+}

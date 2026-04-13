@@ -1,26 +1,29 @@
 import React, { useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import IconExternalLink from '@theme/Icon/ExternalLink';
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import Translate, {translate} from '@docusaurus/Translate';
 
 import styles from './styles.module.css';
 
 function QRCodeModal({ onClose }) {
+  const qrCodeSrc = useBaseUrl('/img/community-qrcode.png');
   return createPortal(
     <div className={styles.qrModal} onClick={onClose}>
       <div className={styles.qrModalContent} onClick={(e) => e.stopPropagation()}>
         <button type="button" className={styles.closeButton} onClick={onClose}>
           ×
         </button>
-        <h3 className={styles.qrTitle}>扫码加入社区</h3>
+        <h3 className={styles.qrTitle}><Translate id="community.qr.title">扫码加入社区</Translate></h3>
         <div className={styles.qrImageContainer}>
           <img
-            src="/img/community-qrcode.png"
-            alt="社区二维码"
+            src={qrCodeSrc}
+            alt={translate({id: 'community.qr.alt', message: '社区二维码'})}
             className={styles.qrImage}
           />
         </div>
         <p className={styles.qrDescription}>
-          扫描二维码加入 BlueKing Lite 开源社区，与开发者们一起交流讨论
+          <Translate id="community.qr.description">扫描二维码加入 BlueKing Lite 开源社区，与开发者们一起交流讨论</Translate>
         </p>
       </div>
     </div>,
@@ -31,6 +34,7 @@ function QRCodeModal({ onClose }) {
 export default function JoinCommunityNavbarButton({ label = '🌍 加入社区' }) {
   const [showQRCode, setShowQRCode] = useState(false);
   const buttonLabel = useMemo(() => label.replace(/^🌍\s*/, ''), [label]);
+  const communityUrl = useBaseUrl('/community');
 
   const handleOpen = (e) => {
     e.preventDefault();
@@ -44,7 +48,7 @@ export default function JoinCommunityNavbarButton({ label = '🌍 加入社区' 
   return (
     <>
       <a
-        href="/community"
+        href={communityUrl}
         className={styles.navbarCommunityButton}
         onClick={handleOpen}
       >

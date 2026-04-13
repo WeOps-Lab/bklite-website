@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Layout from '@theme/Layout';
+import Translate, {translate} from '@docusaurus/Translate';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
@@ -18,17 +19,17 @@ function HomepageHeader() {
   // 版本配置
   const versions = {
     basic: {
-      name: '基础版',
+      name: translate({id: 'hero.version.basic.name', message: '基础版'}),
       command: 'curl -sSL https://bklite.ai/install.run | bash -',
-      description: '核心功能，极简部署',
+      description: translate({id: 'hero.version.basic.desc', message: '核心功能，极简部署'}),
       icon: '⚡',
       color: '#6b7280',
       gradient: 'linear-gradient(135deg, #6b7280, #9ca3af)'
     },
     ai: {
-      name: '智能版',
+      name: translate({id: 'hero.version.ai.name', message: '智能版'}),
       command: 'curl -sSL https://bklite.ai/install.run | bash -s - --opspilot --vllm',
-      description: 'AI驱动，智能运维',
+      description: translate({id: 'hero.version.ai.desc', message: 'AI驱动，智能运维'}),
       icon: '✨',
       color: '#3b82f6',
       gradient: 'linear-gradient(135deg, #3b82f6, #8b5cf6)'
@@ -206,17 +207,17 @@ function HomepageHeader() {
             BlueKing Lite
           </motion.div>
           <motion.p className={styles.heroSubtitle} variants={itemVariants}>
-            全栈能力，轻量落地
+            <Translate id="hero.subtitle">全栈能力，轻量落地</Translate>
           </motion.p>
           <motion.div className={styles.heroStats} variants={statsVariants}>
             <motion.div className={styles.statCard} variants={statItemVariants}>
-              <div className={styles.statValue}>AI原生</div>
+              <div className={styles.statValue}><Translate id="hero.stat.ai">AI原生</Translate></div>
             </motion.div>
             <motion.div className={styles.statCard} variants={statItemVariants}>
-              <div className={styles.statValue}>极简部署</div>
+              <div className={styles.statValue}><Translate id="hero.stat.deploy">极简部署</Translate></div>
             </motion.div>
             <motion.div className={styles.statCard} variants={statItemVariants}>
-              <div className={styles.statValue}>按需启用</div>
+              <div className={styles.statValue}><Translate id="hero.stat.ondemand">按需启用</Translate></div>
             </motion.div>
           </motion.div>
           <motion.div className={styles.quickInstall} variants={itemVariants}>
@@ -246,7 +247,7 @@ function HomepageHeader() {
                 <button
                   className={`${styles.copyButton} ${copyState === 'success' ? styles.copied : ''}`}
                   onClick={handleCopy}
-                  title="复制脚本"
+                  title={translate({id: 'hero.copy.title', message: '复制脚本'})}
                   style={getCopyButtonStyle()}
                 >
                   <span className={styles.copyIcon}>
@@ -308,7 +309,7 @@ export default function Home() {
 
   return (
     <Layout
-      title={`${siteConfig.title} - 轻量级运维平台`}
+      title={`${siteConfig.title} - ${translate({id: 'homepage.title', message: '轻量级运维平台'})}`}
       description="">
       <LiquidNavbar />
       <HomepageHeader />

@@ -126,6 +126,10 @@ const config = {
             "to": "/pricing"
           },
           {
+            type: 'localeDropdown',
+            position: 'right',
+          },
+          {
             type: 'custom-icon-link',
             href: 'https://github.com/TencentBlueKing/bk-lite',
             label: 'GitHub',

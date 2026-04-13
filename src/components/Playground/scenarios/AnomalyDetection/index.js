@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import {translate} from '@docusaurus/Translate';
 
 import * as echarts from 'echarts';
 import clsx from 'clsx';
@@ -80,30 +81,30 @@ function detectSeriesFrequencySeconds(series) {
 }
 
 function formatDurationLabel(totalSeconds) {
-  if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return '未知时长';
+  if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return translate({id: 'anomalyDetection.unknownDuration', message: '未知时长'});
 
   if (totalSeconds % 86400 === 0) {
     const days = totalSeconds / 86400;
-    return `${days}天`;
+    return translate({id: 'anomalyDetection.durationDays', message: '{days}天'}, {days});
   }
 
   if (totalSeconds % 3600 === 0) {
     const hours = totalSeconds / 3600;
-    return `${hours}小时`;
+    return translate({id: 'anomalyDetection.durationHours', message: '{hours}小时'}, {hours});
   }
 
   if (totalSeconds >= 3600) {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.round((totalSeconds % 3600) / 60);
-    return minutes ? `${hours}小时${minutes}分钟` : `${hours}小时`;
+    return minutes ? translate({id: 'anomalyDetection.durationHoursMinutes', message: '{hours}小时{minutes}分钟'}, {hours, minutes}) : translate({id: 'anomalyDetection.durationHoursOnly', message: '{hours}小时'}, {hours});
   }
 
   const minutes = Math.max(1, Math.round(totalSeconds / 60));
-  return `${minutes}分钟`;
+  return translate({id: 'anomalyDetection.durationMinutes', message: '{minutes}分钟'}, {minutes});
 }
 
 function getSampleMetaText(series) {
-  if (!Array.isArray(series) || series.length === 0) return '加载中...';
+  if (!Array.isArray(series) || series.length === 0) return translate({id: 'anomalyDetection.loading', message: '加载中...'});
 
   const frequencySeconds = detectSeriesFrequencySeconds(series) || 5 * 60;
   const spanSeconds = series.length > 1 ? series[series.length - 1].time - series[0].time : frequencySeconds;
@@ -131,7 +132,7 @@ function parseCsvSeries(text) {
   const valIdx = header?.findIndex(h => ['value', 'val'].includes(h));
 
   if (tsIdx === -1 || valIdx === -1) {
-    throw new Error('CSV 格式错误：需要包含 timestamp 和 value 列');
+    throw new Error(translate({id: 'anomalyDetection.csvFormatError', message: 'CSV 格式错误：需要包含 timestamp 和 value 列'}));
   }
 
   const parsed = [];
@@ -164,7 +165,7 @@ function LoadingOverlay() {
     <div className={styles.loadingOverlay}>
       <div className={styles.loadingOverlayContent}>
         <div className={styles.loadingSpinner}></div>
-        <span>模型推理中...</span>
+        <span>{translate({id: 'anomalyDetection.modelInference', message: '模型推理中...'})}</span>
       </div>
     </div>
   );
@@ -272,7 +273,7 @@ function buildAnomalyChartOption({
     ],
     grid: { top: 48, right: 24, bottom: 40, left: 56 },
     legend: {
-      data: ['时序数据', '异常点'],
+      data: [translate({id: 'anomalyDetection.timeSeriesData', message: '时序数据'}), translate({id: 'anomalyDetection.anomalyPoints', message: '异常点'})],
       top: 8,
       textStyle: { fontSize: 12, color: chartColors.text }
     },
@@ -301,7 +302,7 @@ function buildAnomalyChartOption({
     },
     series: [
       {
-        name: '时序数据',
+        name: translate({id: 'anomalyDetection.timeSeriesData', message: '时序数据'}),
         data: values,
         type: 'line',
         smooth: true,
@@ -328,7 +329,7 @@ function buildAnomalyChartOption({
         }
       },
       {
-        name: '异常点',
+        name: translate({id: 'anomalyDetection.anomalyPoints', message: '异常点'}),
         type: 'scatter',
         data: [],
         itemStyle: { color: chartColors.danger }
@@ -347,8 +348,8 @@ function buildAnomalyChartOption({
         const datum = anomalyData[idx];
         const valueText = showPercentAxis ? `${point.value.toFixed(1)}%` : point.value.toFixed(1);
         let html = `<strong>${formatTimestamp(Number(point.axisValue), spanSeconds, effectiveFrequencySeconds, 'tooltip')}</strong><br/>${previewLabel}: ${valueText}`;
-        if (datum?.anomalyProbability != null) html += `<br/>异常概率: ${(datum.anomalyProbability * 100).toFixed(2)}%`;
-        if (datum?.isAnomaly) html += `<br/><span style="color:#EF4444;font-weight:600">⚠ 检测到异常</span>`;
+        if (datum?.anomalyProbability != null) html += `<br/>${translate({id: 'anomalyDetection.anomalyProbability', message: '异常概率'})}: ${(datum.anomalyProbability * 100).toFixed(2)}%`;
+        if (datum?.isAnomaly) html += `<br/><span style="color:#EF4444;font-weight:600">⚠ ${translate({id: 'anomalyDetection.anomalyDetected', message: '检测到异常'})}</span>`;
         return html;
       }
     }
@@ -406,13 +407,13 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
       try {
         const response = await fetch(defaultSampleDataUrl);
         if (!response.ok) {
-          throw new Error(`示例数据加载失败: ${response.status}`);
+          throw new Error(translate({id: 'anomalyDetection.sampleDataLoadFailed', message: '示例数据加载失败: {status}'}, {status: response.status}));
         }
 
         const text = await response.text();
         const data = parseCsvSeries(text);
         if (!data.length) {
-          throw new Error('示例数据文件为空或格式错误');
+          throw new Error(translate({id: 'anomalyDetection.sampleDataEmptyOrInvalid', message: '示例数据文件为空或格式错误'}));
         }
 
         if (cancelled) {
@@ -422,10 +423,10 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
         setFormError('');
         setSampleData(data);
       } catch (err) {
-        console.error('示例数据加载失败:', err);
+        console.error(translate({id: 'anomalyDetection.sampleDataLoadError', message: '示例数据加载失败:'}), err);
         if (!cancelled) {
           setSampleData(null);
-          setFormError(`示例数据加载失败: ${err.message}`);
+          setFormError(translate({id: 'anomalyDetection.sampleDataLoadFailedWithError', message: '示例数据加载失败: {error}'}, {error: err.message}));
         }
       }
     };
@@ -485,7 +486,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
       sourceSeries: uploadData,
       resultData,
       fallbackFrequencySeconds: detectSeriesFrequencySeconds(uploadData) || detectedFrequencySeconds || 5 * 60,
-      previewLabel: '数值',
+      previewLabel: translate({id: 'anomalyDetection.previewLabelValue', message: '数值'}),
     }));
 
     const handleResize = () => chart.resize();
@@ -501,15 +502,15 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
 
   const handleRunInference = async () => {
     if (!selectedModel) {
-      setFormError('请选择一个模型');
+      setFormError(translate({id: 'anomalyDetection.pleaseSelectModel', message: '请选择一个模型'}));
       return;
     }
     if (dataSource === 'sample' && !sampleData?.length) {
-      setFormError('示例数据尚未加载完成');
+      setFormError(translate({id: 'anomalyDetection.sampleDataNotReady', message: '示例数据尚未加载完成'}));
       return;
     }
     if (dataSource === 'upload' && !uploadData) {
-      setUploadError('请先上传数据文件');
+      setUploadError(translate({id: 'anomalyDetection.pleaseUploadFirst', message: '请先上传数据文件'}));
       return;
     }
 
@@ -536,14 +537,14 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
         return;
       }
       if (result.reason === 'auth-expired') {
-        setFormError('登录已过期，请重新登录后重试');
+        setFormError(translate({id: 'anomalyDetection.loginExpired', message: '登录已过期，请重新登录后重试'}));
         return;
       }
       if (result.reason === 'http-error') {
-        throw new Error(`推理请求失败: ${result.status}`);
+        throw new Error(translate({id: 'anomalyDetection.inferenceRequestFailed', message: '推理请求失败: {status}'}, {status: result.status}));
       }
       if (result.reason === 'network-error') {
-        throw result.error || new Error('网络请求失败');
+        throw result.error || new Error(translate({id: 'anomalyDetection.networkRequestFailed', message: '网络请求失败'}));
       }
 
       const json = await result.response.json();
@@ -561,8 +562,8 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
       });
       setInferenceTime(json.data?.metadata?.execution_time_ms ?? null);
     } catch (err) {
-      console.error('推理请求失败:', err);
-      setFormError(`推理失败: ${err.message}`);
+      console.error(translate({id: 'anomalyDetection.inferenceError', message: '推理请求失败:'}), err);
+      setFormError(translate({id: 'anomalyDetection.inferenceFailed', message: '推理失败: {error}'}, {error: err.message}));
     } finally {
       setLoading(false);
     }
@@ -597,13 +598,13 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
         }
 
         if (parsed.length === 0) {
-          setUploadError('未解析到有效数据，请检查文件格式');
+          setUploadError(translate({id: 'anomalyDetection.noValidDataParsed', message: '未解析到有效数据，请检查文件格式'}));
           return;
         }
         setUploadData(parsed);
       } catch (err) {
-        console.error('文件解析失败:', err);
-        setUploadError('文件解析失败，请检查文件格式');
+        console.error(translate({id: 'anomalyDetection.fileParseError', message: '文件解析失败:'}), err);
+        setUploadError(translate({id: 'anomalyDetection.fileParseFailed', message: '文件解析失败，请检查文件格式'}));
       }
     };
     reader.readAsText(file);
@@ -620,9 +621,9 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
       '1704067800,42.1',
       '1704068100,50.5',
       '1704068400,48.3',
-      '# 说明:',
-      '# timestamp: Unix 秒级整数时间戳 (如 1704067200 表示 2024-01-01 08:00:00)',
-      '# value: 数值型指标'
+      '# ' + translate({id: 'anomalyDetection.templateNote', message: '说明:'}),
+      '# timestamp: ' + translate({id: 'anomalyDetection.templateTimestampDesc', message: 'Unix 秒级整数时间戳 (如 1704067200 表示 2024-01-01 08:00:00)'}),
+      '# value: ' + translate({id: 'anomalyDetection.templateValueDesc', message: '数值型指标'})
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -640,21 +641,21 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
           <FiTrendingUp />
         </span>
         <span className={styles.resultHeaderTitle}>
-          {dataSource === 'upload' ? uploadFileName : '服务器 CPU 使用率监控数据'}
+          {dataSource === 'upload' ? uploadFileName : translate({id: 'anomalyDetection.serverCpuMonitorData', message: '服务器 CPU 使用率监控数据'})}
         </span>
       </div>
       <div className={styles.resultHeaderActions}>
         {dataSource === 'upload' && uploadData && (
           <button type="button" className={clsx(styles.resultAction, styles.resultActionSubtle)} onClick={handleReplaceUpload}>
-            重新上传
+            {translate({id: 'anomalyDetection.reUpload', message: '重新上传'})}
           </button>
         )}
         <button type="button" className={styles.resultAction} onClick={handleResetResult}>
-          重置结果
+          {translate({id: 'anomalyDetection.resetResult', message: '重置结果'})}
         </button>
         <span className={styles.resultStatus}>
           <FiCheck />
-          检测完成
+          {translate({id: 'anomalyDetection.detectionComplete', message: '检测完成'})}
         </span>
       </div>
     </div>
@@ -663,25 +664,25 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
   const renderSummary = () => (
     <div className={styles.resultSummary}>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>数据点总数</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'anomalyDetection.totalDataPoints', message: '数据点总数'})}</span>
         <span className={styles.resultStatValue}>
           {resultData?.data?.length || 0}
         </span>
       </div>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>检测到异常</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'anomalyDetection.anomaliesDetected', message: '检测到异常'})}</span>
         <span className={clsx(styles.resultStatValue, styles.resultStatValueAnomaly)}>
           {resultData?.data?.filter(d => d.isAnomaly).length || 0}
         </span>
       </div>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>异常占比</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'anomalyDetection.anomalyRatio', message: '异常占比'})}</span>
         <span className={styles.resultStatValue}>
           {resultData?.data?.length ? `${(resultData.data.filter(d => d.isAnomaly).length / resultData.data.length * 100).toFixed(2)}%` : '0%'}
         </span>
       </div>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>推理耗时</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'anomalyDetection.inferenceTime', message: '推理耗时'})}</span>
         <span className={styles.resultStatValue}>{inferenceTime != null ? (inferenceTime / 1000).toFixed(2) + 's' : '-'}</span>
       </div>
     </div>
@@ -692,7 +693,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
   return (
     <div className={styles.scenarioContent}>
       <div className={styles.formGroup}>
-        <div className={styles.formLabel}>数据源</div>
+        <div className={styles.formLabel}>{translate({id: 'anomalyDetection.dataSource', message: '数据源'})}</div>
         <div className={styles.dataSourceTabs}>
           <button
             type="button"
@@ -705,7 +706,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
               setUploadError('');
             }}
           >
-            示例数据
+            {translate({id: 'anomalyDetection.sampleData', message: '示例数据'})}
           </button>
           <button
             type="button"
@@ -715,7 +716,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
               setDataSource('upload');
             }}
           >
-            上传文件
+            {translate({id: 'anomalyDetection.uploadFile', message: '上传文件'})}
           </button>
         </div>
 
@@ -736,7 +737,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
                 <div className={styles.sampleDataHeader}>
                   <span className={styles.sampleDataTitle}>
                     <FiActivity />
-                    服务器 CPU 使用率监控数据
+                    {translate({id: 'anomalyDetection.serverCpuMonitorData', message: '服务器 CPU 使用率监控数据'})}
                   </span>
                   <span className={styles.sampleDataInfo}>{getSampleMetaText(sampleData)}</span>
                 </div>
@@ -760,13 +761,13 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
                   <FiUploadCloud />
                 </div>
                 <p className={styles.uploadAreaText}>
-                  {uploadFileName ? `已选择: ${uploadFileName}` : '点击或拖拽上传文件'}
+                  {uploadFileName ? translate({id: 'anomalyDetection.fileSelected', message: '已选择: {fileName}'}, {fileName: uploadFileName}) : translate({id: 'anomalyDetection.clickOrDragUpload', message: '点击或拖拽上传文件'})}
                 </p>
-                <p className={styles.uploadAreaHint}>支持 CSV, JSON 格式，时间戳支持 Unix 整数或日期字符串</p>
+                <p className={styles.uploadAreaHint}>{translate({id: 'anomalyDetection.supportedFormats', message: '支持 CSV, JSON 格式，时间戳支持 Unix 整数或日期字符串'})}</p>
               </button>
               <button type="button" className={styles.templateDownload} onClick={handleDownloadTemplate}>
                 <FiDownload />
-                下载数据模板
+                {translate({id: 'anomalyDetection.downloadTemplate', message: '下载数据模板'})}
               </button>
             </div>
             {uploadError && (
@@ -792,7 +793,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
                     className={styles.uploadReplaceTop}
                     onClick={handleReplaceUpload}
                   >
-                    重新上传
+                    {translate({id: 'anomalyDetection.reUpload', message: '重新上传'})}
                   </button>
                 </div>
               )}

@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 
 import Layout from '@theme/Layout';
+import Translate, {translate} from '@docusaurus/Translate';
 
 import MLOpsTab from '@site/src/components/Playground/MLOpsTab';
 import OpsPilotTab from '@site/src/components/Playground/OpsPilotTab';
@@ -32,19 +33,19 @@ export default function DemoPage() {
 
       setCallbackErrorMessage(
         isValid
-          ? '登录未完成，请重新登录后重试。'
-          : '登录验证失败，请重新登录后重试。'
+          ? translate({id: 'playground.error.loginIncomplete', message: '登录未完成，请重新登录后重试。'})
+          : translate({id: 'playground.error.loginFailed', message: '登录验证失败，请重新登录后重试。'})
       );
     }
   }, []);
 
   return (
-    <Layout title="AI体验">
+    <Layout title={translate({id: 'playground.page.title', message: 'AI体验'})}>
       <div className={styles.demoPage}>
         {callbackErrorMessage && (
           <div className={styles.callbackErrorBanner} role="alert">
             <div className={styles.callbackErrorContent}>
-              <strong>登录未完成</strong>
+              <strong><Translate id="playground.error.title">登录未完成</Translate></strong>
               <span>{callbackErrorMessage}</span>
             </div>
             <button
@@ -52,7 +53,7 @@ export default function DemoPage() {
               className={styles.callbackErrorAction}
               onClick={() => redirectToLogin(loginBaseUrl)}
             >
-              重新登录
+              <Translate id="playground.button.relogin">重新登录</Translate>
             </button>
           </div>
         )}

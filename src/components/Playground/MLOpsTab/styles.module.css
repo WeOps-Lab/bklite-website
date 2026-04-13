@@ -566,6 +566,9 @@
 
   .inferenceHeader {
       padding: 18px 16px 16px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
   }
 
   .inferenceHeaderLeft h2 {
@@ -584,6 +587,12 @@
 
   .scenarioItemCount {
       display: none;
+  }
+
+  .sidebar {
+      border-radius: 0;
+      border-left: none;
+      border-right: none;
   }
 
   .lockedContentActive {

@@ -1,4 +1,5 @@
 import React from 'react';
+import Translate, {translate} from '@docusaurus/Translate';
 
 import { FiClock } from 'react-icons/fi';
 
@@ -12,8 +13,8 @@ export default function ComingSoon({ scenarioConfig }) {
       <div className={styles.iconWrapper}>
         <Icon />
       </div>
-      <h3 className={styles.title}>{scenarioConfig?.name || '新场景'}</h3>
-      <p className={styles.description}>该场景正在开发中，敬请期待</p>
+      <h3 className={styles.title}>{scenarioConfig?.name || translate({id: 'comingSoon.defaultName', message: '新场景'})}</h3>
+      <p className={styles.description}><Translate id="playground.comingSoon.desc">该场景正在开发中，敬请期待</Translate></p>
       <div className={styles.badge}>
         <FiClock />
         <span>Coming Soon</span>

@@ -12,6 +12,7 @@ import {
   FiType,
   FiUploadCloud,
 } from 'react-icons/fi';
+import {translate} from '@docusaurus/Translate';
 
 import { authFetch } from '@site/src/lib/playgroundAuth';
 
@@ -73,7 +74,7 @@ function LoadingOverlay() {
     <div className={styles.loadingOverlay}>
       <div className={styles.loadingOverlayContent}>
         <div className={styles.loadingSpinner}></div>
-        <span>模型推理中...</span>
+        <span>{translate({id: 'textClassification.loading.inference', message: '模型推理中...'})}</span>
       </div>
     </div>
   );
@@ -84,11 +85,11 @@ function PaginationControls({ currentPage, totalCount, pageSize, onPageChange })
   const paginationItems = getPaginationItems(currentPage, totalPages);
 
   return (
-    <nav className={styles.paginationBar} aria-label="分页导航">
+    <nav className={styles.paginationBar} aria-label={translate({id: 'textClassification.pagination.ariaLabel', message: '分页导航'})}>
       <span className={styles.paginationInfo}>
-        第&nbsp;<strong>{currentPage}</strong><em>/</em><strong>{totalPages}</strong>&nbsp;页
+        {translate({id: 'textClassification.pagination.pagePrefix', message: '第'})}&nbsp;<strong>{currentPage}</strong><em>/</em><strong>{totalPages}</strong>&nbsp;{translate({id: 'textClassification.pagination.pageSuffix', message: '页'})}
         <em>·</em>
-        共&nbsp;<strong>{totalCount}</strong>&nbsp;项
+        {translate({id: 'textClassification.pagination.totalPrefix', message: '共'})}&nbsp;<strong>{totalCount}</strong>&nbsp;{translate({id: 'textClassification.pagination.totalSuffix', message: '项'})}
       </span>
       <div className={styles.paginationControls}>
         <button
@@ -96,8 +97,8 @@ function PaginationControls({ currentPage, totalCount, pageSize, onPageChange })
           className={clsx(styles.paginationButton, styles.paginationNavButton)}
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
-          aria-label="上一页"
-          title="上一页"
+          aria-label={translate({id: 'textClassification.pagination.prevPage', message: '上一页'})}
+          title={translate({id: 'textClassification.pagination.prevPage', message: '上一页'})}
         >
           <FiChevronLeft aria-hidden="true" />
         </button>
@@ -119,7 +120,7 @@ function PaginationControls({ currentPage, totalCount, pageSize, onPageChange })
                 onClick={() => onPageChange(item.page)}
                 disabled={item.page === currentPage}
                 aria-current={item.page === currentPage ? 'page' : undefined}
-                aria-label={`第 ${item.page} 页`}
+                aria-label={`${translate({id: 'textClassification.pagination.pagePrefix', message: '第'})} ${item.page} ${translate({id: 'textClassification.pagination.pageSuffix', message: '页'})}`}
               >
                 {item.page}
               </button>
@@ -131,8 +132,8 @@ function PaginationControls({ currentPage, totalCount, pageSize, onPageChange })
           className={clsx(styles.paginationButton, styles.paginationNavButton)}
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
-          aria-label="下一页"
-          title="下一页"
+          aria-label={translate({id: 'textClassification.pagination.nextPage', message: '下一页'})}
+          title={translate({id: 'textClassification.pagination.nextPage', message: '下一页'})}
         >
           <FiChevronRight aria-hidden="true" />
         </button>
@@ -154,18 +155,18 @@ function normalizeWarningItem(warning) {
   if (warning && typeof warning === 'object') {
     return {
       ...warning,
-      message: warning.message || warning.reason || warning.code || '服务端返回处理提示',
+      message: warning.message || warning.reason || warning.code || translate({id: 'textClassification.normalize.serverHint', message: '服务端返回处理提示'}),
     };
   }
 
-  return { message: '服务端返回处理提示' };
+  return { message: translate({id: 'textClassification.normalize.serverHint', message: '服务端返回处理提示'}) };
 }
 
 function normalizePredictionItem(prediction, index) {
   if (!prediction || typeof prediction !== 'object') {
     return {
       rank: index + 1,
-      label: `候选 ${index + 1}`,
+      label: `${translate({id: 'textClassification.normalize.candidate', message: '候选'})} ${index + 1}`,
       probability: null,
     };
   }
@@ -175,7 +176,7 @@ function normalizePredictionItem(prediction, index) {
   return {
     ...prediction,
     rank: Number.isFinite(Number(prediction.rank)) ? Number(prediction.rank) : index + 1,
-    label: prediction.label || prediction.prediction || prediction.class_name || `候选 ${index + 1}`,
+    label: prediction.label || prediction.prediction || prediction.class_name || `${translate({id: 'textClassification.normalize.candidate', message: '候选'})} ${index + 1}`,
     probability: Number.isFinite(probability) ? probability : null,
   };
 }
@@ -188,14 +189,14 @@ function normalizeFeatureItem(feature, index) {
   if (feature && typeof feature === 'object') {
     return {
       ...feature,
-      feature: feature.feature || feature.token || feature.term || `特征 ${index + 1}`,
+      feature: feature.feature || feature.token || feature.term || `${translate({id: 'textClassification.normalize.feature', message: '特征'})} ${index + 1}`,
       score: Number.isFinite(Number(feature.score)) ? Number(feature.score) : null,
       rank: Number.isFinite(Number(feature.rank)) ? Number(feature.rank) : index + 1,
     };
   }
 
   return {
-    feature: `特征 ${index + 1}`,
+    feature: `${translate({id: 'textClassification.normalize.feature', message: '特征'})} ${index + 1}`,
     score: null,
     rank: index + 1,
   };
@@ -203,7 +204,7 @@ function normalizeFeatureItem(feature, index) {
 
 function buildDistribution(results) {
   return results.reduce((acc, item) => {
-    const label = item.prediction || '未分类';
+    const label = item.prediction || translate({id: 'textClassification.normalize.unclassified', message: '未分类'});
     acc[label] = (acc[label] || 0) + 1;
     return acc;
   }, {});
@@ -242,7 +243,7 @@ function normalizeResponse(json) {
       ...normalizedItem,
       index: Number.isFinite(Number(normalizedItem.index)) ? Number(normalizedItem.index) : index,
       text_snippet: snippet,
-      prediction: normalizedItem.prediction || normalizedItem.label || normalizedItem.class_name || '未分类',
+      prediction: normalizedItem.prediction || normalizedItem.label || normalizedItem.class_name || translate({id: 'textClassification.normalize.unclassified', message: '未分类'}),
       probability: Number.isFinite(probability) ? probability : null,
       text_length: Number.isFinite(Number(normalizedItem.text_length))
         ? Number(normalizedItem.text_length)
@@ -304,10 +305,10 @@ function formatProbability(value) {
 
 function getTextSourceLabel(dataSource, uploadFileName) {
   if (dataSource === 'upload') {
-    return uploadFileName || '上传文本文件';
+    return uploadFileName || translate({id: 'textClassification.source.uploadFile', message: '上传文本文件'});
   }
 
-  return '内置文本样例';
+  return translate({id: 'textClassification.source.builtinSample', message: '内置文本样例'});
 }
 
 function isTxtFile(file) {
@@ -320,11 +321,11 @@ function getMetadataEntries(metadata) {
   }
 
   const candidates = [
-    ['model_name', '模型名称'],
-    ['model_version', '模型版本'],
-    ['request_id', '请求 ID'],
-    ['input_count', '输入条数'],
-    ['truncated_count', '截断文本'],
+    ['model_name', translate({id: 'textClassification.metadata.modelName', message: '模型名称'})],
+    ['model_version', translate({id: 'textClassification.metadata.modelVersion', message: '模型版本'})],
+    ['request_id', translate({id: 'textClassification.metadata.requestId', message: '请求 ID'})],
+    ['input_count', translate({id: 'textClassification.metadata.inputCount', message: '输入条数'})],
+    ['truncated_count', translate({id: 'textClassification.metadata.truncatedCount', message: '截断文本'})],
   ];
 
   return candidates
@@ -363,14 +364,14 @@ export default function TextClassification({
       try {
         const response = await fetch(defaultSampleDataUrl);
         if (!response.ok) {
-          throw new Error(`示例数据加载失败: ${response.status}`);
+          throw new Error(`${translate({id: 'textClassification.error.sampleLoadFailed', message: '示例数据加载失败'})}: ${response.status}`);
         }
 
         const text = await response.text();
         const parsed = parseTextLines(text);
 
         if (!parsed.length) {
-          throw new Error('示例数据文件为空或格式错误');
+          throw new Error(translate({id: 'textClassification.error.sampleEmptyOrInvalid', message: '示例数据文件为空或格式错误'}));
         }
 
         if (!cancelled) {
@@ -378,10 +379,10 @@ export default function TextClassification({
           setSampleError('');
         }
       } catch (err) {
-        console.error('示例数据加载失败:', err);
+        console.error(translate({id: 'textClassification.error.sampleLoadFailed', message: '示例数据加载失败'}), err);
         if (!cancelled) {
           setSampleTexts([]);
-          setSampleError(err.message || '示例数据加载失败');
+          setSampleError(err.message || translate({id: 'textClassification.error.sampleLoadFailed', message: '示例数据加载失败'}));
         }
       }
     };
@@ -444,7 +445,7 @@ export default function TextClassification({
     const totalCount = resultData?.results?.length || 0;
 
     return [
-      { value: 'all', label: '全部标签', count: totalCount },
+      { value: 'all', label: translate({id: 'textClassification.filter.allLabels', message: '全部标签'}), count: totalCount },
       ...distributionItems.map(item => ({
         value: item.label,
         label: item.label,
@@ -481,7 +482,7 @@ export default function TextClassification({
     }
 
     if (!isTxtFile(file)) {
-      setUploadError('仅支持上传 .txt 文本文件');
+      setUploadError(translate({id: 'textClassification.upload.onlyTxt', message: '仅支持上传 .txt 文本文件'}));
       setUploadTexts(null);
       setUploadFileName('');
       if (e.target) {
@@ -500,18 +501,18 @@ export default function TextClassification({
       try {
         const parsed = parseTextLines(event.target?.result);
         if (!parsed.length) {
-          setUploadError('未解析到有效文本，请检查文件内容');
+          setUploadError(translate({id: 'textClassification.upload.noValidText', message: '未解析到有效文本，请检查文件内容'}));
           return;
         }
 
         setUploadTexts(parsed);
       } catch (err) {
-        console.error('文件解析失败:', err);
-        setUploadError('文件解析失败，请检查文件格式');
+        console.error(translate({id: 'textClassification.upload.parseFailed', message: '文件解析失败'}), err);
+        setUploadError(translate({id: 'textClassification.upload.parseFailedHint', message: '文件解析失败，请检查文件格式'}));
       }
     };
     reader.onerror = () => {
-      setUploadError('文件解析失败，请检查文件格式');
+      setUploadError(translate({id: 'textClassification.upload.parseFailedHint', message: '文件解析失败，请检查文件格式'}));
     };
     reader.readAsText(file);
   };
@@ -521,12 +522,12 @@ export default function TextClassification({
     e.stopPropagation();
 
     const content = [
-      '凌晨批处理作业执行失败，返回码 137',
-      '缓存命中率持续下降，接口响应时间明显升高',
-      '用户反馈登录页面提示验证码错误且无法重试',
-      '巡检任务执行成功，所有服务状态正常',
-      '数据库主从延迟超过阈值，告警已触发',
-      '应用发布完成，灰度流量切换成功',
+      translate({id: 'textClassification.template.line1', message: '凌晨批处理作业执行失败，返回码 137'}),
+      translate({id: 'textClassification.template.line2', message: '缓存命中率持续下降，接口响应时间明显升高'}),
+      translate({id: 'textClassification.template.line3', message: '用户反馈登录页面提示验证码错误且无法重试'}),
+      translate({id: 'textClassification.template.line4', message: '巡检任务执行成功，所有服务状态正常'}),
+      translate({id: 'textClassification.template.line5', message: '数据库主从延迟超过阈值，告警已触发'}),
+      translate({id: 'textClassification.template.line6', message: '应用发布完成，灰度流量切换成功'}),
     ].join('\n');
 
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
@@ -539,17 +540,17 @@ export default function TextClassification({
 
   const handleRunInference = async () => {
     if (!selectedModel) {
-      setFormError('请选择一个模型');
+      setFormError(translate({id: 'textClassification.form.selectModel', message: '请选择一个模型'}));
       return;
     }
 
     if (!activeTexts.length) {
-      setFormError('请先提供待分类文本');
+      setFormError(translate({id: 'textClassification.form.provideText', message: '请先提供待分类文本'}));
       return;
     }
 
     if (activeTexts.length > MAX_BATCH_SIZE) {
-      setFormError(`单次最多提交 ${MAX_BATCH_SIZE} 条文本，请拆分后重试`);
+      setFormError(`${translate({id: 'textClassification.form.maxBatchPrefix', message: '单次最多提交'})} ${MAX_BATCH_SIZE} ${translate({id: 'textClassification.form.maxBatchSuffix', message: '条文本，请拆分后重试'})}`);
       return;
     }
 
@@ -576,28 +577,28 @@ export default function TextClassification({
         return;
       }
       if (result.reason === 'auth-expired') {
-        setFormError('登录已过期，请重新登录后重试');
+        setFormError(translate({id: 'textClassification.error.authExpired', message: '登录已过期，请重新登录后重试'}));
         return;
       }
       if (result.reason === 'http-error') {
-        throw new Error(`推理请求失败: ${result.status}`);
+        throw new Error(`${translate({id: 'textClassification.error.inferenceFailed', message: '推理请求失败'})}: ${result.status}`);
       }
       if (result.reason === 'network-error') {
-        throw result.error || new Error('网络请求失败');
+        throw result.error || new Error(translate({id: 'textClassification.error.networkFailed', message: '网络请求失败'}));
       }
 
       const json = await result.response.json();
       const normalized = normalizeResponse(json);
 
       if (!normalized.success) {
-        setFormError(normalized.error?.message || '文本分类失败，请稍后重试');
+        setFormError(normalized.error?.message || translate({id: 'textClassification.error.classifyFailed', message: '文本分类失败，请稍后重试'}));
         return;
       }
 
       setResultData(normalized);
     } catch (err) {
-      console.error('推理请求失败:', err);
-      setFormError(`推理失败: ${err.message}`);
+      console.error(translate({id: 'textClassification.error.inferenceFailed', message: '推理请求失败'}), err);
+      setFormError(`${translate({id: 'textClassification.error.inferenceFailedShort', message: '推理失败'})}: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -620,15 +621,15 @@ export default function TextClassification({
             className={clsx(styles.resultAction, styles.resultActionSubtle)}
             onClick={handleReplaceUpload}
           >
-            重新上传
+            {translate({id: 'textClassification.action.reupload', message: '重新上传'})}
           </button>
         ) : null}
         <button type="button" className={styles.resultAction} onClick={handleResetResult}>
-          重置结果
+          {translate({id: 'textClassification.result.reset', message: '重置结果'})}
         </button>
         <span className={styles.resultStatus}>
           <FiCheck />
-          分类完成
+          {translate({id: 'textClassification.result.classifyDone', message: '分类完成'})}
         </span>
       </div>
     </div>
@@ -637,15 +638,15 @@ export default function TextClassification({
   const renderSummary = () => (
     <div className={styles.resultSummary}>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>文本总数</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'textClassification.summary.totalTexts', message: '文本总数'})}</span>
         <span className={styles.resultStatValue}>{resultData.summary?.total_samples || 0}</span>
       </div>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>标签种类</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'textClassification.summary.labelTypes', message: '标签种类'})}</span>
         <span className={styles.resultStatValue}>{distributionItems.length}</span>
       </div>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>平均置信度</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'textClassification.summary.avgConfidence', message: '平均置信度'})}</span>
         <span className={styles.resultStatValue}>{formatProbability(resultData.summary?.avg_probability)}</span>
       </div>
       <div className={styles.resultStat}>

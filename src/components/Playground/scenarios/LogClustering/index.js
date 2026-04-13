@@ -14,6 +14,7 @@ import {
 } from 'react-icons/fi';
 
 import { authFetch } from '@site/src/lib/playgroundAuth';
+import {translate} from '@docusaurus/Translate';
 
 import styles from './index.module.css';
 
@@ -29,7 +30,7 @@ function LoadingOverlay() {
     <div className={styles.loadingOverlay}>
       <div className={styles.loadingOverlayContent}>
         <div className={styles.loadingSpinner}></div>
-        <span>模型推理中...</span>
+        <span>{translate({id: 'logClustering.inferenceLoading', message: '模型推理中...'})}</span>
       </div>
     </div>
   );
@@ -90,7 +91,7 @@ function getStableLineKey(prefix, line, index) {
 }
 
 function formatFileSize(size) {
-  if (!Number.isFinite(size) || size <= 0) return '未知大小';
+  if (!Number.isFinite(size) || size <= 0) return translate({id: 'logClustering.unknownSize', message: '未知大小'});
   if (size < 1024) return `${size} B`;
   if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
@@ -159,11 +160,11 @@ function PaginationControls({ currentPage, totalCount, pageSize, onPageChange })
   const paginationItems = getPaginationItems(currentPage, totalPages);
 
   return (
-    <nav className={styles.paginationBar} aria-label="分页导航">
+    <nav className={styles.paginationBar} aria-label={translate({id: 'logClustering.pagination.ariaLabel', message: '分页导航'})}>
       <span className={styles.paginationInfo}>
-        第&nbsp;<strong>{currentPage}</strong><em>/</em><strong>{totalPages}</strong>&nbsp;页
+        {translate({id: 'logClustering.pagination.pagePrefix', message: '第'})}&nbsp;<strong>{currentPage}</strong><em>/</em><strong>{totalPages}</strong>&nbsp;{translate({id: 'logClustering.pagination.pageSuffix', message: '页'})}
         <em>·</em>
-        共&nbsp;<strong>{totalCount}</strong>&nbsp;项
+        {translate({id: 'logClustering.pagination.totalPrefix', message: '共'})}&nbsp;<strong>{totalCount}</strong>&nbsp;{translate({id: 'logClustering.pagination.totalSuffix', message: '项'})}
       </span>
       <div className={styles.paginationControls}>
         <button
@@ -171,8 +172,8 @@ function PaginationControls({ currentPage, totalCount, pageSize, onPageChange })
           className={clsx(styles.paginationButton, styles.paginationNavButton)}
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
-          aria-label="上一页"
-          title="上一页"
+          aria-label={translate({id: 'logClustering.pagination.prevPage', message: '上一页'})}
+          title={translate({id: 'logClustering.pagination.prevPage', message: '上一页'})}
         >
           <FiChevronLeft aria-hidden="true" />
         </button>
@@ -190,7 +191,7 @@ function PaginationControls({ currentPage, totalCount, pageSize, onPageChange })
                 onClick={() => onPageChange(item.page)}
                 disabled={item.page === currentPage}
                 aria-current={item.page === currentPage ? 'page' : undefined}
-                aria-label={`第 ${item.page} 页`}
+                aria-label={`${translate({id: 'logClustering.pagination.pagePrefix', message: '第'})} ${item.page} ${translate({id: 'logClustering.pagination.pageSuffix', message: '页'})}`}
               >
                 {item.page}
               </button>
@@ -202,8 +203,8 @@ function PaginationControls({ currentPage, totalCount, pageSize, onPageChange })
           className={clsx(styles.paginationButton, styles.paginationNavButton)}
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
-          aria-label="下一页"
-          title="下一页"
+          aria-label={translate({id: 'logClustering.pagination.nextPage', message: '下一页'})}
+          title={translate({id: 'logClustering.pagination.nextPage', message: '下一页'})}
         >
           <FiChevronRight aria-hidden="true" />
         </button>
@@ -230,8 +231,8 @@ function LogInputPreview({ title, fileLabel, infoText, logs, truncated, action, 
         <div className={styles.logPreviewBody}>
           <div className={styles.previewNotice}>
             {truncated
-              ? `当前仅发送前 ${MAX_LOG_LINES.toLocaleString()} 条有效日志，预览展示前 ${PREVIEW_LINE_COUNT} 条。`
-              : `当前预览前 ${Math.min(logs.length, PREVIEW_LINE_COUNT)} 条日志。`}
+              ? `${translate({id: 'logClustering.preview.truncatedPrefix', message: '当前仅发送前'})} ${MAX_LOG_LINES.toLocaleString()} ${translate({id: 'logClustering.preview.truncatedMiddle', message: '条有效日志，预览展示前'})} ${PREVIEW_LINE_COUNT} ${translate({id: 'logClustering.preview.truncatedSuffix', message: '条。'})}`
+              : `${translate({id: 'logClustering.preview.normalPrefix', message: '当前预览前'})} ${Math.min(logs.length, PREVIEW_LINE_COUNT)} ${translate({id: 'logClustering.preview.normalSuffix', message: '条日志。'})}`}
           </div>
 
           <div className={styles.logPreviewList}>
@@ -241,7 +242,7 @@ function LogInputPreview({ title, fileLabel, infoText, logs, truncated, action, 
                 <span className={styles.logLineText}>{line}</span>
               </div>
             )) : (
-              <div className={styles.emptyStateInline}>暂无可预览日志</div>
+              <div className={styles.emptyStateInline}>{translate({id: 'logClustering.preview.noLogs', message: '暂无可预览日志'})}</div>
             )}
           </div>
         </div>
@@ -286,14 +287,14 @@ export default function LogClustering({
       try {
         const response = await fetch(defaultSampleDataUrl);
         if (!response.ok) {
-          throw new Error(`示例数据加载失败: ${response.status}`);
+          throw new Error(`${translate({id: 'logClustering.error.sampleLoadFailed', message: '示例数据加载失败'})}: ${response.status}`);
         }
 
         const text = await response.text();
         const parsed = parseTextLogs(text);
 
         if (!parsed.logs.length) {
-          throw new Error('示例数据文件为空或格式错误');
+          throw new Error(translate({id: 'logClustering.error.sampleEmpty', message: '示例数据文件为空或格式错误'}));
         }
 
         if (!cancelled) {
@@ -304,7 +305,7 @@ export default function LogClustering({
       } catch (err) {
         console.error('示例数据加载失败:', err);
         if (!cancelled) {
-          setSampleError(err.message || '示例数据加载失败');
+          setSampleError(err.message || translate({id: 'logClustering.error.sampleLoadFailed', message: '示例数据加载失败'}));
         }
       }
     };
@@ -392,7 +393,7 @@ export default function LogClustering({
     if (!file) return;
 
     if (!isTxtFile(file)) {
-      setUploadError('仅支持上传 .txt 文本文件');
+      setUploadError(translate({id: 'logClustering.error.txtOnly', message: '仅支持上传 .txt 文本文件'}));
       setUploadLogs(null);
       setUploadStats(null);
       setUploadFileName('');
@@ -416,7 +417,7 @@ export default function LogClustering({
         const parsed = parseTextLogs(evt.target?.result);
 
         if (!parsed.logs.length) {
-          setUploadError('未解析到有效日志，请检查文件内容');
+          setUploadError(translate({id: 'logClustering.error.noValidLogs', message: '未解析到有效日志，请检查文件内容'}));
           return;
         }
 
@@ -424,7 +425,7 @@ export default function LogClustering({
         setUploadStats(parsed.stats);
       } catch (err) {
         console.error('文件解析失败:', err);
-        setUploadError('文件解析失败，请检查文件格式');
+        setUploadError(translate({id: 'logClustering.error.parseFailed', message: '文件解析失败，请检查文件格式'}));
       }
     };
     reader.readAsText(file);
@@ -453,17 +454,17 @@ export default function LogClustering({
 
   const handleRunInference = async () => {
     if (!selectedModel) {
-      setFormError('请选择一个模型');
+      setFormError(translate({id: 'logClustering.error.selectModel', message: '请选择一个模型'}));
       return;
     }
 
     if (dataSource === 'sample' && !sampleLogs.length) {
-      setFormError(sampleError || '示例数据尚未加载完成');
+      setFormError(sampleError || translate({id: 'logClustering.error.sampleNotLoaded', message: '示例数据尚未加载完成'}));
       return;
     }
 
     if (dataSource === 'upload' && !uploadLogs?.length) {
-      setUploadError('请先上传日志文件');
+      setUploadError(translate({id: 'logClustering.error.uploadFirst', message: '请先上传日志文件'}));
       return;
     }
 
@@ -489,14 +490,14 @@ export default function LogClustering({
         return;
       }
       if (result.reason === 'auth-expired') {
-        setFormError('登录已过期，请重新登录后重试');
+        setFormError(translate({id: 'logClustering.error.authExpired', message: '登录已过期，请重新登录后重试'}));
         return;
       }
       if (result.reason === 'http-error') {
-        throw new Error(`推理请求失败: ${result.status}`);
+        throw new Error(`${translate({id: 'logClustering.error.inferenceFailed', message: '推理请求失败'})}: ${result.status}`);
       }
       if (result.reason === 'network-error') {
-        throw result.error || new Error('网络请求失败');
+        throw result.error || new Error(translate({id: 'logClustering.error.networkFailed', message: '网络请求失败'}));
       }
 
       const json = await result.response.json();
@@ -508,7 +509,7 @@ export default function LogClustering({
       setActiveTab('clusters');
     } catch (err) {
       console.error('推理请求失败:', err);
-      setFormError(`推理失败: ${err.message}`);
+      setFormError(`${translate({id: 'logClustering.error.inferenceFailed', message: '推理失败'})}: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -521,21 +522,21 @@ export default function LogClustering({
           <FiLayers />
         </span>
         <span className={styles.resultHeaderTitle}>
-          {dataSource === 'upload' ? uploadFileName : '内置日志样例'}
+          {dataSource === 'upload' ? uploadFileName : translate({id: 'logClustering.builtinSample', message: '内置日志样例'})}
         </span>
       </div>
       <div className={styles.resultHeaderActions}>
         {dataSource === 'upload' && uploadLogs?.length ? (
           <button type="button" className={clsx(styles.resultAction, styles.resultActionSubtle)} onClick={handleReplaceUpload}>
-            重新上传
+            {translate({id: 'logClustering.reupload', message: '重新上传'})}
           </button>
         ) : null}
         <button type="button" className={styles.resultAction} onClick={handleResetResult}>
-          重置结果
+          {translate({id: 'logClustering.resetResult', message: '重置结果'})}
         </button>
         <span className={styles.resultStatus}>
           <FiCheck />
-          聚类完成
+          {translate({id: 'logClustering.clusteringComplete', message: '聚类完成'})}
         </span>
       </div>
     </div>
@@ -544,19 +545,19 @@ export default function LogClustering({
   const renderSummary = () => (
     <div className={styles.resultSummary}>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>日志总数</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'logClustering.summary.totalLogs', message: '日志总数'})}</span>
         <span className={styles.resultStatValue}>{resultData.summary.total_logs}</span>
       </div>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>模板数量</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'logClustering.summary.templateCount', message: '模板数量'})}</span>
         <span className={styles.resultStatValue}>{resultData.summary.num_templates}</span>
       </div>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>未归类日志</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'logClustering.summary.unknownLogs', message: '未归类日志'})}</span>
         <span className={styles.resultStatValue}>{resultData.summary.unknown_logs}</span>
       </div>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>推理耗时</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'logClustering.summary.inferenceTime', message: '推理耗时'})}</span>
         <span className={styles.resultStatValue}>{resultData.summary.processing_time_ms ? `${(resultData.summary.processing_time_ms / 1000).toFixed(2)}s` : '-'}</span>
       </div>
     </div>
@@ -565,7 +566,7 @@ export default function LogClustering({
   const renderResultContent = () => (
     <>
       <div className={styles.topClusters}>
-        <div className={styles.sectionHeading}>重点模板</div>
+        <div className={styles.sectionHeading}>{translate({id: 'logClustering.keyTemplates', message: '重点模板'})}</div>
         <div className={styles.topClusterList}>
           {topClusters.length ? topClusters.map(cluster => (
             <button
@@ -580,10 +581,10 @@ export default function LogClustering({
               }}
             >
               <span className={styles.topClusterTemplate}>{cluster.template}</span>
-              <span className={styles.topClusterCount}>{cluster.count} 条</span>
+              <span className={styles.topClusterCount}>{cluster.count} {translate({id: 'logClustering.unit.items', message: '条'})}</span>
             </button>
           )) : (
-            <div className={styles.emptyStateInline}>暂无聚类模板</div>
+            <div className={styles.emptyStateInline}>{translate({id: 'logClustering.noTemplates', message: '暂无聚类模板'})}</div>
           )}
         </div>
       </div>
@@ -594,14 +595,14 @@ export default function LogClustering({
           className={clsx(styles.resultTab, activeTab === 'clusters' && styles.resultTabActive)}
           onClick={() => setActiveTab('clusters')}
         >
-          聚类结果 ({resultData.templateGroups.length})
+          {translate({id: 'logClustering.tab.clusterResults', message: '聚类结果'})} ({resultData.templateGroups.length})
         </button>
         <button
           type="button"
           className={clsx(styles.resultTab, activeTab === 'unknown' && styles.resultTabActive)}
           onClick={() => setActiveTab('unknown')}
         >
-          未归类日志 ({resultData.unknownLogs.length})
+          {translate({id: 'logClustering.tab.unknownLogs', message: '未归类日志'})} ({resultData.unknownLogs.length})
         </button>
       </div>
 
@@ -617,7 +618,7 @@ export default function LogClustering({
                   setClusterSearch(e.target.value);
                   setClusterPage(1);
                 }}
-                placeholder="按模板内容或 ID 搜索"
+                placeholder={translate({id: 'logClustering.search.placeholder', message: '按模板内容或 ID 搜索'})}
               />
               <div className={styles.sortTabs}>
                 <button
@@ -625,14 +626,14 @@ export default function LogClustering({
                   className={clsx(styles.sortTab, clusterSort === 'count' && styles.sortTabActive)}
                   onClick={() => setClusterSort('count')}
                 >
-                  按数量
+                  {translate({id: 'logClustering.sort.byCount', message: '按数量'})}
                 </button>
                 <button
                   type="button"
                   className={clsx(styles.sortTab, clusterSort === 'cluster_id' && styles.sortTabActive)}
                   onClick={() => setClusterSort('cluster_id')}
                 >
-                  按 ID
+                  {translate({id: 'logClustering.sort.byId', message: '按 ID'})}
                 </button>
               </div>
             </div>
@@ -647,18 +648,18 @@ export default function LogClustering({
                 >
                   <div className={styles.clusterCardHeader}>
                     <span className={styles.clusterId}>Cluster #{cluster.cluster_id}</span>
-                    <span className={styles.clusterCount}>{cluster.count} 条</span>
+                    <span className={styles.clusterCount}>{cluster.count} {translate({id: 'logClustering.unit.items', message: '条'})}</span>
                   </div>
                   <div className={styles.clusterTemplate}>{cluster.template}</div>
                   <div className={styles.clusterMeta}>
-                    命中占比 {cluster.percentage.toFixed(2)}%
+                    {translate({id: 'logClustering.hitRatio', message: '命中占比'})} {cluster.percentage.toFixed(2)}%
                   </div>
                   <div className={styles.clusterSample}>
-                    {cluster.sample_logs[0] || '暂无样例日志'}
+                    {cluster.sample_logs[0] || translate({id: 'logClustering.noSampleLogs', message: '暂无样例日志'})}
                   </div>
                 </button>
               )) : (
-                <div className={styles.emptyState}>未找到匹配的模板结果</div>
+                <div className={styles.emptyState}>{translate({id: 'logClustering.noMatchingTemplates', message: '未找到匹配的模板结果'})}</div>
               )}
             </div>
           </div>
@@ -668,34 +669,34 @@ export default function LogClustering({
               <div className={styles.detailCard}>
                 <div className={styles.detailHeader}>
                   <span className={styles.detailTitle}>Cluster #{selectedCluster.cluster_id}</span>
-                  <span className={styles.detailBadge}>{selectedCluster.count} 条</span>
+                  <span className={styles.detailBadge}>{selectedCluster.count} {translate({id: 'logClustering.unit.items', message: '条'})}</span>
                 </div>
 
                 <div className={styles.detailSection}>
-                  <div className={styles.detailLabel}>模板内容</div>
+                  <div className={styles.detailLabel}>{translate({id: 'logClustering.detail.templateContent', message: '模板内容'})}</div>
                   <div className={styles.detailTemplate}>{selectedCluster.template}</div>
                 </div>
 
                 <div className={styles.detailStats}>
                   <div className={styles.detailStat}>
-                    <span className={styles.detailStatLabel}>命中占比</span>
+                    <span className={styles.detailStatLabel}>{translate({id: 'logClustering.detail.hitRatio', message: '命中占比'})}</span>
                     <span className={styles.detailStatValue}>{selectedCluster.percentage.toFixed(2)}%</span>
                   </div>
                   <div className={styles.detailStat}>
-                    <span className={styles.detailStatLabel}>索引数量</span>
+                    <span className={styles.detailStatLabel}>{translate({id: 'logClustering.detail.indexCount', message: '索引数量'})}</span>
                     <span className={styles.detailStatValue}>{selectedCluster.log_indices.length}</span>
                   </div>
                 </div>
 
                 <div className={styles.detailSection}>
-                  <div className={styles.detailLabel}>样例日志</div>
+                  <div className={styles.detailLabel}>{translate({id: 'logClustering.detail.sampleLogs', message: '样例日志'})}</div>
                   <div className={styles.sampleLogList}>
                     {selectedCluster.sample_logs.length ? selectedCluster.sample_logs.map((line, index) => (
                       <div key={getStableLineKey(`cluster-${selectedCluster.cluster_id}`, line, index)} className={styles.sampleLogItem}>
                         <span className={styles.sampleLogIndex}>{index + 1}</span>
                         <span className={styles.sampleLogText}>{line}</span>
                       </div>
-                    )) : <div className={styles.emptyStateInline}>暂无样例日志</div>}
+                    )) : <div className={styles.emptyStateInline}>{translate({id: 'logClustering.noSampleLogs', message: '暂无样例日志'})}</div>}
                   </div>
                 </div>
               </div>

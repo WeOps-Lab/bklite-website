@@ -572,3 +572,33 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+@media (max-width: 640px) {
+  .sampleDataHeader,
+  .resultHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .resultHeaderActions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .resultSummary {
+    grid-template-columns: 1fr;
+  }
+
+  .sampleDataChart {
+    height: 160px;
+  }
+
+  .sampleDataChartResult {
+    height: 240px;
+  }
+
+  .uploadArea {
+    padding: 24px 16px;
+  }
+}

@@ -122,6 +122,11 @@ const config = {
             position: 'left',
           },
           {
+            label: '博客',
+            to: '/blog',
+            position: 'left',
+          },
+          {
             "label": "价格",
             "to": "/pricing"
           },

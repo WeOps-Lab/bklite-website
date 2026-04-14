@@ -5,6 +5,7 @@ import Translate, {translate} from '@docusaurus/Translate';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import HomepageFeatures from '@site/src/components/HomepageFeatures';
+import HomepageBlog from '@site/src/components/HomepageBlog';
 import PlatformShowcase from '@site/src/components/AIShowcase';
 import PartnersShowcase from '@site/src/components/PartnersShowcase';
 import FinalCTA from '@site/src/components/FinalCTA';
@@ -226,6 +227,7 @@ function HomepageHeader() {
                 {Object.entries(versions).map(([key, version]) => (
                   <button
                     key={key}
+                    type="button"
                     className={`${styles.versionTab} ${selectedVersion === key ? styles.versionTabActive : ''}`}
                     onClick={() => handleVersionChange(key)}
                   >
@@ -245,6 +247,7 @@ function HomepageHeader() {
                   <code>{versions[selectedVersion].command}</code>
                 </pre>
                 <button
+                  type="button"
                   className={`${styles.copyButton} ${copyState === 'success' ? styles.copied : ''}`}
                   onClick={handleCopy}
                   title={translate({id: 'hero.copy.title', message: '复制脚本'})}
@@ -317,6 +320,7 @@ export default function Home() {
         <HomepageFeatures />
         <PlatformShowcase />
         <PartnersShowcase />
+        <HomepageBlog />
         <FinalCTA />
       </main>
     </Layout>

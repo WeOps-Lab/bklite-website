@@ -31,6 +31,10 @@
     "message": "Pricing",
     "description": "Navbar item with label 价格"
   },
+  "item.label.博客": {
+    "message": "Blog",
+    "description": "Navbar item with label 博客"
+  },
   "item.label.GitHub": {
     "message": "GitHub",
     "description": "Navbar item with label GitHub"

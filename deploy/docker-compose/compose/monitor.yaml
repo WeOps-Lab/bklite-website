@@ -10,8 +10,12 @@ services:
       METRIC_NATS_PASSWORD: ${NATS_ADMIN_PASSWORD}
       METRIC_OUTPUT_URL: http://victoria-metrics:8428
       METRIC_NATS_SERVERS: tls://nats:4222
-    ports:
-      - 33000:33000
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.telegraf.rule=PathPrefix(`/telegraf/api`)"
+      - "traefik.http.routers.telegraf.entrypoints=websecure"
+      - "traefik.http.routers.telegraf.priority=20"
+      - "traefik.http.services.telegraf.loadbalancer.server.port=19090"
     volumes:
       - ../conf/telegraf/telegraf.conf:/apps/telegraf.conf:ro
       - ../conf/certs:/etc/certs:ro

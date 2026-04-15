@@ -14,6 +14,7 @@ import {
 
 import { authFetch } from '@site/src/lib/playgroundAuth';
 
+import {translate} from '@docusaurus/Translate';
 import styles from './index.module.css';
 
 const defaultSampleDataUrl = new URL('./sample-data/default.csv', import.meta.url).href;
@@ -79,7 +80,7 @@ function parseCsvSeries(text) {
   const valIdx = header?.findIndex(h => ['value', 'val'].includes(h));
 
   if (tsIdx === -1 || valIdx === -1) {
-    throw new Error('CSV 格式错误：需要包含 timestamp 和 value 列');
+    throw new Error(translate({id: 'timeSeriesPredict.csvFormatError', message: 'CSV 格式错误：需要包含 timestamp 和 value 列'}));
   }
 
   const parsed = [];
@@ -120,30 +121,30 @@ function detectSeriesFrequencySeconds(series) {
 }
 
 function formatDurationLabel(totalSeconds) {
-  if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return '未知时长';
+  if (!Number.isFinite(totalSeconds) || totalSeconds <= 0) return translate({id: 'timeSeriesPredict.unknownDuration', message: '未知时长'});
 
   if (totalSeconds % 86400 === 0) {
     const days = totalSeconds / 86400;
-    return `${days}天`;
+    return `${days}${translate({id: 'timeSeriesPredict.unitDays', message: '天'})}`;
   }
 
   if (totalSeconds % 3600 === 0) {
     const hours = totalSeconds / 3600;
-    return `${hours}小时`;
+    return `${hours}${translate({id: 'timeSeriesPredict.unitHours', message: '小时'})}`;
   }
 
   if (totalSeconds >= 3600) {
     const hours = Math.floor(totalSeconds / 3600);
     const minutes = Math.round((totalSeconds % 3600) / 60);
-    return minutes ? `${hours}小时${minutes}分钟` : `${hours}小时`;
+    return minutes ? `${hours}${translate({id: 'timeSeriesPredict.unitHours', message: '小时'})}${minutes}${translate({id: 'timeSeriesPredict.unitMinutes', message: '分钟'})}` : `${hours}${translate({id: 'timeSeriesPredict.unitHours', message: '小时'})}`;
   }
 
   const minutes = Math.max(1, Math.round(totalSeconds / 60));
-  return `${minutes}分钟`;
+  return `${minutes}${translate({id: 'timeSeriesPredict.unitMinutes', message: '分钟'})}`;
 }
 
 function getSampleMetaText(series) {
-  if (!Array.isArray(series) || series.length === 0) return '加载中...';
+  if (!Array.isArray(series) || series.length === 0) return translate({id: 'timeSeriesPredict.loading', message: '加载中...'});
 
   const frequencySeconds = detectSeriesFrequencySeconds(series) || 5 * 60;
   const spanSeconds = series.length > 1 ? series[series.length - 1].time - series[0].time : frequencySeconds;
@@ -164,7 +165,7 @@ function LoadingOverlay() {
     <div className={styles.loadingOverlay}>
       <div className={styles.loadingOverlayContent}>
         <div className={styles.loadingSpinner}></div>
-        <span>模型推理中...</span>
+        <span>{translate({id: 'timeSeriesPredict.modelInferring', message: '模型推理中...'})}</span>
       </div>
     </div>
   );
@@ -300,7 +301,7 @@ function buildForecastChartOption({
     },
     series: [
       {
-        name: '历史数据',
+        name: translate({id: 'timeSeriesPredict.historicalData', message: '历史数据'}),
         data: historyValues,
         type: 'line',
         smooth: true,
@@ -315,7 +316,7 @@ function buildForecastChartOption({
         }
       },
       {
-        name: '预测数据',
+        name: translate({id: 'timeSeriesPredict.predictionData', message: '预测数据'}),
         data: [...overlapPadding, ...overlapPrediction],
         type: 'line',
         smooth: true,
@@ -370,7 +371,7 @@ function buildForecastChartOption({
         let html = `<strong>${formatTimestamp(Number(point.axisValue), spanSeconds, effectiveFrequencySeconds, 'tooltip')}</strong>`;
         params.forEach(p => {
           if (p.value != null) {
-            const color = p.seriesName === '预测数据' ? '#F59E0B' : chartColors.primaryLight;
+            const color = p.seriesName === translate({id: 'timeSeriesPredict.predictionData', message: '预测数据'}) ? '#F59E0B' : chartColors.primaryLight;
             html += `<br/><span style="color:${color}">${p.seriesName}: ${p.value.toFixed(1)}</span>`;
           }
         });
@@ -406,7 +407,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
   const activeSeries = dataSource === 'upload' && uploadData?.length ? uploadData : sampleData;
   const hasSampleData = Boolean(sampleData?.length);
   const detectedFrequencySeconds = detectSeriesFrequencySeconds(activeSeries);
-  const frequencyLabel = detectedFrequencySeconds ? formatDurationLabel(detectedFrequencySeconds) : '5分钟';
+  const frequencyLabel = detectedFrequencySeconds ? formatDurationLabel(detectedFrequencySeconds) : translate({id: 'timeSeriesPredict.defaultFrequency', message: '5分钟'});
   const hasResult = Boolean(resultData && !loading);
 
   const getPredictionTimeLabel = (steps) => {
@@ -441,13 +442,13 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
       try {
         const response = await fetch(defaultSampleDataUrl);
         if (!response.ok) {
-          throw new Error(`示例数据加载失败: ${response.status}`);
+          throw new Error(`${translate({id: 'timeSeriesPredict.sampleDataLoadFailed', message: '示例数据加载失败'})}: ${response.status}`);
         }
 
         const text = await response.text();
         const data = parseCsvSeries(text);
         if (!data.length) {
-          throw new Error('示例数据文件为空或格式错误');
+          throw new Error(translate({id: 'timeSeriesPredict.sampleDataEmptyOrInvalid', message: '示例数据文件为空或格式错误'}));
         }
 
         if (cancelled) {
@@ -457,10 +458,10 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
         setFormError('');
         setSampleData(data);
       } catch (err) {
-        console.error('示例数据加载失败:', err);
+        console.error(translate({id: 'timeSeriesPredict.sampleDataLoadFailedLog', message: '示例数据加载失败:'}), err);
         if (!cancelled) {
           setSampleData(null);
-          setFormError(`示例数据加载失败: ${err.message}`);
+          setFormError(`${translate({id: 'timeSeriesPredict.sampleDataLoadFailed', message: '示例数据加载失败'})}: ${err.message}`);
         }
       }
     };
@@ -520,7 +521,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
       sourceSeries: uploadData,
       resultData,
       fallbackFrequencySeconds: detectSeriesFrequencySeconds(uploadData) || detectedFrequencySeconds || 5 * 60,
-      previewLabel: '数值',
+      previewLabel: translate({id: 'timeSeriesPredict.numericValue', message: '数值'}),
     }));
 
     const handleResize = () => chart.resize();
@@ -536,15 +537,15 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
 
   const handleRunInference = async () => {
     if (!selectedModel) {
-      setFormError('请选择一个模型');
+      setFormError(translate({id: 'timeSeriesPredict.pleaseSelectModel', message: '请选择一个模型'}));
       return;
     }
     if (dataSource === 'sample' && !sampleData?.length) {
-      setFormError('示例数据尚未加载完成');
+      setFormError(translate({id: 'timeSeriesPredict.sampleDataNotReady', message: '示例数据尚未加载完成'}));
       return;
     }
     if (dataSource === 'upload' && !uploadData) {
-      setUploadError('请先上传数据文件');
+      setUploadError(translate({id: 'timeSeriesPredict.pleaseUploadData', message: '请先上传数据文件'}));
       return;
     }
 
@@ -571,14 +572,14 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
         return;
       }
       if (result.reason === 'auth-expired') {
-        setFormError('登录已过期，请重新登录后重试');
+        setFormError(translate({id: 'timeSeriesPredict.loginExpired', message: '登录已过期，请重新登录后重试'}));
         return;
       }
       if (result.reason === 'http-error') {
-        throw new Error(`推理请求失败: ${result.status}`);
+        throw new Error(`${translate({id: 'timeSeriesPredict.inferenceRequestFailed', message: '推理请求失败'})}: ${result.status}`);
       }
       if (result.reason === 'network-error') {
-        throw result.error || new Error('网络请求失败');
+        throw result.error || new Error(translate({id: 'timeSeriesPredict.networkError', message: '网络请求失败'}));
       }
 
       const json = await result.response.json();
@@ -599,8 +600,8 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
       });
       setInferenceTime(inner.metadata?.execution_time_ms ?? null);
     } catch (err) {
-      console.error('推理请求失败:', err);
-      setFormError(`推理失败: ${err.message}`);
+      console.error(translate({id: 'timeSeriesPredict.inferenceRequestFailedLog', message: '推理请求失败:'}), err);
+      setFormError(`${translate({id: 'timeSeriesPredict.inferenceFailed', message: '推理失败'})}: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -635,13 +636,13 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
         }
 
         if (parsed.length === 0) {
-          setUploadError('未解析到有效数据，请检查文件格式');
+          setUploadError(translate({id: 'timeSeriesPredict.noValidDataParsed', message: '未解析到有效数据，请检查文件格式'}));
           return;
         }
         setUploadData(parsed);
       } catch (err) {
-        console.error('文件解析失败:', err);
-        setUploadError('文件解析失败，请检查文件格式');
+        console.error(translate({id: 'timeSeriesPredict.fileParseFailedLog', message: '文件解析失败:'}), err);
+        setUploadError(translate({id: 'timeSeriesPredict.fileParseFailed', message: '文件解析失败，请检查文件格式'}));
       }
     };
     reader.readAsText(file);
@@ -658,9 +659,9 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
       '1704067800,42.1',
       '1704068100,50.5',
       '1704068400,48.3',
-      '# 说明:',
-      '# timestamp: Unix 秒级整数时间戳 (如 1704067200 表示 2024-01-01 08:00:00)',
-      '# value: 数值型指标'
+      `# ${translate({id: 'timeSeriesPredict.templateNote', message: '说明'})}:`,
+      `# timestamp: ${translate({id: 'timeSeriesPredict.templateTimestampDesc', message: 'Unix 秒级整数时间戳 (如 1704067200 表示 2024-01-01 08:00:00)'})}`,
+      `# value: ${translate({id: 'timeSeriesPredict.templateValueDesc', message: '数值型指标'})}`
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -678,21 +679,21 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
           <FiTrendingUp />
         </span>
         <span className={styles.resultHeaderTitle}>
-          {dataSource === 'upload' ? uploadFileName : '服务器 CPU 使用率监控数据'}
+          {dataSource === 'upload' ? uploadFileName : translate({id: 'timeSeriesPredict.serverCpuMonitorData', message: '服务器 CPU 使用率监控数据'})}
         </span>
       </div>
       <div className={styles.resultHeaderActions}>
         {dataSource === 'upload' && uploadData && (
           <button type="button" className={clsx(styles.resultAction, styles.resultActionSubtle)} onClick={handleReplaceUpload}>
-            重新上传
+            {translate({id: 'timeSeriesPredict.reUpload', message: '重新上传'})}
           </button>
         )}
         <button type="button" className={styles.resultAction} onClick={handleResetResult}>
-          重置结果
+          {translate({id: 'timeSeriesPredict.resetResult', message: '重置结果'})}
         </button>
         <span className={styles.resultStatus}>
           <FiCheck />
-          预测完成
+          {translate({id: 'timeSeriesPredict.predictionComplete', message: '预测完成'})}
         </span>
       </div>
     </div>
@@ -702,11 +703,11 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
     <div className={styles.chartLegend}>
       <span className={styles.chartLegendItem}>
         <span className={clsx(styles.chartLegendLine, styles.chartLegendLineHistory)} aria-hidden="true"></span>
-        历史数据
+        {translate({id: 'timeSeriesPredict.historicalData', message: '历史数据'})}
       </span>
       <span className={styles.chartLegendItem}>
         <span className={clsx(styles.chartLegendLine, styles.chartLegendLinePrediction)} aria-hidden="true"></span>
-        预测数据
+        {translate({id: 'timeSeriesPredict.predictionData', message: '预测数据'})}
       </span>
     </div>
   );
@@ -714,25 +715,25 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
   const renderSummary = () => (
     <div className={styles.resultSummary}>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>输入数据点</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'timeSeriesPredict.inputDataPoints', message: '输入数据点'})}</span>
         <span className={styles.resultStatValue}>
           {resultData?.metadata?.input_data_points || resultData?.history?.length || 0}
         </span>
       </div>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>预测时间</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'timeSeriesPredict.predictionTime', message: '预测时间'})}</span>
         <span className={styles.resultStatValue}>
           {getPredictionTimeLabel(resultData?.metadata?.prediction_steps || selectedSteps || resultData?.prediction?.length || 0)}
         </span>
       </div>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>预测频率</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'timeSeriesPredict.predictionFrequency', message: '预测频率'})}</span>
         <span className={styles.resultStatValue}>
           {resultData?.metadata?.input_frequency || '-'}
         </span>
       </div>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>推理耗时</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'timeSeriesPredict.inferenceTime', message: '推理耗时'})}</span>
         <span className={styles.resultStatValue}>{inferenceTime != null ? (inferenceTime / 1000).toFixed(2) + 's' : '-'}</span>
       </div>
     </div>
@@ -743,7 +744,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
   return (
     <div className={styles.scenarioContent}>
       <div className={styles.formGroup}>
-        <div className={styles.formLabel}>数据源</div>
+        <div className={styles.formLabel}>{translate({id: 'timeSeriesPredict.dataSource', message: '数据源'})}</div>
         <div className={styles.dataSourceTabs}>
           <button
             type="button"
@@ -756,7 +757,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
               setUploadError('');
             }}
           >
-            示例数据
+            {translate({id: 'timeSeriesPredict.sampleData', message: '示例数据'})}
           </button>
           <button
             type="button"
@@ -766,7 +767,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
               setDataSource('upload');
             }}
           >
-            上传文件
+            {translate({id: 'timeSeriesPredict.uploadFile', message: '上传文件'})}
           </button>
         </div>
 
@@ -787,7 +788,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
                 <div className={styles.sampleDataHeader}>
                   <span className={styles.sampleDataTitle}>
                     <FiActivity />
-                    服务器 CPU 使用率监控数据
+                    {translate({id: 'timeSeriesPredict.serverCpuMonitorData', message: '服务器 CPU 使用率监控数据'})}
                   </span>
                   <span className={styles.sampleDataInfo}>{getSampleMetaText(sampleData)}</span>
                 </div>
@@ -812,13 +813,13 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
                   <FiUploadCloud />
                 </div>
                 <p className={styles.uploadAreaText}>
-                  {uploadFileName ? `已选择: ${uploadFileName}` : '点击或拖拽上传文件'}
+                  {uploadFileName ? `${translate({id: 'timeSeriesPredict.fileSelected', message: '已选择'})}: ${uploadFileName}` : translate({id: 'timeSeriesPredict.clickOrDragToUpload', message: '点击或拖拽上传文件'})}
                 </p>
-                <p className={styles.uploadAreaHint}>支持 CSV, JSON 格式，时间戳支持 Unix 整数或日期字符串</p>
+                <p className={styles.uploadAreaHint}>{translate({id: 'timeSeriesPredict.supportedFormats', message: '支持 CSV, JSON 格式，时间戳支持 Unix 整数或日期字符串'})}</p>
               </button>
               <button type="button" className={styles.templateDownload} onClick={handleDownloadTemplate}>
                 <FiDownload />
-                下载数据模板
+                {translate({id: 'timeSeriesPredict.downloadTemplate', message: '下载数据模板'})}
               </button>
             </div>
             {uploadError && (
@@ -844,7 +845,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
                     className={styles.uploadReplaceTop}
                     onClick={handleReplaceUpload}
                   >
-                    重新上传
+                    {translate({id: 'timeSeriesPredict.reUpload', message: '重新上传'})}
                   </button>
                 </div>
               )}
@@ -858,13 +859,13 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
       </div>
 
       <div className={styles.formGroup}>
-        <div className={styles.formLabel}>预测时间</div>
+        <div className={styles.formLabel}>{translate({id: 'timeSeriesPredict.predictionTimeLabel', message: '预测时间'})}</div>
         <div className={styles.stepsCard}>
           <div className={styles.stepsHeader}>
-            <p className={styles.stepsHint}>拖动下方滑块可调整未来预测时长，当前每个数据点约为 {frequencyLabel}。</p>
+            <p className={styles.stepsHint}>{translate({id: 'timeSeriesPredict.sliderHintPrefix', message: '拖动下方滑块可调整未来预测时长，当前每个数据点约为'})}{' '}{frequencyLabel}{translate({id: 'timeSeriesPredict.sliderHintSuffix', message: '。'})}</p>
             <div className={styles.stepsValue}>
               <div className={styles.stepsValueMain}>
-                <span className={styles.stepsValueLabel}>当前预测范围</span>
+                <span className={styles.stepsValueLabel}>{translate({id: 'timeSeriesPredict.currentPredictionRange', message: '当前预测范围'})}</span>
                 <span className={styles.stepsValueText}>{getPredictionTimeLabel(selectedSteps)}</span>
               </div>
             </div>
@@ -903,7 +904,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
           disabled={loading || !selectedModel || (dataSource === 'sample' ? !hasSampleData : !uploadData?.length)}
         >
           <FiPlay />
-          开始时序预测
+          {translate({id: 'timeSeriesPredict.startPrediction', message: '开始时序预测'})}
         </button>
       </div>
 

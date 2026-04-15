@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import clsx from 'clsx';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import {translate} from '@docusaurus/Translate';
 import { FiLogIn, FiLogOut, FiUser } from 'react-icons/fi';
 
 import { fetchLoginInfo, getCachedLoginInfo, logout, redirectToLogin } from '@site/src/lib/playgroundAuth';
@@ -15,14 +16,14 @@ function getAccountRoleLabel(loginInfo) {
   }
 
   if (loginInfo.isSuperuser) {
-    return '管理员';
+    return translate({id: 'account.role.admin', message: '管理员'});
   }
 
   if (loginInfo.isFirstLogin) {
-    return '访客';
+    return translate({id: 'account.role.guest', message: '访客'});
   }
 
-  return '普通用户';
+  return translate({id: 'account.role.user', message: '普通用户'});
 }
 
 export default function LogoutNavbarButton({ mobile = false, label = '账号' }) {
@@ -34,7 +35,7 @@ export default function LogoutNavbarButton({ mobile = false, label = '账号' })
   const [loginInfo, setLoginInfo] = useState(() => getCachedLoginInfo());
   const [profileLoading, setProfileLoading] = useState(false);
   const menuRef = useRef(null);
-  const normalizedLabel = useMemo(() => label.trim() || '账号', [label]);
+  const normalizedLabel = useMemo(() => label.trim() || translate({id: 'account.label', message: '账号'}), [label]);
   const accountTitle = useMemo(() => {
     if (!loginInfo) {
       return normalizedLabel;
@@ -130,7 +131,7 @@ export default function LogoutNavbarButton({ mobile = false, label = '账号' })
           onClick={handleLogin}
         >
           <FiUser />
-          <span>登录</span>
+          <span>{translate({id: 'account.login', message: '登录'})}</span>
         </button>
       );
     }
@@ -142,13 +143,13 @@ export default function LogoutNavbarButton({ mobile = false, label = '账号' })
         onClick={handleLogout}
       >
         <FiLogOut />
-        <span>退出登录</span>
+        <span>{translate({id: 'account.logout', message: '退出登录'})}</span>
       </button>
       );
   }
 
-  const buttonTitle = isLoggedIn ? accountTitle : '登录';
-  const menuAriaLabel = isLoggedIn ? `${normalizedLabel}菜单` : '登录入口';
+  const buttonTitle = isLoggedIn ? accountTitle : translate({id: 'account.login', message: '登录'});
+  const menuAriaLabel = isLoggedIn ? `${normalizedLabel}${translate({id: 'account.menu', message: '菜单'})}` : translate({id: 'account.loginEntry', message: '登录入口'});
 
   return (
     <div className={styles.accountMenu} ref={menuRef}>
@@ -183,8 +184,8 @@ export default function LogoutNavbarButton({ mobile = false, label = '账号' })
                   ) : null}
                 </div>
                 {loginInfo?.username ? (
-                  <span className={styles.menuUsername} title={`用户名：@${loginInfo.username}`}>
-                    用户名：@{loginInfo.username}
+                  <span className={styles.menuUsername} title={`${translate({id: 'account.username.label', message: '用户名'})}：@${loginInfo.username}`}>
+                    {translate({id: 'account.username.label', message: '用户名'})}：@{loginInfo.username}
                   </span>
                 ) : null}
               </div>
@@ -202,10 +203,10 @@ export default function LogoutNavbarButton({ mobile = false, label = '账号' })
             <>
               <div className={styles.menuHeader}>
                 <div className={styles.menuTitleRow}>
-                  <span className={styles.menuTitle}>登录账号</span>
+                  <span className={styles.menuTitle}>{translate({id: 'account.loginAccount', message: '登录账号'})}</span>
                 </div>
                 <span className={styles.menuDescription}>
-                  登录以体验 AI 能力，解锁模型选择、在线推理与更多功能。
+                  {translate({id: 'account.loginDesc', message: '登录以体验 AI 能力，解锁模型选择、在线推理与更多功能。'})}
                 </span>
               </div>
               <button
@@ -215,7 +216,7 @@ export default function LogoutNavbarButton({ mobile = false, label = '账号' })
                 onClick={handleLogin}
               >
                 <FiLogIn />
-                <span>登录</span>
+                <span>{translate({id: 'account.login', message: '登录'})}</span>
               </button>
             </>
           )}

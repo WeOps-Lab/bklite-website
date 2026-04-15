@@ -1,0 +1,58 @@
+{
+  "title": {
+    "message": "BlueKing Lite",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "BKLite Logo",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.产品文档": {
+    "message": "Docs",
+    "description": "Navbar item with label 产品文档"
+  },
+  "item.label.部署指南": {
+    "message": "Deploy Guide",
+    "description": "Navbar item with label 部署指南"
+  },
+  "item.label.运维手册": {
+    "message": "Operations",
+    "description": "Navbar item with label 运维手册"
+  },
+  "item.label.开发指南": {
+    "message": "Dev Guide",
+    "description": "Navbar item with label 开发指南"
+  },
+  "item.label.AI体验": {
+    "message": "AI Playground",
+    "description": "Navbar item with label AI体验"
+  },
+  "item.label.价格": {
+    "message": "Pricing",
+    "description": "Navbar item with label 价格"
+  },
+  "item.label.博客": {
+    "message": "Blog",
+    "description": "Navbar item with label 博客"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  },
+  "item.label.DeepWiki": {
+    "message": "DeepWiki",
+    "description": "Navbar item with label DeepWiki"
+  },
+  "item.label.加入社区": {
+    "message": "Join Community",
+    "description": "Navbar item with label 加入社区"
+  },
+  "item.label.在线体验": {
+    "message": "Online Demo",
+    "description": "Navbar item with label 在线体验"
+  },
+  "item.label.账号": {
+    "message": "Account",
+    "description": "Navbar item with label 账号"
+  }
+}

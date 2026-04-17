@@ -658,6 +658,7 @@ echo "${LINUX_SIDECAR_VERSION}" > "${STAGE_L}/VERSION"
 mkdir -p "${STAGE_L}/certs"
 cp "${PKG}/controller/linux/certs/ca.crt" "${STAGE_L}/certs/"
 rm -rf "${STAGE_L}/misc"
+cp /opt/release/linux/fusion-collectors/bklite-controller-installer "${PKG}/controller/linux/"
 (cd "${OPT}" && zip -rq "${PKG}/controller/fusion-collectors-linux-amd64.zip" fusion-collectors)
 log "SUCCESS" "Linux package built."
 
@@ -670,7 +671,7 @@ cp "${PKG}/controller/windows/certs/ca.crt" "${STAGE_W}/certs/"
 # 写入纯版本号
 echo "${WINDOWS_SIDECAR_VERSION}" > "${STAGE_W}/VERSION"
 rm -rf "${STAGE_W}/misc"
-cp ${STAGE_W}/collector-sidecar-installer.exe "${PKG}/controller/windows/"
+cp ${STAGE_W}/bklite-controller-installer.exe "${PKG}/controller/windows/"
 (cd "${OPT}/windows" && zip -rq "${PKG}/controller/fusion-collectors-windows-amd64.zip" fusion-collectors)
 log "SUCCESS" "Windows package built."
 

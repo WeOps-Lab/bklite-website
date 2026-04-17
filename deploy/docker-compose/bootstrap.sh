@@ -860,7 +860,8 @@ python manage.py collector_package_init --os linux --object Nats-Executor --pk_v
 python manage.py controller_package_init --os windows --pk_version $WINDOWS_SIDECAR_VERSION --file_path /apps/pkgs/controller/fusion-collectors-windows-amd64.zip
 python manage.py collector_package_init --os windows --object Telegraf --pk_version latest --file_path /apps/pkgs/collector/windows/telegraf.exe
 python manage.py collector_package_init --os windows --object Nats-Executor --pk_version latest --file_path /apps/pkgs/collector/windows/nats-executor.exe
-python manage.py installer_init --file_path /apps/pkgs/controller/windows/collector-sidecar-installer.exe
+python manage.py installer_init --file_path /apps/pkgs/controller/linux/bklite-controller-installer
+python manage.py installer_init --file_path /apps/pkgs/controller/windows/bklite-controller-installer.exe
 EXPORTER_DIR="/apps/pkgs/collector/linux/exporters"
 
 for filepath in "${EXPORTER_DIR}"/*; do

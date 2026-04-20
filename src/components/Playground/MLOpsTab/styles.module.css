@@ -354,7 +354,19 @@
   background-color: rgba(30, 64, 175, 0.12);
 }
 
+.selectOptionContent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
 .selectOptionName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-weight: 600;
   font-size: 14px;
 }

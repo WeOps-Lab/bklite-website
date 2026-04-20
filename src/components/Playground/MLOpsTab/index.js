@@ -141,6 +141,7 @@ export default function MLOpsTab() {
           .map(item => ({
             id: item.id,
             name: item.name || `Serving #${item.id}`,
+            trainJobAlgorithm: item.train_job_algorithm || '',
           }));
 
         return { scenario, list };
@@ -206,6 +207,7 @@ export default function MLOpsTab() {
 
   // 当前场景的 serving 列表
   const currentServings = servings[selectedScenario] || [];
+  const selectedServing = currentServings.find(model => model.id === selectedModel) || null;
 
   const getScenarioCountText = (scenarioKey) => {
     if (isLoggedIn === false) {
@@ -319,7 +321,7 @@ export default function MLOpsTab() {
                     >
                       <span className={styles.selectValue}>
                         {selectedModel
-                          ? currentServings.find(m => m.id === selectedModel)?.name || `Serving #${selectedModel}`
+                          ? selectedServing?.name || `Serving #${selectedModel}`
                           : currentServings.length ? translate({id: 'playground.mlops.pickModel', message: '请选择模型'}) : translate({id: 'playground.mlops.noModelAvailable', message: '当前场景无可用模型'})}
                       </span>
                       <FiChevronDown className={clsx(styles.selectArrow, modelDropdownOpen && styles.selectArrowUp)} />
@@ -336,7 +338,9 @@ export default function MLOpsTab() {
                                 setModelDropdownOpen(false);
                               }}
                             >
-                              <span className={styles.selectOptionName}>{m.name}</span>
+                              <span className={styles.selectOptionContent}>
+                                <span className={styles.selectOptionName}>{m.name}</span>
+                              </span>
                             </button>
                           </li>
                         ))}
@@ -356,6 +360,7 @@ export default function MLOpsTab() {
                       loginBaseUrl={loginBaseUrl}
                       isLoggedIn={isLoggedIn}
                       selectedModel={selectedModel}
+                      selectedModelAlgorithm={selectedServing?.trainJobAlgorithm || ''}
                       scenarioConfig={scenarioConfig[selectedScenario]}
                     />
                   </div>

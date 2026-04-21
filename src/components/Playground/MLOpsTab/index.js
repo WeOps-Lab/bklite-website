@@ -137,12 +137,22 @@ export default function MLOpsTab() {
         const json = await result.response.json();
         const items = Array.isArray(json.data) ? json.data : [];
         const list = items
-          .filter(item => item.container_info?.state === 'running')
+          .filter(item => item.container_info?.state === "running")
           .map(item => ({
             id: item.id,
-            name: item.name || `Serving #${item.id}`,
-            trainJobAlgorithm: item.train_job_algorithm || '',
-          }));
+            name: item.name || "Serving #" + item.id,
+            trainJobAlgorithm: item.train_job_algorithm || "",
+          }))
+          .sort((a, b) => {
+            const aId = Number(a.id);
+            const bId = Number(b.id);
+
+            if (!Number.isNaN(aId) && !Number.isNaN(bId)) {
+              return aId - bId;
+            }
+
+            return String(a.id).localeCompare(String(b.id), undefined, {numeric: true, sensitivity: "base"});
+          });
 
         return { scenario, list };
       })

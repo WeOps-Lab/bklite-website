@@ -23,9 +23,9 @@
 curl -sSL https://bklite.ai/install.run | bash -s -
 ```
 
-### 2.2 智能版（附带本地大模型环境）
+### 2.2 智能版（附带本地模型环境）
 
-推荐使用智能版获得开箱即用的 AI 体验。该版本不仅包含 OpsPilot，还会配套拉起 VLLM，内置部署相应的 OCR、Embedding 和 Rerank 模型：
+推荐使用智能版获得开箱即用的 AI 体验。该版本不仅包含 OpsPilot，还会配套拉起 VLLM，内置部署相应的 OCR、Embedding 和 Rerank 模型 **（不含LLM大模型）**：
 
 ```bash
 curl -sSL https://bklite.ai/install.run | bash -s - --opspilot --vllm

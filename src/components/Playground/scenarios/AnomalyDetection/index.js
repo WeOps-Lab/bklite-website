@@ -17,7 +17,22 @@ import { authFetch } from '@site/src/lib/playgroundAuth';
 
 import styles from './index.module.css';
 
-const defaultSampleDataUrl = new URL('./sample-data/default.csv', import.meta.url).href;
+const sampleDataUrlMap = {
+  ECOD: new URL('./sample-data/default.csv', import.meta.url).href,
+  PELT: new URL('./sample-data/PELT.csv', import.meta.url).href,
+  EWMA: new URL('./sample-data/EWMA.csv', import.meta.url).href,
+};
+
+function normalizeTrainJobAlgorithm(algorithm) {
+  if (!algorithm) return 'ECOD';
+
+  const normalized = String(algorithm).trim().toUpperCase();
+  return sampleDataUrlMap[normalized] ? normalized : 'ECOD';
+}
+
+function getSampleDataUrlByAlgorithm(algorithm) {
+  return sampleDataUrlMap[normalizeTrainJobAlgorithm(algorithm)] || sampleDataUrlMap.ECOD;
+}
 
 // ==================== 工具函数 ====================
 
@@ -184,6 +199,14 @@ function getChartBounds(values, fixedBounds) {
   };
 }
 
+function appendAnomalyBand(target, startIndex, endIndex) {
+  if (startIndex == null || endIndex == null || endIndex <= startIndex) {
+    return;
+  }
+
+  target.push([startIndex, endIndex]);
+}
+
 function buildAnomalyChartOption({
   sourceSeries,
   resultData,
@@ -261,6 +284,36 @@ function buildAnomalyChartOption({
   const anomalyPoints = anomalyData
     .map((d, i) => d.isAnomaly ? { xAxis: i, yAxis: d.value, value: d.value } : null)
     .filter(p => p !== null);
+  const anomalyBandData = [];
+  let bandStart = null;
+  let lastAnomalyIndex = null;
+
+  anomalyData.forEach((d, i) => {
+    if (!d.isAnomaly) {
+      appendAnomalyBand(anomalyBandData, bandStart, lastAnomalyIndex);
+      bandStart = null;
+      lastAnomalyIndex = null;
+      return;
+    }
+
+    if (bandStart == null) {
+      bandStart = i;
+      lastAnomalyIndex = i;
+      return;
+    }
+
+    if (i - lastAnomalyIndex <= 1) {
+      lastAnomalyIndex = i;
+      return;
+    }
+
+    appendAnomalyBand(anomalyBandData, bandStart, lastAnomalyIndex);
+    bandStart = i;
+    lastAnomalyIndex = i;
+  });
+
+  appendAnomalyBand(anomalyBandData, bandStart, lastAnomalyIndex);
+
   const values = anomalyData.map(d => d.value);
   const bounds = getChartBounds(values, fixedBounds);
   const interval = Math.max(1, Math.floor(anomalyData.length / 6));
@@ -302,6 +355,54 @@ function buildAnomalyChartOption({
     },
     series: [
       {
+        type: 'custom',
+        coordinateSystem: 'cartesian2d',
+        silent: true,
+        tooltip: { show: false },
+        animation: false,
+        z: -10,
+        data: anomalyBandData,
+        renderItem: (params, api) => {
+          const startIndex = api.value(0);
+          const endIndex = api.value(1);
+          const topPoint = api.coord([startIndex, bounds.max]);
+          const bottomPoint = api.coord([endIndex, bounds.min]);
+
+          if (!topPoint || !bottomPoint || !params.coordSys) {
+            return null;
+          }
+
+          const cellWidth = api.size([1, 0])[0];
+          const halfBandPadding = Math.max(1.5, cellWidth * 0.2);
+          const startX = topPoint[0] - halfBandPadding;
+          const endX = bottomPoint[0] + halfBandPadding;
+          const rect = echarts.graphic.clipRectByRect({
+            x: startX,
+            y: topPoint[1],
+            width: Math.max(5, cellWidth * 0.68, endX - startX),
+            height: bottomPoint[1] - topPoint[1]
+          }, {
+            x: params.coordSys.x,
+            y: params.coordSys.y,
+            width: params.coordSys.width,
+            height: params.coordSys.height
+          });
+
+          if (!rect) {
+            return null;
+          }
+
+          return {
+            type: 'rect',
+            shape: rect,
+            style: {
+              fill: 'rgba(239, 68, 68, 0.16)'
+            },
+            silent: true
+          };
+        }
+      },
+      {
         name: translate({id: 'anomalyDetection.timeSeriesData', message: '时序数据'}),
         data: values,
         type: 'line',
@@ -316,13 +417,13 @@ function buildAnomalyChartOption({
         },
         markPoint: {
           symbol: 'circle',
-          symbolSize: 7,
+          symbolSize: 5,
           itemStyle: {
-            color: chartColors.danger,
-            borderColor: '#fff',
-            borderWidth: 2,
-            shadowColor: 'rgba(239, 68, 68, 0.5)',
-            shadowBlur: 8
+            color: 'rgba(239, 68, 68, 0.88)',
+            borderColor: 'rgba(255, 255, 255, 0.92)',
+            borderWidth: 1,
+            shadowColor: 'transparent',
+            shadowBlur: 0
           },
           label: { show: false },
           data: anomalyPoints
@@ -342,7 +443,7 @@ function buildAnomalyChartOption({
       borderWidth: 1,
       textStyle: { fontSize: 13 },
       formatter: params => {
-        const point = params[0];
+        const point = params.find(item => item.seriesType === 'line') || params[0];
         if (!point) return '';
         const idx = point.dataIndex;
         const datum = anomalyData[idx];
@@ -358,7 +459,7 @@ function buildAnomalyChartOption({
 
 // ==================== 组件 ====================
 
-export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, selectedModel, scenarioConfig }) {
+export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, selectedModel, selectedModelAlgorithm, scenarioConfig }) {
   const [dataSource, setDataSource] = useState('sample');
   const [loading, setLoading] = useState(false);
   const [resultData, setResultData] = useState(null);
@@ -379,6 +480,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
   const hasSampleData = Boolean(sampleData?.length);
   const detectedFrequencySeconds = detectSeriesFrequencySeconds(activeSeries);
   const hasResult = Boolean(resultData && !loading);
+  const selectedSampleDataUrl = getSampleDataUrlByAlgorithm(selectedModelAlgorithm);
 
   const handleResetResult = () => {
     setResultData(null);
@@ -395,6 +497,11 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
 
   // ==================== 图表 ====================
 
+  useEffect(() => {
+    setSampleData(null);
+    handleResetResult();
+  }, [selectedSampleDataUrl]);
+
   // 示例数据加载
   useEffect(() => {
     let cancelled = false;
@@ -405,7 +512,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
       }
 
       try {
-        const response = await fetch(defaultSampleDataUrl);
+        const response = await fetch(selectedSampleDataUrl);
         if (!response.ok) {
           throw new Error(translate({id: 'anomalyDetection.sampleDataLoadFailed', message: '示例数据加载失败: {status}'}, {status: response.status}));
         }
@@ -436,7 +543,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
     return () => {
       cancelled = true;
     };
-  }, [dataSource, sampleData]);
+  }, [dataSource, sampleData, selectedSampleDataUrl]);
 
   // 示例数据图表
   useEffect(() => {

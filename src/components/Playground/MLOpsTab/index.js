@@ -22,9 +22,10 @@ import {
 import useAuthStateSync from '@site/src/lib/useAuthStateSync';
 import AnomalyDetection from '@site/src/components/Playground/scenarios/AnomalyDetection';
 import LogClustering from '@site/src/components/Playground/scenarios/LogClustering';
+import ImageClassification from '@site/src/components/Playground/scenarios/ImageClassification';
+import ObjectDetection from '@site/src/components/Playground/scenarios/ObjectDetection';
 import TextClassification from '@site/src/components/Playground/scenarios/TextClassification';
 import TimeSeriesPredict from '@site/src/components/Playground/scenarios/TimeSeriesPredict';
-import ComingSoon from '@site/src/components/Playground/scenarios/ComingSoon';
 
 import styles from './styles.module.css';
 
@@ -69,8 +70,7 @@ function getScenarioConfig() {
       guide: translate({id: 'playground.mlops.image-classification.guide', message: '适合单目标图像分类场景，后续将提供图片上传与推理体验。'}),
       icon: FiImage,
       algorithmType: 'image_classification',
-      servingName: 'image_classification_servings',
-      comingSoon: true
+      servingName: 'image_classification_servings'
     },
     'object-detection': {
       name: translate({id: 'playground.mlops.object-detection.name', message: '目标检测'}),
@@ -78,8 +78,7 @@ function getScenarioConfig() {
       guide: translate({id: 'playground.mlops.object-detection.guide', message: '适合图像中多目标定位场景，后续将开放示例图片与检测结果展示。'}),
       icon: FiTarget,
       algorithmType: 'object_detection',
-      servingName: 'object_detection_servings',
-      comingSoon: true
+      servingName: 'object_detection_servings'
     }
   };
 }
@@ -90,8 +89,8 @@ const scenarioComponents = {
   'time-series': TimeSeriesPredict,
   'log-analysis': LogClustering,
   'text-classification': TextClassification,
-  'image-classification': ComingSoon,
-  'object-detection': ComingSoon,
+  'image-classification': ImageClassification,
+  'object-detection': ObjectDetection,
 };
 
 export default function MLOpsTab() {
@@ -137,11 +136,22 @@ export default function MLOpsTab() {
         const json = await result.response.json();
         const items = Array.isArray(json.data) ? json.data : [];
         const list = items
-          .filter(item => item.container_info?.state === 'running')
+          .filter(item => item.container_info?.state === "running")
           .map(item => ({
             id: item.id,
-            name: item.name || `Serving #${item.id}`,
-          }));
+            name: item.name || "Serving #" + item.id,
+            trainJobAlgorithm: item.train_job_algorithm || "",
+          }))
+          .sort((a, b) => {
+            const aId = Number(a.id);
+            const bId = Number(b.id);
+
+            if (!Number.isNaN(aId) && !Number.isNaN(bId)) {
+              return aId - bId;
+            }
+
+            return String(a.id).localeCompare(String(b.id), undefined, {numeric: true, sensitivity: "base"});
+          });
 
         return { scenario, list };
       })
@@ -206,6 +216,7 @@ export default function MLOpsTab() {
 
   // 当前场景的 serving 列表
   const currentServings = servings[selectedScenario] || [];
+  const selectedServing = currentServings.find(model => model.id === selectedModel) || null;
 
   const getScenarioCountText = (scenarioKey) => {
     if (isLoggedIn === false) {
@@ -319,7 +330,7 @@ export default function MLOpsTab() {
                     >
                       <span className={styles.selectValue}>
                         {selectedModel
-                          ? currentServings.find(m => m.id === selectedModel)?.name || `Serving #${selectedModel}`
+                          ? selectedServing?.name || `Serving #${selectedModel}`
                           : currentServings.length ? translate({id: 'playground.mlops.pickModel', message: '请选择模型'}) : translate({id: 'playground.mlops.noModelAvailable', message: '当前场景无可用模型'})}
                       </span>
                       <FiChevronDown className={clsx(styles.selectArrow, modelDropdownOpen && styles.selectArrowUp)} />
@@ -336,7 +347,9 @@ export default function MLOpsTab() {
                                 setModelDropdownOpen(false);
                               }}
                             >
-                              <span className={styles.selectOptionName}>{m.name}</span>
+                              <span className={styles.selectOptionContent}>
+                                <span className={styles.selectOptionName}>{m.name}</span>
+                              </span>
                             </button>
                           </li>
                         ))}
@@ -356,6 +369,7 @@ export default function MLOpsTab() {
                       loginBaseUrl={loginBaseUrl}
                       isLoggedIn={isLoggedIn}
                       selectedModel={selectedModel}
+                      selectedModelAlgorithm={selectedServing?.trainJobAlgorithm || ''}
                       scenarioConfig={scenarioConfig[selectedScenario]}
                     />
                   </div>

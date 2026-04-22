@@ -1007,9 +1007,9 @@ do_install() {
     fi
     
     # 构建安装应用列表
-    INSTALL_APPS="system_mgmt,cmdb,monitor,node_mgmt,console_mgmt,alerts,log,mlops,operation_analysis,job_mgmt"
+    INSTALL_APPS="system_mgmt,cmdb,monitor,node_mgmt,console_mgmt,alerts,log,mlops,operation_analysis,job_mgmt,opspilot"
     if [[ "$OPSPILOT_ENABLED" == "true" ]]; then
-        INSTALL_APPS="${INSTALL_APPS},opspilot"
+        #INSTALL_APPS="${INSTALL_APPS},opspilot"
         log "INFO" "安装应用列表: ${INSTALL_APPS}"
     fi
     

@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 
 import clsx from 'clsx';
 import { FiAlertTriangle, FiCheck, FiImage, FiPlay, FiSliders, FiTarget, FiUploadCloud } from 'react-icons/fi';
+import {translate} from '@docusaurus/Translate';
+
 import { authFetch } from '@site/src/lib/playgroundAuth';
 
 import styles from './index.module.css';
@@ -47,7 +49,7 @@ function normalizeResponse(json) {
       .map((item, index) => ({
         id: `${item?.class_id ?? index}-${index}`,
         classId: Number.isFinite(Number(item?.class_id)) ? Number(item.class_id) : index,
-        className: item?.class_name || item?.label || `目标 ${index + 1}`,
+        className: item?.class_name || item?.label || `${translate({id: 'objectDetection.targetPrefix', message: '目标'})} ${index + 1}`,
         confidence: Number(item?.confidence ?? item?.score ?? item?.probability),
         bbox: {
           x1: Number(item?.bbox?.x1 ?? 0),
@@ -112,7 +114,7 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
 
   const payload = mode === 'upload' ? uploadPayload : '';
   const preview = mode === 'upload' ? uploadPayload : '';
-  const previewLabel = mode === 'upload' ? (uploadName || '上传图片') : '示例图片';
+  const previewLabel = mode === 'upload' ? (uploadName || translate({id: 'objectDetection.uploadImage', message: '上传图片'})) : translate({id: 'objectDetection.sampleImage', message: '示例图片'});
   const hasPreview = mode === 'upload' ? Boolean(uploadPayload) : false;
   const visibleResult = result;
   const isUploadEmpty = mode === 'upload' && !uploadPayload && !visibleResult;
@@ -125,7 +127,7 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
       return;
     }
     if (!acceptedTypes.includes(file.type)) {
-      setUploadError('仅支持 JPG、PNG、WEBP、BMP 图片');
+      setUploadError(translate({id: 'objectDetection.error.unsupportedFormat', message: '仅支持 JPG、PNG、WEBP、BMP 图片'}));
       return;
     }
 
@@ -137,7 +139,7 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
       setResult(null);
       setSettingsOpen(false);
     } catch {
-      setUploadError('图片读取失败');
+      setUploadError(translate({id: 'objectDetection.error.readFailed', message: '图片读取失败'}));
     }
   };
 
@@ -150,18 +152,18 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
         aria-haspopup="dialog"
         aria-expanded={settingsOpen}
       >
-        <FiSliders /> 参数设置
+        <FiSliders /> {translate({id: 'objectDetection.paramSettings', message: '参数设置'})}
       </button>
       {settingsOpen ? (
-        <div className={styles.settingsPopover} role="dialog" aria-label="检测参数设置">
+        <div className={styles.settingsPopover} role="dialog" aria-label={translate({id: 'objectDetection.detectionParamSettings', message: '检测参数设置'})}>
           <div className={styles.settingsPopoverHeader}>
-            <div className={styles.settingsPopoverTitle}>检测参数</div>
-            <div className={styles.settingsPopoverHint}>调整框选严格程度与输出数量</div>
+            <div className={styles.settingsPopoverTitle}>{translate({id: 'objectDetection.detectionParams', message: '检测参数'})}</div>
+            <div className={styles.settingsPopoverHint}>{translate({id: 'objectDetection.paramHint', message: '调整框选严格程度与输出数量'})}</div>
           </div>
           <div className={styles.settingsPopoverFields}>
             <label className={styles.popoverField}>
               <div className={styles.popoverFieldTop}>
-                <span className={styles.popoverFieldLabel}>置信度</span>
+                <span className={styles.popoverFieldLabel}>{translate({id: 'objectDetection.confidence', message: '置信度'})}</span>
                 <strong className={styles.popoverFieldValue}>{conf.toFixed(2)}</strong>
               </div>
               <input type="range" min="0.05" max="1" step="0.05" value={conf} onChange={(e) => setConf(Number(e.target.value))} />
@@ -175,7 +177,7 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
             </label>
             <label className={styles.popoverField}>
               <div className={styles.popoverFieldTop}>
-                <span className={styles.popoverFieldLabel}>最大目标数</span>
+                <span className={styles.popoverFieldLabel}>{translate({id: 'objectDetection.maxTargets', message: '最大目标数'})}</span>
                 <strong className={styles.popoverFieldValue}>{maxDetections}</strong>
               </div>
               <input type="number" min="1" max="300" value={maxDetections} onChange={(e) => setMaxDetections(clamp(e.target.value || 1, 1, 300))} />
@@ -188,15 +190,15 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
 
   const handleRun = async () => {
     if (!selectedModel) {
-      setFormError('请选择一个模型');
+      setFormError(translate({id: 'objectDetection.error.selectModel', message: '请选择一个模型'}));
       return;
     }
     if (mode === 'sample') {
-      setFormError('暂无示例图片，请切换到上传图片后再进行检测');
+      setFormError(translate({id: 'objectDetection.error.noSampleSwitch', message: '暂无示例图片，请切换到上传图片后再进行检测'}));
       return;
     }
     if (mode === 'upload' && !uploadPayload) {
-      setUploadError('请先上传图片');
+      setUploadError(translate({id: 'objectDetection.error.uploadFirst', message: '请先上传图片'}));
       return;
     }
 
@@ -227,25 +229,25 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
         return;
       }
       if (response.reason === 'auth-expired') {
-        setFormError('登录已过期，请重新登录后重试');
+        setFormError(translate({id: 'objectDetection.error.authExpired', message: '登录已过期，请重新登录后重试'}));
         return;
       }
       if (response.reason === 'http-error') {
-        throw new Error(`推理请求失败: ${response.status}`);
+        throw new Error(`${translate({id: 'objectDetection.error.inferenceRequestFailed', message: '推理请求失败'})}: ${response.status}`);
       }
       if (response.reason === 'network-error') {
-        throw (response.error || new Error('网络请求失败'));
+        throw (response.error || new Error(translate({id: 'objectDetection.error.networkFailed', message: '网络请求失败'})));
       }
 
       const normalized = normalizeResponse(await response.response.json());
       if (!normalized.success) {
-        setFormError(normalized.error || '目标检测失败，请稍后重试');
+        setFormError(normalized.error || translate({id: 'objectDetection.error.detectFailed', message: '目标检测失败，请稍后重试'}));
         return;
       }
 
       setResult(normalized);
     } catch (error) {
-      setFormError(`推理失败: ${error.message}`);
+      setFormError(`${translate({id: 'objectDetection.error.inferenceFailed', message: '推理失败'})}: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -253,13 +255,13 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.label}>数据源</div>
+      <div className={styles.label}>{translate({id: 'objectDetection.dataSource', message: '数据源'})}</div>
       <div className={styles.dataSourceTabs}>
         <button type="button" className={clsx(styles.dataSourceTab, mode === 'sample' && styles.dataSourceTabActive)} onClick={() => { setMode('sample'); setResult(null); setFormError(''); setSettingsOpen(false); }}>
-          示例图片
+          {translate({id: 'objectDetection.sampleImage', message: '示例图片'})}
         </button>
         <button type="button" className={clsx(styles.dataSourceTab, mode === 'upload' && styles.dataSourceTabActive)} onClick={() => { setMode('upload'); setResult(null); setFormError(''); setSettingsOpen(false); }}>
-          上传图片
+          {translate({id: 'objectDetection.uploadImage', message: '上传图片'})}
         </button>
       </div>
 
@@ -275,8 +277,8 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
               <div className={clsx(styles.uploadPanel, uploadError && styles.uploadPanelError)}>
                 <button type="button" className={styles.uploadPanelTrigger} onClick={() => inputRef.current?.click()}>
                   <span className={styles.uploadPanelIcon}><FiUploadCloud /></span>
-                  <span className={styles.uploadPanelTitle}>上传待检测图片</span>
-                  <span className={styles.uploadPanelHint}>支持 JPG、PNG、WEBP、BMP。上传后会在这里展示原图，并在检测完成后叠加框选结果。</span>
+                  <span className={styles.uploadPanelTitle}>{translate({id: 'objectDetection.uploadPanelTitle', message: '上传待检测图片'})}</span>
+                  <span className={styles.uploadPanelHint}>{translate({id: 'objectDetection.uploadPanelHint', message: '支持 JPG、PNG、WEBP、BMP。上传后会在这里展示原图，并在检测完成后叠加框选结果。'})}</span>
                 </button>
               </div>
             ) : (
@@ -291,8 +293,8 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
                   </div>
                   <div className={styles.resultHeaderActions}>
                     {renderSettingsTrigger()}
-                    {mode === 'upload' && uploadPayload ? <button type="button" className={clsx(styles.resultAction, styles.resultActionSubtle)} onClick={() => inputRef.current?.click()}>重新上传</button> : null}
-                    <span className={styles.resultStatus}><FiCheck /> 检测完成</span>
+                    {mode === 'upload' && uploadPayload ? <button type="button" className={clsx(styles.resultAction, styles.resultActionSubtle)} onClick={() => inputRef.current?.click()}>{translate({id: 'objectDetection.reupload', message: '重新上传'})}</button> : null}
+                    <span className={styles.resultStatus}><FiCheck /> {translate({id: 'objectDetection.detectionDone', message: '检测完成'})}</span>
                   </div>
                 </div>
               ) : (
@@ -300,19 +302,19 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
                   <div className={styles.previewTitle}><FiImage /> {previewLabel}</div>
                   <div className={styles.resultHeaderActions}>
                     {renderSettingsTrigger()}
-                    {mode === 'upload' && uploadPayload ? <button type="button" className={styles.subbtn} onClick={() => inputRef.current?.click()}>重新上传</button> : null}
+                    {mode === 'upload' && uploadPayload ? <button type="button" className={styles.subbtn} onClick={() => inputRef.current?.click()}>{translate({id: 'objectDetection.reupload', message: '重新上传'})}</button> : null}
                   </div>
                 </div>
               )}
               <div className={styles.previewFrame}>
                 {mode === 'sample' ? (
                   <div className={styles.samplePlaceholder}>
-                    <div className={styles.samplePlaceholderTitle}>暂无示例</div>
-                    <div className={styles.samplePlaceholderDesc}>当前场景暂未提供示例图片，请切换到上传图片后体验目标检测能力。</div>
+                    <div className={styles.samplePlaceholderTitle}>{translate({id: 'objectDetection.noSampleTitle', message: '暂无示例'})}</div>
+                    <div className={styles.samplePlaceholderDesc}>{translate({id: 'objectDetection.noSampleDesc', message: '当前场景暂未提供示例图片，请切换到上传图片后体验目标检测能力。'})}</div>
                   </div>
                 ) : hasPreview ? (
                   <>
-                    <img src={preview} alt="preview" className={styles.img} />
+                    <img src={preview} alt={translate({id: "objectDetection.previewAlt", message: "预览图片"})} className={styles.img} />
                     {visibleResult ? (
                       <div className={styles.overlay}>
                         {visibleResult.detections.map((item, index) => (
@@ -326,23 +328,23 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
                 ) : (
                   <button type="button" className={styles.previewUploadTrigger} onClick={() => inputRef.current?.click()}>
                     <span className={styles.previewUploadIcon}><FiUploadCloud /></span>
-                    <span className={styles.previewUploadTitle}>点击上传图片</span>
-                    <span className={styles.previewUploadDesc}>上传图片后，将在这里预览待检测图片，检测结果也会直接叠加显示在图像上。</span>
+                    <span className={styles.previewUploadTitle}>{translate({id: 'objectDetection.clickUpload', message: '点击上传图片'})}</span>
+                    <span className={styles.previewUploadDesc}>{translate({id: 'objectDetection.clickUploadDesc', message: '上传图片后，将在这里预览待检测图片，检测结果也会直接叠加显示在图像上。'})}</span>
                   </button>
                 )}
               </div>
               {visibleResult ? (
                 <div className={styles.resultSummary}>
                   <div className={styles.resultStat}>
-                    <span className={styles.resultStatLabel}>识别目标数</span>
+                    <span className={styles.resultStatLabel}>{translate({id: 'objectDetection.detectedTargets', message: '识别目标数'})}</span>
                     <span className={styles.resultStatValue}>{detectionCount}</span>
                   </div>
                   <div className={styles.resultStat}>
-                    <span className={styles.resultStatLabel}>最高识别置信度</span>
+                    <span className={styles.resultStatLabel}>{translate({id: 'objectDetection.topConfidence', message: '最高识别置信度'})}</span>
                     <span className={styles.resultStatValue}>{formatPercent(topConfidence)}</span>
                   </div>
                   <div className={styles.resultStat}>
-                    <span className={styles.resultStatLabel}>推理耗时</span>
+                    <span className={styles.resultStatLabel}>{translate({id: 'objectDetection.inferenceTime', message: '推理耗时'})}</span>
                     <span className={styles.resultStatValue}>{formatMs(visibleResult.metadata?.total_time_ms)}</span>
                   </div>
                 </div>
@@ -354,10 +356,10 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
         </div>
 
         <button type="button" className={styles.run} disabled={loading || !selectedModel || !payload} onClick={handleRun}>
-          <FiPlay /> 检测这张图片
+          <FiPlay /> {translate({id: 'objectDetection.runButton', message: '检测这张图片'})}
         </button>
 
-        {loading ? <div className={styles.loading}>目标检测中...</div> : null}
+        {loading ? <div className={styles.loading}>{translate({id: 'objectDetection.loading', message: '目标检测中...'})}</div> : null}
       </div>    </div>
   );
 }

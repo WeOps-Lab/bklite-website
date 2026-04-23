@@ -647,7 +647,7 @@ export default function LogClustering({
                   onClick={() => setSelectedClusterId(cluster.cluster_id)}
                 >
                   <div className={styles.clusterCardHeader}>
-                    <span className={styles.clusterId}>Cluster #{cluster.cluster_id}</span>
+                    <span className={styles.clusterId}>{translate({id: "logClustering.clusterLabel", message: "Cluster #{clusterId}", values: {clusterId: cluster.cluster_id}})}</span>
                     <span className={styles.clusterCount}>{cluster.count} {translate({id: 'logClustering.unit.items', message: '条'})}</span>
                   </div>
                   <div className={styles.clusterTemplate}>{cluster.template}</div>
@@ -668,7 +668,7 @@ export default function LogClustering({
             {selectedCluster ? (
               <div className={styles.detailCard}>
                 <div className={styles.detailHeader}>
-                  <span className={styles.detailTitle}>Cluster #{selectedCluster.cluster_id}</span>
+                  <span className={styles.detailTitle}>{translate({id: "logClustering.clusterLabel", message: "Cluster #{clusterId}", values: {clusterId: selectedCluster.cluster_id}})}</span>
                   <span className={styles.detailBadge}>{selectedCluster.count} {translate({id: 'logClustering.unit.items', message: '条'})}</span>
                 </div>
 
@@ -701,7 +701,7 @@ export default function LogClustering({
                 </div>
               </div>
             ) : (
-              <div className={styles.emptyState}>请选择左侧模板查看详情</div>
+              <div className={styles.emptyState}>{translate({id: 'logClustering.selectTemplateHint', message: '请选择左侧模板查看详情'})}</div>
             )}
           </div>
 
@@ -718,21 +718,21 @@ export default function LogClustering({
         <div className={styles.unknownPanelWrap}>
           <div className={styles.unknownPanel}>
             <div className={styles.unknownHeader}>
-              <div className={styles.sectionHeading}>未归类日志</div>
-              <div className={styles.unknownHint}>这些日志未命中已有模板，可能代表新型模式或异常。</div>
+              <div className={styles.sectionHeading}>{translate({id: 'logClustering.unknownLogsHeading', message: '未归类日志'})}</div>
+              <div className={styles.unknownHint}>{translate({id: 'logClustering.unknownLogsHint', message: '这些日志未命中已有模板，可能代表新型模式或异常。'})}</div>
             </div>
 
             <div className={styles.unknownList}>
               {pagedUnknownLogs.length ? pagedUnknownLogs.map(item => (
                 <div key={`${item.index}-${item.log.slice(0, 12)}`} className={styles.unknownItem}>
                   <div className={styles.unknownMeta}>
-                    <span>索引 #{item.index}</span>
-                    <span>{item.reason}</span>
+                    <span>{translate({id: 'logClustering.indexPrefix', message: '索引'})} #{item.index}</span>
+                    <span>{item.reason === "no_matching_template" ? translate({id: "logClustering.reason.noMatchingTemplate", message: "未命中已有模板"}) : item.reason}</span>
                   </div>
                   <div className={styles.unknownText}>{item.log}</div>
                 </div>
               )) : (
-                <div className={styles.emptyState}>当前没有未归类日志</div>
+                <div className={styles.emptyState}>{translate({id: 'logClustering.noUnknownLogs', message: '当前没有未归类日志'})}</div>
               )}
             </div>
           </div>
@@ -754,9 +754,9 @@ export default function LogClustering({
     if (dataSource === 'sample') {
       return (
         <LogInputPreview
-          title="内置日志样例"
-          fileLabel="示例数据"
-          infoText={sampleStats ? `${sampleStats.sentLines} 条日志` : '加载中...'}
+          title={translate({id: 'logClustering.builtinSample', message: '内置日志样例'})}
+          fileLabel={translate({id: 'logClustering.sampleDataLabel', message: '示例数据'})}
+          infoText={sampleStats ? `${sampleStats.sentLines} ${translate({id: 'logClustering.unit.logsCount', message: '条日志'})}` : translate({id: 'logClustering.loadingText', message: '加载中...'})}
           logs={sampleLogs.slice(0, PREVIEW_LINE_COUNT)}
           truncated={Boolean(sampleStats?.truncated)}
           action={null}
@@ -773,7 +773,7 @@ export default function LogClustering({
       <div className={styles.sampleDataSection}>
         <LogInputPreview
           title={uploadFileName}
-          infoText={`${uploadStats?.sentLines || 0} 条日志`}
+          infoText={`${uploadStats?.sentLines || 0} ${translate({id: 'logClustering.unit.logsCount', message: '条日志'})}`}
           logs={uploadLogs.slice(0, PREVIEW_LINE_COUNT)}
           truncated={Boolean(uploadStats?.truncated)}
           action={(
@@ -782,7 +782,7 @@ export default function LogClustering({
               className={styles.uploadReplaceTop}
               onClick={handleReplaceUpload}
             >
-              重新上传
+              {translate({id: 'logClustering.reupload', message: '重新上传'})}
             </button>
           )}
           loading={loading}
@@ -811,7 +811,7 @@ export default function LogClustering({
   return (
     <div className={styles.scenarioContent}>
       <div className={styles.formGroup}>
-        <div className={styles.formLabel}>数据源</div>
+        <div className={styles.formLabel}>{translate({id: 'logClustering.dataSource', message: '数据源'})}</div>
         <div className={styles.dataSourceTabs}>
           <button
             type="button"
@@ -826,7 +826,7 @@ export default function LogClustering({
               setUploadError('');
             }}
           >
-            示例数据
+            {translate({id: 'logClustering.sampleDataLabel', message: '示例数据'})}
           </button>
           <button
             type="button"
@@ -836,7 +836,7 @@ export default function LogClustering({
               setDataSource('upload');
             }}
           >
-            上传文件
+            {translate({id: 'logClustering.uploadFile', message: '上传文件'})}
           </button>
         </div>
 
@@ -862,13 +862,13 @@ export default function LogClustering({
                   <FiUploadCloud />
                 </div>
                 <p className={styles.uploadAreaText}>
-                  {uploadFileName ? `已选择: ${uploadFileName}` : '点击或拖拽上传日志文件'}
+                  {uploadFileName ? `${translate({id: 'logClustering.selectedPrefix', message: '已选择:'})}: ${uploadFileName}` : translate({id: 'logClustering.clickOrDragUpload', message: '点击或拖拽上传日志文件'})}
                 </p>
-                <p className={styles.uploadAreaHint}>仅支持 TXT 文件，按行解析，一行视为一条日志。</p>
+                <p className={styles.uploadAreaHint}>{translate({id: 'logClustering.uploadHint', message: '仅支持 TXT 文件，按行解析，一行视为一条日志。'})}</p>
               </button>
               <button type="button" className={styles.templateDownload} onClick={handleDownloadTemplate}>
                 <FiDownload />
-                下载示例模板
+                {translate({id: 'logClustering.downloadTemplate', message: '下载示例模板'})}
               </button>
             </div>
             {uploadError && (
@@ -902,7 +902,7 @@ export default function LogClustering({
           disabled={loading || !selectedModel || !activeLogs?.length}
         >
           <FiPlay />
-          开始日志聚类
+          {translate({id: 'logClustering.startClustering', message: '开始日志聚类'})}
         </button>
       </div>
 

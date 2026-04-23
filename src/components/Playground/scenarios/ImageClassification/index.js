@@ -42,7 +42,7 @@ function normalizeResponse(json) {
     metadata: root.metadata || json?.metadata || {},
     prediction: raw.length ? {
       id: Number.isFinite(Number(raw[0]?.class_id)) ? Number(raw[0].class_id) : 0,
-      name: raw[0]?.class_name || raw[0]?.label || raw[0]?.prediction || '未知类别',
+      name: raw[0]?.class_name || raw[0]?.label || raw[0]?.prediction || translate({id: 'imageClassification.unknownCategory', message: '未知类别'}),
       confidence: Number(raw[0]?.confidence ?? raw[0]?.score ?? raw[0]?.probability),
     } : null,
   };
@@ -60,7 +60,7 @@ export default function ImageClassification({ apiBase, loginBaseUrl, selectedMod
 
   const payload = mode === 'upload' ? uploadPayload : '';
   const preview = mode === 'upload' ? uploadPayload : '';
-  const previewLabel = mode === 'upload' ? (uploadName || '上传图片') : '示例图片';
+  const previewLabel = mode === 'upload' ? (uploadName || translate({id: 'imageClassification.uploadImage', message: '上传图片'})) : translate({id: 'imageClassification.sampleImage', message: '示例图片'});
   const hasPreview = mode === 'upload' ? Boolean(uploadPayload) : false;
 
   const handleUpload = async (event) => {
@@ -69,7 +69,7 @@ export default function ImageClassification({ apiBase, loginBaseUrl, selectedMod
       return;
     }
     if (!acceptedTypes.includes(file.type)) {
-      setUploadError('仅支持 JPG、PNG、WEBP、BMP 图片');
+      setUploadError(translate({id: 'imageClassification.error.unsupportedFormat', message: '仅支持 JPG、PNG、WEBP、BMP 图片'}));
       return;
     }
 
@@ -80,21 +80,21 @@ export default function ImageClassification({ apiBase, loginBaseUrl, selectedMod
       setFormError('');
       setResult(null);
     } catch {
-      setUploadError('图片读取失败');
+      setUploadError(translate({id: 'imageClassification.error.readFailed', message: '图片读取失败'}));
     }
   };
 
   const handleRun = async () => {
     if (!selectedModel) {
-      setFormError('请选择一个模型');
+      setFormError(translate({id: 'imageClassification.error.selectModel', message: '请选择一个模型'}));
       return;
     }
     if (mode === 'sample') {
-      setFormError('暂无示例图片，请切换到上传图片后再进行识别');
+      setFormError(translate({id: 'imageClassification.error.noSampleSwitch', message: '暂无示例图片，请切换到上传图片后再进行识别'}));
       return;
     }
     if (mode === 'upload' && !uploadPayload) {
-      setUploadError('请先上传图片');
+      setUploadError(translate({id: 'imageClassification.error.uploadFirst', message: '请先上传图片'}));
       return;
     }
 
@@ -117,25 +117,25 @@ export default function ImageClassification({ apiBase, loginBaseUrl, selectedMod
         return;
       }
       if (response.reason === 'auth-expired') {
-        setFormError('登录已过期，请重新登录后重试');
+        setFormError(translate({id: 'imageClassification.error.authExpired', message: '登录已过期，请重新登录后重试'}));
         return;
       }
       if (response.reason === 'http-error') {
-        throw new Error(`推理请求失败: ${response.status}`);
+        throw new Error(`${translate({id: 'imageClassification.error.inferenceRequestFailed', message: '推理请求失败'})}: ${response.status}`);
       }
       if (response.reason === 'network-error') {
-        throw (response.error || new Error('网络请求失败'));
+        throw (response.error || new Error(translate({id: 'imageClassification.error.networkFailed', message: '网络请求失败'})));
       }
 
       const normalized = normalizeResponse(await response.response.json());
       if (!normalized.success) {
-        setFormError(normalized.error || '图片分类失败，请稍后重试');
+        setFormError(normalized.error || translate({id: 'imageClassification.error.classifyFailed', message: '图片分类失败，请稍后重试'}));
         return;
       }
 
       setResult(normalized);
     } catch (error) {
-      setFormError(`推理失败: ${error.message}`);
+      setFormError(`${translate({id: 'imageClassification.error.inferenceFailed', message: '推理失败'})}: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -143,13 +143,13 @@ export default function ImageClassification({ apiBase, loginBaseUrl, selectedMod
 
   return (
     <div className={styles.wrap}>
-      <div className={styles.label}>数据源</div>
+      <div className={styles.label}>{translate({id: 'imageClassification.dataSource', message: '数据源'})}</div>
       <div className={styles.dataSourceTabs}>
         <button type="button" className={clsx(styles.dataSourceTab, mode === 'sample' && styles.dataSourceTabActive)} onClick={() => { setMode('sample'); setResult(null); setFormError(''); }}>
-          示例图片
+          {translate({id: 'imageClassification.sampleImage', message: '示例图片'})}
         </button>
         <button type="button" className={clsx(styles.dataSourceTab, mode === 'upload' && styles.dataSourceTabActive)} onClick={() => { setMode('upload'); setResult(null); setFormError(''); }}>
-          上传图片
+          {translate({id: 'imageClassification.uploadImage', message: '上传图片'})}
         </button>
       </div>
 
@@ -165,8 +165,8 @@ export default function ImageClassification({ apiBase, loginBaseUrl, selectedMod
               <div className={clsx(styles.uploadPanel, uploadError && styles.uploadPanelError)}>
                 <button type="button" className={styles.uploadPanelTrigger} onClick={() => inputRef.current?.click()}>
                   <span className={styles.uploadPanelIcon}><FiUploadCloud /></span>
-                  <span className={styles.uploadPanelTitle}>上传待识别图片</span>
-                  <span className={styles.uploadPanelHint}>支持 JPG、PNG、WEBP、BMP。上传后会在这里展示原图，并在识别完成后展示分类结果。</span>
+                  <span className={styles.uploadPanelTitle}>{translate({id: 'imageClassification.uploadPanelTitle', message: '上传待识别图片'})}</span>
+                  <span className={styles.uploadPanelHint}>{translate({id: 'imageClassification.uploadPanelHint', message: '支持 JPG、PNG、WEBP、BMP。上传后会在这里展示原图，并在识别完成后展示分类结果。'})}</span>
                 </button>
               </div>
             ) : (
@@ -180,36 +180,36 @@ export default function ImageClassification({ apiBase, loginBaseUrl, selectedMod
                       <span className={styles.resultHeaderTitle}>{previewLabel}</span>
                     </div>
                     <div className={styles.resultHeaderActions}>
-                      {mode === 'upload' && uploadPayload ? <button type="button" className={clsx(styles.resultAction, styles.resultActionSubtle)} onClick={() => inputRef.current?.click()}>重新上传</button> : null}
-                      <span className={styles.resultStatus}><FiCheck /> 识别完成</span>
+                      {mode === 'upload' && uploadPayload ? <button type="button" className={clsx(styles.resultAction, styles.resultActionSubtle)} onClick={() => inputRef.current?.click()}>{translate({id: 'imageClassification.reupload', message: '重新上传'})}</button> : null}
+                      <span className={styles.resultStatus}><FiCheck /> {translate({id: 'imageClassification.recognitionDone', message: '识别完成'})}</span>
                     </div>
                   </div>
                 ) : (
                   <div className={styles.previewHeader}>
                     <div className={styles.previewTitle}><FiImage /> {previewLabel}</div>
-                    {mode === 'upload' && uploadPayload ? <button type="button" className={styles.subbtn} onClick={() => inputRef.current?.click()}>重新上传</button> : null}
+                    {mode === 'upload' && uploadPayload ? <button type="button" className={styles.subbtn} onClick={() => inputRef.current?.click()}>{translate({id: 'imageClassification.reupload', message: '重新上传'})}</button> : null}
                   </div>
                 )}
                 <div className={styles.previewFrame}>
                   {mode === 'sample' ? (
                     <div className={styles.samplePlaceholder}>
-                      <div className={styles.samplePlaceholderTitle}>暂无示例</div>
-                      <div className={styles.samplePlaceholderDesc}>当前场景暂未提供示例图片，请切换到上传图片后体验分类能力。</div>
+                      <div className={styles.samplePlaceholderTitle}>{translate({id: 'imageClassification.noSampleTitle', message: '暂无示例'})}</div>
+                      <div className={styles.samplePlaceholderDesc}>{translate({id: 'imageClassification.noSampleDesc', message: '当前场景暂未提供示例图片，请切换到上传图片后体验分类能力。'})}</div>
                     </div>
-                  ) : hasPreview ? <img src={preview} alt="preview" className={styles.img} /> : null}
+                  ) : hasPreview ? <img src={preview} alt={translate({id: "imageClassification.previewAlt", message: "预览图片"})} className={styles.img} /> : null}
                 </div>
                 {result?.prediction ? (
                   <div className={styles.resultSummary}>
                     <div className={clsx(styles.resultStat, styles.resultStatPrimary)}>
-                      <span className={styles.resultStatLabel}>识别类别</span>
+                      <span className={styles.resultStatLabel}>{translate({id: 'imageClassification.resultCategory', message: '识别类别'})}</span>
                       <span className={styles.resultStatValue}>{result.prediction.name}</span>
                     </div>
                     <div className={styles.resultStat}>
-                      <span className={styles.resultStatLabel}>置信度</span>
+                      <span className={styles.resultStatLabel}>{translate({id: 'imageClassification.confidence', message: '置信度'})}</span>
                       <span className={styles.resultStatValue}>{formatPercent(result.prediction.confidence)}</span>
                     </div>
                     <div className={styles.resultStat}>
-                      <span className={styles.resultStatLabel}>推理耗时</span>
+                      <span className={styles.resultStatLabel}>{translate({id: 'imageClassification.inferenceTime', message: '推理耗时'})}</span>
                       <span className={styles.resultStatValue}>{formatMs(result.metadata?.total_time_ms)}</span>
                     </div>
                   </div>
@@ -220,10 +220,10 @@ export default function ImageClassification({ apiBase, loginBaseUrl, selectedMod
         </div>
       
         <button type="button" className={styles.run} disabled={loading || !selectedModel || !payload} onClick={handleRun}>
-          <FiPlay /> 识别这张图片
+          <FiPlay /> {translate({id: 'imageClassification.runButton', message: '识别这张图片'})}
         </button>
       
-        {loading ? <div className={styles.loading}>图片分类中...</div> : null}
+        {loading ? <div className={styles.loading}>{translate({id: 'imageClassification.loading', message: '图片分类中...'})}</div> : null}
       </div>
     </div>
   );

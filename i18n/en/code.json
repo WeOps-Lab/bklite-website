@@ -1202,7 +1202,7 @@
     "message": "This scenario is under development. Stay tuned!"
   },
   "logClustering.inferenceLoading": {
-    "message": "Model inference in progress..."
+    "message": "Running inference..."
   },
   "logClustering.unknownSize": {
     "message": "Unknown size"
@@ -1211,40 +1211,40 @@
     "message": "Pagination"
   },
   "logClustering.pagination.pagePrefix": {
-    "message": "Page "
+    "message": "Page"
   },
   "logClustering.pagination.pageSuffix": {
     "message": ""
   },
   "logClustering.pagination.totalPrefix": {
-    "message": "Total "
+    "message": "Total"
   },
   "logClustering.pagination.totalSuffix": {
-    "message": " items"
+    "message": "items"
   },
   "logClustering.pagination.prevPage": {
-    "message": "Previous"
+    "message": "Previous page"
   },
   "logClustering.pagination.nextPage": {
-    "message": "Next"
+    "message": "Next page"
   },
   "logClustering.preview.truncatedPrefix": {
-    "message": "Only sending the first "
+    "message": "Only the first"
   },
   "logClustering.preview.truncatedMiddle": {
-    "message": " valid logs, previewing the first "
+    "message": "valid logs are sent. Previewing the first"
   },
   "logClustering.preview.truncatedSuffix": {
-    "message": " entries."
+    "message": "entries."
   },
   "logClustering.preview.normalPrefix": {
-    "message": "Previewing the first "
+    "message": "Previewing the first"
   },
   "logClustering.preview.normalSuffix": {
-    "message": " logs."
+    "message": "log entries."
   },
   "logClustering.preview.noLogs": {
-    "message": "No logs available for preview"
+    "message": "No logs to preview"
   },
   "logClustering.error.sampleLoadFailed": {
     "message": "Failed to load sample data"
@@ -1256,25 +1256,25 @@
     "message": "Only .txt text files are supported"
   },
   "logClustering.error.noValidLogs": {
-    "message": "No valid logs found. Please check the file content"
+    "message": "No valid logs found. Please check the file contents."
   },
   "logClustering.error.parseFailed": {
-    "message": "File parsing failed. Please check the file format"
+    "message": "Failed to parse file. Please check the format."
   },
   "logClustering.error.selectModel": {
     "message": "Please select a model"
   },
   "logClustering.error.sampleNotLoaded": {
-    "message": "Sample data is still loading"
+    "message": "Sample data has not loaded yet"
   },
   "logClustering.error.uploadFirst": {
     "message": "Please upload a log file first"
   },
   "logClustering.error.authExpired": {
-    "message": "Login expired. Please log in again"
+    "message": "Session expired. Please log in again."
   },
   "logClustering.error.inferenceFailed": {
-    "message": "Inference Failed"
+    "message": "Inference failed"
   },
   "logClustering.error.networkFailed": {
     "message": "Network request failed"
@@ -1307,10 +1307,10 @@
     "message": "Key Templates"
   },
   "logClustering.unit.items": {
-    "message": " items"
+    "message": "items"
   },
   "logClustering.noTemplates": {
-    "message": "No clustering templates yet"
+    "message": "No clustering templates"
   },
   "logClustering.tab.clusterResults": {
     "message": "Cluster Results"
@@ -1331,10 +1331,10 @@
     "message": "Hit Ratio"
   },
   "logClustering.noSampleLogs": {
-    "message": "No sample logs available"
+    "message": "No sample logs"
   },
   "logClustering.noMatchingTemplates": {
-    "message": "No matching template results found"
+    "message": "No matching templates found"
   },
   "logClustering.detail.templateContent": {
     "message": "Template Content"
@@ -1346,31 +1346,31 @@
     "message": "Index Count"
   },
   "textClassification.loading.inference": {
-    "message": "Model inference in progress..."
+    "message": "Running inference..."
   },
   "textClassification.pagination.ariaLabel": {
     "message": "Pagination"
   },
   "textClassification.pagination.pagePrefix": {
-    "message": "Page "
+    "message": "Page"
   },
   "textClassification.pagination.pageSuffix": {
     "message": ""
   },
   "textClassification.pagination.totalPrefix": {
-    "message": "Total "
+    "message": "Total"
   },
   "textClassification.pagination.totalSuffix": {
-    "message": " items"
+    "message": "items"
   },
   "textClassification.pagination.prevPage": {
-    "message": "Previous"
+    "message": "Previous page"
   },
   "textClassification.pagination.nextPage": {
-    "message": "Next"
+    "message": "Next page"
   },
   "textClassification.normalize.serverHint": {
-    "message": "Server processing hint"
+    "message": "Server returned a processing notice"
   },
   "textClassification.normalize.candidate": {
     "message": "Candidate"
@@ -1382,7 +1382,7 @@
     "message": "Unclassified"
   },
   "textClassification.source.uploadFile": {
-    "message": "Upload Text File"
+    "message": "Uploaded text file"
   },
   "textClassification.source.builtinSample": {
     "message": "Built-in Text Sample"
@@ -1400,7 +1400,7 @@
     "message": "Input Count"
   },
   "textClassification.metadata.truncatedCount": {
-    "message": "Truncated Text"
+    "message": "Truncated Texts"
   },
   "textClassification.error.sampleLoadFailed": {
     "message": "Failed to load sample data"
@@ -1415,46 +1415,46 @@
     "message": "Only .txt text files are supported"
   },
   "textClassification.upload.noValidText": {
-    "message": "No valid text found. Please check the file content"
+    "message": "No valid text found. Please check the file contents."
   },
   "textClassification.upload.parseFailed": {
-    "message": "File parsing failed"
+    "message": "Failed to parse file"
   },
   "textClassification.upload.parseFailedHint": {
-    "message": "File parsing failed. Please check the file format"
+    "message": "Failed to parse file. Please check the format."
   },
   "textClassification.template.line1": {
-    "message": "Batch job failed at midnight, return code 137"
+    "message": "Batch job failed at midnight, exit code 137"
   },
   "textClassification.template.line2": {
-    "message": "Cache hit rate declining, API response time significantly increased"
+    "message": "Cache hit rate declining, API response time increasing"
   },
   "textClassification.template.line3": {
-    "message": "User reports CAPTCHA error on login page with no retry option"
+    "message": "User reports captcha error on login page with no retry option"
   },
   "textClassification.template.line4": {
-    "message": "Inspection task completed successfully, all services healthy"
+    "message": "Health check completed, all services running normally"
   },
   "textClassification.template.line5": {
     "message": "Database replication lag exceeded threshold, alert triggered"
   },
   "textClassification.template.line6": {
-    "message": "Application release complete, canary traffic switch successful"
+    "message": "Deployment complete, canary traffic switch successful"
   },
   "textClassification.form.selectModel": {
     "message": "Please select a model"
   },
   "textClassification.form.provideText": {
-    "message": "Please provide text for classification"
+    "message": "Please provide texts to classify"
   },
   "textClassification.form.maxBatchPrefix": {
-    "message": "Maximum "
+    "message": "Maximum"
   },
   "textClassification.form.maxBatchSuffix": {
-    "message": " texts per batch. Please split and retry"
+    "message": "texts per submission. Please split and retry."
   },
   "textClassification.error.authExpired": {
-    "message": "Login expired. Please log in again"
+    "message": "Session expired. Please log in again."
   },
   "textClassification.error.inferenceFailed": {
     "message": "Inference request failed"
@@ -1463,10 +1463,10 @@
     "message": "Network request failed"
   },
   "textClassification.error.classifyFailed": {
-    "message": "Text classification failed. Please try again later"
+    "message": "Text classification failed. Please try again later."
   },
   "textClassification.error.inferenceFailedShort": {
-    "message": "Inference Failed"
+    "message": "Inference failed"
   },
   "textClassification.action.reupload": {
     "message": "Re-upload"
@@ -1758,5 +1758,311 @@
   },
   "anomalyDetection.downloadTemplate": {
     "message": "Download Template"
+  },
+  "logClustering.detail.sampleLogs": {
+    "message": "Sample Logs"
+  },
+  "logClustering.selectTemplateHint": {
+    "message": "Select a template on the left to view details"
+  },
+  "logClustering.unknownLogsHeading": {
+    "message": "Uncategorized Logs"
+  },
+  "logClustering.unknownLogsHint": {
+    "message": "These logs did not match any existing template and may represent new patterns or anomalies."
+  },
+  "logClustering.indexPrefix": {
+    "message": "Index"
+  },
+  "logClustering.noUnknownLogs": {
+    "message": "No uncategorized logs"
+  },
+  "logClustering.sampleDataLabel": {
+    "message": "Sample Data"
+  },
+  "logClustering.unit.logsCount": {
+    "message": "logs"
+  },
+  "logClustering.loadingText": {
+    "message": "Loading..."
+  },
+  "logClustering.dataSource": {
+    "message": "Data Source"
+  },
+  "logClustering.uploadFile": {
+    "message": "Upload File"
+  },
+  "logClustering.selectedPrefix": {
+    "message": "Selected:"
+  },
+  "logClustering.clickOrDragUpload": {
+    "message": "Click or drag to upload log file"
+  },
+  "logClustering.uploadHint": {
+    "message": "Only TXT files are supported. Each line is parsed as one log entry."
+  },
+  "logClustering.downloadTemplate": {
+    "message": "Download Sample Template"
+  },
+  "logClustering.startClustering": {
+    "message": "Start Log Clustering"
+  },
+  "imageClassification.unknownCategory": {
+    "message": "Unknown Category"
+  },
+  "imageClassification.uploadImage": {
+    "message": "Upload Image"
+  },
+  "imageClassification.sampleImage": {
+    "message": "Sample Image"
+  },
+  "imageClassification.error.unsupportedFormat": {
+    "message": "Only JPG, PNG, WEBP, and BMP images are supported"
+  },
+  "imageClassification.error.readFailed": {
+    "message": "Failed to read the image"
+  },
+  "imageClassification.error.selectModel": {
+    "message": "Please select a model"
+  },
+  "imageClassification.error.noSampleSwitch": {
+    "message": "No sample images available. Please switch to Upload Image to proceed."
+  },
+  "imageClassification.error.uploadFirst": {
+    "message": "Please upload an image first"
+  },
+  "imageClassification.error.authExpired": {
+    "message": "Session expired. Please log in again."
+  },
+  "imageClassification.error.inferenceRequestFailed": {
+    "message": "Inference request failed"
+  },
+  "imageClassification.error.networkFailed": {
+    "message": "Network request failed"
+  },
+  "imageClassification.error.classifyFailed": {
+    "message": "Image classification failed. Please try again later."
+  },
+  "imageClassification.error.inferenceFailed": {
+    "message": "Inference failed"
+  },
+  "imageClassification.dataSource": {
+    "message": "Data Source"
+  },
+  "imageClassification.uploadPanelTitle": {
+    "message": "Upload Image for Recognition"
+  },
+  "imageClassification.uploadPanelHint": {
+    "message": "Supports JPG, PNG, WEBP, and BMP. The original image will be displayed here, and classification results will be shown after recognition."
+  },
+  "imageClassification.reupload": {
+    "message": "Re-upload"
+  },
+  "imageClassification.recognitionDone": {
+    "message": "Recognition Complete"
+  },
+  "imageClassification.noSampleTitle": {
+    "message": "No Samples"
+  },
+  "imageClassification.noSampleDesc": {
+    "message": "No sample images are available for this scenario. Please switch to Upload Image to try the classification feature."
+  },
+  "imageClassification.resultCategory": {
+    "message": "Category"
+  },
+  "imageClassification.confidence": {
+    "message": "Confidence"
+  },
+  "imageClassification.inferenceTime": {
+    "message": "Inference Time"
+  },
+  "imageClassification.runButton": {
+    "message": "Classify This Image"
+  },
+  "imageClassification.loading": {
+    "message": "Classifying image..."
+  },
+  "objectDetection.targetPrefix": {
+    "message": "Target"
+  },
+  "objectDetection.uploadImage": {
+    "message": "Upload Image"
+  },
+  "objectDetection.sampleImage": {
+    "message": "Sample Image"
+  },
+  "objectDetection.error.unsupportedFormat": {
+    "message": "Only JPG, PNG, WEBP, and BMP images are supported"
+  },
+  "objectDetection.error.readFailed": {
+    "message": "Failed to read the image"
+  },
+  "objectDetection.paramSettings": {
+    "message": "Settings"
+  },
+  "objectDetection.detectionParamSettings": {
+    "message": "Detection Parameter Settings"
+  },
+  "objectDetection.detectionParams": {
+    "message": "Detection Parameters"
+  },
+  "objectDetection.paramHint": {
+    "message": "Adjust bounding box strictness and output count"
+  },
+  "objectDetection.confidence": {
+    "message": "Confidence"
+  },
+  "objectDetection.maxTargets": {
+    "message": "Max Targets"
+  },
+  "objectDetection.error.selectModel": {
+    "message": "Please select a model"
+  },
+  "objectDetection.error.noSampleSwitch": {
+    "message": "No sample images available. Please switch to Upload Image to proceed."
+  },
+  "objectDetection.error.uploadFirst": {
+    "message": "Please upload an image first"
+  },
+  "objectDetection.error.authExpired": {
+    "message": "Session expired. Please log in again."
+  },
+  "objectDetection.error.inferenceRequestFailed": {
+    "message": "Inference request failed"
+  },
+  "objectDetection.error.networkFailed": {
+    "message": "Network request failed"
+  },
+  "objectDetection.error.detectFailed": {
+    "message": "Object detection failed. Please try again later."
+  },
+  "objectDetection.error.inferenceFailed": {
+    "message": "Inference failed"
+  },
+  "objectDetection.dataSource": {
+    "message": "Data Source"
+  },
+  "objectDetection.uploadPanelTitle": {
+    "message": "Upload Image for Detection"
+  },
+  "objectDetection.uploadPanelHint": {
+    "message": "Supports JPG, PNG, WEBP, and BMP. The original image will be displayed here, with bounding box results overlaid after detection."
+  },
+  "objectDetection.reupload": {
+    "message": "Re-upload"
+  },
+  "objectDetection.detectionDone": {
+    "message": "Detection Complete"
+  },
+  "objectDetection.noSampleTitle": {
+    "message": "No Samples"
+  },
+  "objectDetection.noSampleDesc": {
+    "message": "No sample images are available for this scenario. Please switch to Upload Image to try the object detection feature."
+  },
+  "objectDetection.clickUpload": {
+    "message": "Click to Upload Image"
+  },
+  "objectDetection.clickUploadDesc": {
+    "message": "After uploading, the image will be previewed here, and detection results will be overlaid directly on the image."
+  },
+  "objectDetection.detectedTargets": {
+    "message": "Detected Targets"
+  },
+  "objectDetection.topConfidence": {
+    "message": "Top Confidence"
+  },
+  "objectDetection.inferenceTime": {
+    "message": "Inference Time"
+  },
+  "objectDetection.runButton": {
+    "message": "Detect This Image"
+  },
+  "objectDetection.loading": {
+    "message": "Detecting objects..."
+  },
+  "timeSeriesPredict.currentPredictionRange": {
+    "message": "Current Prediction Range"
+  },
+  "timeSeriesPredict.startPrediction": {
+    "message": "Start Time Series Prediction"
+  },
+  "textClassification.summary.labelTypes": {
+    "message": "Label Types"
+  },
+  "textClassification.summary.avgConfidence": {
+    "message": "Avg. Confidence"
+  },
+  "textClassification.summary.inferenceTime": {
+    "message": "Inference Time"
+  },
+  "textClassification.result.heading": {
+    "message": "Classification Results"
+  },
+  "textClassification.result.noTextContent": {
+    "message": "No text content returned by server"
+  },
+  "textClassification.result.textLength": {
+    "message": "Text Length"
+  },
+  "textClassification.result.noFilterResults": {
+    "message": "No results match the current filter"
+  },
+  "textClassification.unit.textsCount": {
+    "message": "texts"
+  },
+  "textClassification.sampleDataLabel": {
+    "message": "Sample Data"
+  },
+  "textClassification.preview.noticePrefix": {
+    "message": "Previewing the first"
+  },
+  "textClassification.preview.noticeSuffix": {
+    "message": "texts. Each line is treated as one sample."
+  },
+  "textClassification.preview.noTexts": {
+    "message": "No texts to preview"
+  },
+  "textClassification.dataSource": {
+    "message": "Data Source"
+  },
+  "textClassification.uploadFile": {
+    "message": "Upload File"
+  },
+  "textClassification.upload.selectedPrefix": {
+    "message": "Selected"
+  },
+  "textClassification.upload.clickUpload": {
+    "message": "Click to upload a text file"
+  },
+  "textClassification.upload.hint": {
+    "message": "Only TXT files are supported. Each line is parsed as one text entry."
+  },
+  "textClassification.downloadTemplate": {
+    "message": "Download Sample Template"
+  },
+  "textClassification.notice.overlongText": {
+    "message": "Some texts exceed"
+  },
+  "textClassification.notice.overlongTextSuffix": {
+    "message": "characters. The server will auto-truncate and return a notice."
+  },
+  "textClassification.startClassification": {
+    "message": "Start Text Classification"
+  },
+  "logClustering.clusterLabel": {
+    "message": "Cluster #{clusterId}"
+  },
+  "logClustering.reason.noMatchingTemplate": {
+    "message": "No matching existing template"
+  },
+  "textClassification.result.topPrediction": {
+    "message": "Top-1"
+  },
+  "imageClassification.previewAlt": {
+    "message": "Preview image"
+  },
+  "objectDetection.previewAlt": {
+    "message": "Preview image"
   }
 }

@@ -650,7 +650,7 @@ export default function TextClassification({
         <span className={styles.resultStatValue}>{formatProbability(resultData.summary?.avg_probability)}</span>
       </div>
       <div className={styles.resultStat}>
-        <span className={styles.resultStatLabel}>推理耗时</span>
+        <span className={styles.resultStatLabel}>{translate({id: 'textClassification.summary.inferenceTime', message: '推理耗时'})}</span>
         <span className={styles.resultStatValue}>
           {resultData.summary?.processing_time_ms
             ? `${(resultData.summary.processing_time_ms / 1000).toFixed(2)}s`
@@ -692,7 +692,7 @@ export default function TextClassification({
 
       <div className={styles.resultPanelWrap}>
         <div className={styles.resultPanel}>
-          <div className={styles.sectionHeading}>分类结果 ({filteredResults.length})</div>
+          <div className={styles.sectionHeading}>{translate({id: 'textClassification.result.heading', message: '分类结果'})} ({filteredResults.length})</div>
           <div className={styles.resultListCompact}>
             {pagedResults.length ? pagedResults.map((item) => (
               <article key={`${item.index}-${item.text_snippet || item.text || item.input_text || ''}`} className={styles.resultCard}>
@@ -705,14 +705,14 @@ export default function TextClassification({
                 </div>
 
                 <div className={styles.resultCardText}>
-                  {item.text_snippet || item.text || item.input_text || '服务端未返回文本内容'}
+                  {item.text_snippet || item.text || item.input_text || translate({id: 'textClassification.result.noTextContent', message: '服务端未返回文本内容'})}
                 </div>
 
                 <div className={styles.resultCardMeta}>
-                  <span className={styles.infoChip}>文本长度 · {item.text_length || 0}</span>
+                  <span className={styles.infoChip}>{translate({id: 'textClassification.result.textLength', message: '文本长度'})} · {item.text_length || 0}</span>
                   {Array.isArray(item.top_predictions) && item.top_predictions.length ? (
                     <span className={styles.infoChip}>
-                      Top-1 · {item.top_predictions[0].label} {formatProbability(item.top_predictions[0].probability)}
+                      {translate({id: "textClassification.result.topPrediction", message: "Top-1"})} · {item.top_predictions[0].label} {formatProbability(item.top_predictions[0].probability)}
                     </span>
                   ) : null}
                 </div>
@@ -734,7 +734,7 @@ export default function TextClassification({
                 ) : null}
               </article>
             )) : (
-              <div className={styles.emptyState}>当前筛选条件下暂无结果</div>
+              <div className={styles.emptyState}>{translate({id: 'textClassification.result.noFilterResults', message: '当前筛选条件下暂无结果'})}</div>
             )}
           </div>
 
@@ -765,23 +765,23 @@ export default function TextClassification({
                 <FiFileText />
                 {getTextSourceLabel(dataSource, uploadFileName)}
               </span>
-              <span className={styles.sampleDataInfo}>{activeTexts.length} 条文本</span>
+              <span className={styles.sampleDataInfo}>{activeTexts.length} {translate({id: 'textClassification.unit.textsCount', message: '条文本'})}</span>
             </div>
-            {dataSource === 'sample' ? <span className={styles.previewTag}>示例数据</span> : null}
+            {dataSource === 'sample' ? <span className={styles.previewTag}>{translate({id: 'textClassification.sampleDataLabel', message: '示例数据'})}</span> : null}
             {dataSource === 'upload' && uploadTexts?.length ? (
               <button
                 type="button"
                 className={styles.uploadReplaceTop}
                 onClick={handleReplaceUpload}
               >
-                重新上传
+                {translate({id: 'textClassification.action.reupload', message: '重新上传'})}
               </button>
             ) : null}
           </div>
 
           <div className={styles.previewBody}>
             <div className={styles.previewNotice}>
-              当前预览前 {Math.min(activeTexts.length, PREVIEW_COUNT)} 条文本，一行视为一条分类样本。
+              {translate({id: 'textClassification.preview.noticePrefix', message: '当前预览前'})} {Math.min(activeTexts.length, PREVIEW_COUNT)} {translate({id: 'textClassification.preview.noticeSuffix', message: '条文本，一行视为一条分类样本。'})}
             </div>
             <div className={styles.previewList}>
               {previewTexts.length ? previewTexts.map((text, index) => (
@@ -790,7 +790,7 @@ export default function TextClassification({
                   <span className={styles.previewText}>{text}</span>
                 </div>
               )) : (
-                <div className={styles.emptyStateInline}>暂无可预览文本</div>
+                <div className={styles.emptyStateInline}>{translate({id: 'textClassification.preview.noTexts', message: '暂无可预览文本'})}</div>
               )}
             </div>
           </div>
@@ -821,7 +821,7 @@ export default function TextClassification({
   return (
     <div className={styles.scenarioContent}>
       <div className={styles.formGroup}>
-        <div className={styles.formLabel}>数据源</div>
+        <div className={styles.formLabel}>{translate({id: 'textClassification.dataSource', message: '数据源'})}</div>
         <div className={styles.dataSourceTabs}>
           <button
             type="button"
@@ -831,7 +831,7 @@ export default function TextClassification({
               setDataSource('sample');
             }}
           >
-            示例数据
+            {translate({id: 'textClassification.sampleDataLabel', message: '示例数据'})}
           </button>
           <button
             type="button"
@@ -841,7 +841,7 @@ export default function TextClassification({
               setDataSource('upload');
             }}
           >
-            上传文件
+            {translate({id: 'textClassification.uploadFile', message: '上传文件'})}
           </button>
         </div>
 
@@ -867,13 +867,13 @@ export default function TextClassification({
                   <FiUploadCloud />
                 </div>
                 <p className={styles.uploadAreaText}>
-                  {uploadFileName ? `已选择: ${uploadFileName}` : '点击上传文本文件'}
+                  {uploadFileName ? `${translate({id: 'textClassification.upload.selectedPrefix', message: '已选择'})}: ${uploadFileName}` : translate({id: 'textClassification.upload.clickUpload', message: '点击上传文本文件'})}
                 </p>
-                <p className={styles.uploadAreaHint}>仅支持 TXT 文件，按行解析，一行视为一条文本。</p>
+                <p className={styles.uploadAreaHint}>{translate({id: 'textClassification.upload.hint', message: '仅支持 TXT 文件，按行解析，一行视为一条文本。'})}</p>
               </button>
               <button type="button" className={styles.templateDownload} onClick={handleDownloadTemplate}>
                 <FiDownload />
-                下载示例模板
+                {translate({id: 'textClassification.downloadTemplate', message: '下载示例模板'})}
               </button>
             </div>
             {uploadError ? <p className={styles.uploadErrorText}>{uploadError}</p> : null}
@@ -893,7 +893,7 @@ export default function TextClassification({
       {hasOverlongText ? (
         <div className={styles.formNoticeMsg}>
           <FiAlertTriangle />
-          部分文本超过 {MAX_TEXT_LENGTH} 字，提交后服务端会自动截断并返回提示。
+          {translate({id: 'textClassification.notice.overlongText', message: '部分文本超过'})} {MAX_TEXT_LENGTH} {translate({id: 'textClassification.notice.overlongTextSuffix', message: '字，提交后服务端会自动截断并返回提示。'})}
         </div>
       ) : null}
 
@@ -912,7 +912,7 @@ export default function TextClassification({
           disabled={loading || !selectedModel || !activeTexts.length}
         >
           <FiPlay />
-          开始文本分类
+          {translate({id: 'textClassification.startClassification', message: '开始文本分类'})}
         </button>
       </div>
 

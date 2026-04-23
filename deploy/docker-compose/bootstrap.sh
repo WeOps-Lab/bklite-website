@@ -4,6 +4,7 @@ set -euo pipefail
 #=============================================================================
 # 常量定义
 #=============================================================================
+
 readonly DEFAULT_MIRROR="bk-lite.tencentcloudcr.com/bklite"
 readonly ENTERPRISE_MIRROR="docker-bkrepo.cwoa.net/ce1b09/bklite/weopsx"
 readonly REQUIRED_DOCKER_VERSION="20.10.23"

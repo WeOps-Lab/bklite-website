@@ -897,7 +897,7 @@ export default function AnomalyDetection({ apiBase, loginBaseUrl, isLoggedIn, se
                   </div>
                   <button
                     type="button"
-                    className={styles.uploadReplaceTop}
+                    className={clsx(styles.resultAction, styles.resultActionSubtle)}
                     onClick={handleReplaceUpload}
                   >
                     {translate({id: 'anomalyDetection.reUpload', message: '重新上传'})}

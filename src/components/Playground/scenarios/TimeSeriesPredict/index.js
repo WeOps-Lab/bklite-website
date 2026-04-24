@@ -409,6 +409,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
   const detectedFrequencySeconds = detectSeriesFrequencySeconds(activeSeries);
   const frequencyLabel = detectedFrequencySeconds ? formatDurationLabel(detectedFrequencySeconds) : translate({id: 'timeSeriesPredict.defaultFrequency', message: '5分钟'});
   const hasResult = Boolean(resultData && !loading);
+  const shouldShowPredictionSteps = dataSource === "sample" || Boolean(uploadData?.length);
 
   const getPredictionTimeLabel = (steps) => {
     const baseFrequency = detectedFrequencySeconds || 5 * 60;
@@ -842,7 +843,7 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
                   </div>
                   <button
                     type="button"
-                    className={styles.uploadReplaceTop}
+                    className={clsx(styles.resultAction, styles.resultActionSubtle)}
                     onClick={handleReplaceUpload}
                   >
                     {translate({id: 'timeSeriesPredict.reUpload', message: '重新上传'})}
@@ -858,36 +859,38 @@ export default function TimeSeriesPredict({ apiBase, loginBaseUrl, isLoggedIn, s
         )}
       </div>
 
-      <div className={styles.formGroup}>
-        <div className={styles.formLabel}>{translate({id: 'timeSeriesPredict.predictionTimeLabel', message: '预测时间'})}</div>
-        <div className={styles.stepsCard}>
-          <div className={styles.stepsHeader}>
-            <p className={styles.stepsHint}>{translate({id: 'timeSeriesPredict.sliderHintPrefix', message: '拖动下方滑块可调整未来预测时长，当前每个数据点约为'})}{' '}{frequencyLabel}{translate({id: 'timeSeriesPredict.sliderHintSuffix', message: '。'})}</p>
-            <div className={styles.stepsValue}>
-              <div className={styles.stepsValueMain}>
-                <span className={styles.stepsValueLabel}>{translate({id: 'timeSeriesPredict.currentPredictionRange', message: '当前预测范围'})}</span>
-                <span className={styles.stepsValueText}>{getPredictionTimeLabel(selectedSteps)}</span>
+      {shouldShowPredictionSteps && (
+        <div className={styles.formGroup}>
+          <div className={styles.formLabel}>{translate({id: 'timeSeriesPredict.predictionTimeLabel', message: '预测时间'})}</div>
+          <div className={styles.stepsCard}>
+            <div className={styles.stepsHeader}>
+              <p className={styles.stepsHint}>{translate({id: 'timeSeriesPredict.sliderHintPrefix', message: '拖动下方滑块可调整未来预测时长，当前每个数据点约为'})}{' '}{frequencyLabel}{translate({id: 'timeSeriesPredict.sliderHintSuffix', message: '。'})}</p>
+              <div className={styles.stepsValue}>
+                <div className={styles.stepsValueMain}>
+                  <span className={styles.stepsValueLabel}>{translate({id: 'timeSeriesPredict.currentPredictionRange', message: '当前预测范围'})}</span>
+                  <span className={styles.stepsValueText}>{getPredictionTimeLabel(selectedSteps)}</span>
+                </div>
+              </div>
+            </div>
+            <div className={styles.stepsSliderGroup}>
+              <input
+                type="range"
+                min={minPredictionSteps}
+                max={maxPredictionSteps}
+                step={1}
+                value={selectedSteps}
+                className={styles.stepsSlider}
+                onChange={(e) => setSelectedSteps(Number(e.target.value))}
+                disabled={loading}
+              />
+              <div className={styles.stepsScale}>
+                <span className={styles.stepsScaleLabel}>{getPredictionTimeLabel(minPredictionSteps)}</span>
+                <span className={styles.stepsScaleLabel}>{getPredictionTimeLabel(maxPredictionSteps)}</span>
               </div>
             </div>
           </div>
-          <div className={styles.stepsSliderGroup}>
-            <input
-              type="range"
-              min={minPredictionSteps}
-              max={maxPredictionSteps}
-              step={1}
-              value={selectedSteps}
-              className={styles.stepsSlider}
-              onChange={(e) => setSelectedSteps(Number(e.target.value))}
-              disabled={loading}
-            />
-            <div className={styles.stepsScale}>
-              <span className={styles.stepsScaleLabel}>{getPredictionTimeLabel(minPredictionSteps)}</span>
-              <span className={styles.stepsScaleLabel}>{getPredictionTimeLabel(maxPredictionSteps)}</span>
-            </div>
-          </div>
         </div>
-      </div>
+      )}
 
       {formError && (
         <div className={styles.formErrorMsg}>

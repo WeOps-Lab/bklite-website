@@ -779,7 +779,7 @@ export default function LogClustering({
           action={(
             <button
               type="button"
-              className={styles.uploadReplaceTop}
+              className={clsx(styles.resultAction, styles.resultActionSubtle)}
               onClick={handleReplaceUpload}
             >
               {translate({id: 'logClustering.reupload', message: '重新上传'})}

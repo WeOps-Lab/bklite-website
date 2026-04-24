@@ -701,20 +701,11 @@ export default function TextClassification({
                     <span className={styles.resultItemIndex}>#{item.index + 1}</span>
                     <span className={styles.resultItemLabel}>{item.prediction}</span>
                   </div>
-                  <span className={styles.resultItemProb}>{formatProbability(item.probability)}</span>
+                  <span className={styles.resultItemProb}>{translate({id: "textClassification.result.confidence", message: "置信度"})}<strong>{formatProbability(item.probability)}</strong></span>
                 </div>
 
                 <div className={styles.resultCardText}>
                   {item.text_snippet || item.text || item.input_text || translate({id: 'textClassification.result.noTextContent', message: '服务端未返回文本内容'})}
-                </div>
-
-                <div className={styles.resultCardMeta}>
-                  <span className={styles.infoChip}>{translate({id: 'textClassification.result.textLength', message: '文本长度'})} · {item.text_length || 0}</span>
-                  {Array.isArray(item.top_predictions) && item.top_predictions.length ? (
-                    <span className={styles.infoChip}>
-                      {translate({id: "textClassification.result.topPrediction", message: "Top-1"})} · {item.top_predictions[0].label} {formatProbability(item.top_predictions[0].probability)}
-                    </span>
-                  ) : null}
                 </div>
 
                 {Array.isArray(item.feature_importance) && item.feature_importance.length ? (

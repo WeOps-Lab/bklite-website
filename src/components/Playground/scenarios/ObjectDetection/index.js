@@ -271,7 +271,7 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
       {formError ? <div className={styles.error}><FiAlertTriangle />{formError}</div> : null}
 
       <div className={styles.card}>
-        <div className={styles.layout}>
+        <div>
           <div className={clsx(styles.leftPane, isUploadEmpty && styles.leftPaneUploadEmpty)}>
             {isUploadEmpty ? (
               <div className={clsx(styles.uploadPanel, uploadError && styles.uploadPanelError)}>
@@ -282,7 +282,7 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
                 </button>
               </div>
             ) : (
-              <div className={styles.previewCard}>
+              <div>
               {visibleResult ? (
                 <div className={styles.resultHeader}>
                   <div className={styles.resultHeaderMain}>
@@ -325,13 +325,7 @@ export default function ObjectDetection({ apiBase, loginBaseUrl, selectedModel, 
                       </div>
                     ) : null}
                   </>
-                ) : (
-                  <button type="button" className={styles.previewUploadTrigger} onClick={() => inputRef.current?.click()}>
-                    <span className={styles.previewUploadIcon}><FiUploadCloud /></span>
-                    <span className={styles.previewUploadTitle}>{translate({id: 'objectDetection.clickUpload', message: '点击上传图片'})}</span>
-                    <span className={styles.previewUploadDesc}>{translate({id: 'objectDetection.clickUploadDesc', message: '上传图片后，将在这里预览待检测图片，检测结果也会直接叠加显示在图像上。'})}</span>
-                  </button>
-                )}
+                ) : null}
               </div>
               {visibleResult ? (
                 <div className={styles.resultSummary}>

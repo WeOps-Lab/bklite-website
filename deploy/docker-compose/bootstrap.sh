@@ -5,8 +5,10 @@ set -euo pipefail
 # 常量定义
 #=============================================================================
 
-readonly DEFAULT_MIRROR="bk-lite.tencentcloudcr.com/bklite"
-readonly ENTERPRISE_MIRROR="docker-bkrepo.cwoa.net/ce1b09/bklite/weopsx"
+readonly DEFAULT_REGISTRY_BASE="bk-lite.tencentcloudcr.com/bklite"
+readonly DEFAULT_APP_NAMESPACE="bklite"
+readonly ENTERPRISE_REGISTRY_BASE="bk-lite.tencentcloudcr.com/bklite/weopsx"
+readonly ENTERPRISE_APP_NAMESPACE=""
 readonly REQUIRED_DOCKER_VERSION="20.10.23"
 readonly REQUIRED_COMPOSE_VERSION="2.27.0"
 readonly DEFAULT_PORT=443
@@ -26,7 +28,7 @@ readonly BLUE='\033[0;34m'
 readonly NC='\033[0m'
 
 #=============================================================================
-# 保存用户通过环境变量传入的 MIRROR（用于优先级判断）
+# 保存用户通过环境变量传入的 MIRROR（作为 registry base 覆盖）
 #=============================================================================
 readonly USER_MIRROR="${MIRROR:-}"
 
@@ -121,48 +123,135 @@ check_nvidia_gpu() {
 
 #=============================================================================
 # 配置加载（单一入口）
+# 镜像配置模型: REGISTRY_BASE (模式特定的 registry 地址) + APP_NAMESPACE (内部应用前缀)
+# - Default:    REGISTRY_BASE=bk-lite.tencentcloudcr.com/bklite, APP_NAMESPACE=bklite
+# - Enterprise: REGISTRY_BASE=bk-lite.tencentcloudcr.com/bklite/weopsx, APP_NAMESPACE=""
+#   企业版 weopsx 已在 REGISTRY_BASE 中，内部应用不需要额外前缀
+# MIRROR 仅作为向后兼容的派生值保留
 #=============================================================================
-load_mirror_config() {
+load_image_config() {
     if [ -f "$COMMON_ENV_FILE" ]; then
         source "$COMMON_ENV_FILE"
     fi
 
+    # 兼容旧 common.env: 仅有 MIRROR 时推导 REGISTRY_BASE 和 APP_NAMESPACE
+    if [ -z "${REGISTRY_BASE:-}" ] && [ -n "${MIRROR:-}" ]; then
+        if [[ "$MIRROR" == */weopsx ]]; then
+            # 企业版 MIRROR 整体作为 REGISTRY_BASE，内部应用无额外前缀
+            REGISTRY_BASE="$MIRROR"
+            APP_NAMESPACE=""
+        else
+            REGISTRY_BASE="$MIRROR"
+            APP_NAMESPACE="${APP_NAMESPACE-bklite}"
+        fi
+    fi
+
+    # 兼容过渡态 common.env: REGISTRY_BASE 不含 weopsx 但 APP_NAMESPACE=weopsx
+    # 这是旧版脚本写入的值，需要修正为新模型
+    if [ -n "${REGISTRY_BASE:-}" ] && [[ "${APP_NAMESPACE:-}" == "weopsx" ]] && [[ "$REGISTRY_BASE" != */weopsx ]]; then
+        REGISTRY_BASE="${REGISTRY_BASE}/weopsx"
+        APP_NAMESPACE=""
+    fi
+
+    # --enterprise 模式覆盖
     if [[ "${ENTERPRISE_ENABLED:-false}" == "true" ]]; then
-        MIRROR="$ENTERPRISE_MIRROR"
-        export MIRROR
-        return
+        REGISTRY_BASE="$ENTERPRISE_REGISTRY_BASE"
+        APP_NAMESPACE="$ENTERPRISE_APP_NAMESPACE"
     fi
-    
-    # 用户环境变量优先级最高
+
+    # 用户环境变量 MIRROR 覆盖 registry base（不影响 namespace）
     if [ -n "$USER_MIRROR" ]; then
-        MIRROR="$USER_MIRROR"
+        REGISTRY_BASE="$USER_MIRROR"
     fi
-    
-    # 兜底默认值
-    MIRROR="${MIRROR:-$DEFAULT_MIRROR}"
-    export MIRROR
+
+    # 兜底默认值（注意: 用 ${VAR-default} 而非 ${VAR:-default}，保留空值）
+    REGISTRY_BASE="${REGISTRY_BASE:-$DEFAULT_REGISTRY_BASE}"
+    APP_NAMESPACE="${APP_NAMESPACE-$DEFAULT_APP_NAMESPACE}"
+
+    # 派生 MIRROR 用于向后兼容
+    MIRROR="$REGISTRY_BASE"
+
+    export REGISTRY_BASE APP_NAMESPACE MIRROR
 }
 
 #=============================================================================
-# 镜像前缀处理
+# 镜像解析辅助函数
+# - resolve_third_party_image:  第三方镜像 → REGISTRY_BASE + 原始路径
+# - resolve_internal_app_image: 内部应用镜像 → REGISTRY_BASE + [APP_NAMESPACE/] + 服务名
+#   当 APP_NAMESPACE 为空时（企业版），直接 REGISTRY_BASE/服务名
 #=============================================================================
-add_mirror_prefix() {
+resolve_third_party_image() {
     local image="$1"
-    
+
     # OFFLINE 模式返回原始镜像名
     if [[ "${OFFLINE:-false}" == "true" ]]; then
         echo "$image"
         return
     fi
-    
-    if [ -n "${MIRROR:-}" ]; then
+
+    if [ -n "${REGISTRY_BASE:-}" ]; then
         if [[ "$image" == *"/"* ]]; then
-            echo "${MIRROR}/${image}"
+            echo "${REGISTRY_BASE}/${image}"
         else
-            echo "${MIRROR}/library/${image}"
+            echo "${REGISTRY_BASE}/library/${image}"
         fi
     else
         echo "$image"
+    fi
+}
+
+resolve_internal_app_image() {
+    local service="$1"
+
+    # OFFLINE 模式返回别名（与离线包别名一致）
+    if [[ "${OFFLINE:-false}" == "true" ]]; then
+        if [ -n "${APP_NAMESPACE}" ]; then
+            echo "${APP_NAMESPACE}/${service}"
+        else
+            echo "${service}"
+        fi
+        return
+    fi
+
+    if [ -n "${REGISTRY_BASE:-}" ]; then
+        if [ -n "${APP_NAMESPACE}" ]; then
+            echo "${REGISTRY_BASE}/${APP_NAMESPACE}/${service}"
+        else
+            echo "${REGISTRY_BASE}/${service}"
+        fi
+    else
+        if [ -n "${APP_NAMESPACE}" ]; then
+            echo "${APP_NAMESPACE}/${service}"
+        else
+            echo "${service}"
+        fi
+    fi
+}
+
+#=============================================================================
+# 镜像分类与别名还原辅助函数
+#=============================================================================
+restore_image_alias() {
+    local resolved_name="$1"
+    local after_base="${resolved_name#${REGISTRY_BASE}/}"
+
+    if [ -n "${APP_NAMESPACE}" ] && [[ "$after_base" == "${APP_NAMESPACE}/"* ]]; then
+        # 内部应用镜像（有 namespace）: 别名为 namespace/service
+        echo "$after_base"
+    elif [ -z "${APP_NAMESPACE}" ] && [[ "$resolved_name" != "$after_base" ]]; then
+        # 内部应用镜像（空 namespace，企业版）: 需要判断是否为第三方
+        # 第三方镜像有 library/ 前缀或含有子路径（如 minio/minio）
+        if [[ "$after_base" == "library/"* ]]; then
+            echo "${after_base#library/}"
+        else
+            echo "$after_base"
+        fi
+    elif [[ "$after_base" == "library/"* ]]; then
+        # 第三方 library 镜像: 去掉 library/ 前缀
+        echo "${after_base#library/}"
+    else
+        # 第三方上游镜像: 保留原始路径
+        echo "$after_base"
     fi
 }
 
@@ -170,51 +259,53 @@ add_mirror_prefix() {
 # Docker 镜像初始化
 #=============================================================================
 init_docker_images() {
-    log "INFO" "初始化镜像变量，当前 MIRROR=${MIRROR:-}"
-    
-    # 基础设施镜像
-    export DOCKER_IMAGE_TRAEFIK=$(add_mirror_prefix "traefik:3.6.2")
-    export DOCKER_IMAGE_REDIS=$(add_mirror_prefix "redis:5.0.14")
-    export DOCKER_IMAGE_NATS=$(add_mirror_prefix "nats:2.10.25")
-    export DOCKER_IMAGE_NATS_CLI=$(add_mirror_prefix "natsio/nats-box:latest")
-    
-    # 数据库镜像
-    export DOCKER_IMAGE_POSTGRES=$(add_mirror_prefix "postgres:15")
-    export DOCKER_IMAGE_PGVECTOR=$(add_mirror_prefix "pgvector/pgvector:pg15")
-    export DOCKER_IMAGE_FALKORDB=$(add_mirror_prefix "falkordb/falkordb:latest")
-    
-    # 监控日志镜像
-    export DOCKER_IMAGE_VICTORIA_METRICS=$(add_mirror_prefix "victoriametrics/victoria-metrics:v1.106.1")
-    export DOCKER_IMAGE_VICTORIALOGS=$(add_mirror_prefix "victoriametrics/victoria-logs:v1.49.0")
-    export DOCKER_IMAGE_VECTOR=$(add_mirror_prefix "timberio/vector:0.48.0-debian")
-    
-    # 应用镜像
-    export DOCKER_IMAGE_SERVER=$(add_mirror_prefix "bklite/server")
-    export DOCKER_IMAGE_WEB=$(add_mirror_prefix "bklite/web")
-    export DOCKER_IMAGE_STARGAZER=$(add_mirror_prefix "bklite/stargazer")
-    export DOCKER_IMAGE_METIS=$(add_mirror_prefix "bklite/metis")
-    export DOCKER_IMAGE_MLFLOW=$(add_mirror_prefix "bklite/mlflow")
-    
-    # 存储镜像
-    export DOCKER_IMAGE_MINIO=$(add_mirror_prefix "minio/minio:RELEASE.2024-05-01T01-11-10Z-cpuv1")
-    
-    # 采集器镜像
-    export DOCKER_IMAGE_FUSION_COLLECTOR=$(add_mirror_prefix "bklite/fusion-collector:latest")
-    export DOCKER_IMAGE_TELEGRAF=$(add_mirror_prefix "bklite/telegraf:latest")
-    export DOCKER_IMAGE_NATS_EXECUTOR=$(add_mirror_prefix "bklite/nats-executor")
-    
-    # 工具镜像
-    export DOCKER_IMAGE_OPENSSL=$(add_mirror_prefix "alpine/openssl:3.5.4")
-    export DOCKER_IMAGE_VLLM=$(add_mirror_prefix "bklite/vllm:latest")
-    export DOCKER_IMAGE_WEBHOOKD=$(add_mirror_prefix "bklite/webhookd:latest")
-    
+    log "INFO" "初始化镜像变量，当前 REGISTRY_BASE=${REGISTRY_BASE:-}, APP_NAMESPACE=${APP_NAMESPACE:-}"
+
+    # 第三方基础设施镜像
+    export DOCKER_IMAGE_TRAEFIK=$(resolve_third_party_image "traefik:3.6.2")
+    export DOCKER_IMAGE_REDIS=$(resolve_third_party_image "redis:5.0.14")
+    export DOCKER_IMAGE_NATS=$(resolve_third_party_image "nats:2.10.25")
+    export DOCKER_IMAGE_NATS_CLI=$(resolve_third_party_image "natsio/nats-box:latest")
+
+    # 第三方数据库镜像
+    export DOCKER_IMAGE_POSTGRES=$(resolve_third_party_image "postgres:15")
+    export DOCKER_IMAGE_PGVECTOR=$(resolve_third_party_image "pgvector/pgvector:pg15")
+    export DOCKER_IMAGE_FALKORDB=$(resolve_third_party_image "falkordb/falkordb:latest")
+
+    # 第三方监控日志镜像
+    export DOCKER_IMAGE_VICTORIA_METRICS=$(resolve_third_party_image "victoriametrics/victoria-metrics:v1.106.1")
+    export DOCKER_IMAGE_VICTORIALOGS=$(resolve_third_party_image "victoriametrics/victoria-logs:v1.49.0")
+    export DOCKER_IMAGE_VECTOR=$(resolve_third_party_image "timberio/vector:0.48.0-debian")
+
+    # 内部应用镜像（通过 APP_NAMESPACE 动态解析）
+    export DOCKER_IMAGE_SERVER=$(resolve_internal_app_image "server")
+    export DOCKER_IMAGE_WEB=$(resolve_internal_app_image "web")
+    export DOCKER_IMAGE_STARGAZER=$(resolve_internal_app_image "stargazer")
+    export DOCKER_IMAGE_METIS=$(resolve_internal_app_image "metis")
+    export DOCKER_IMAGE_MLFLOW=$(resolve_internal_app_image "mlflow")
+
+    # 第三方存储镜像
+    export DOCKER_IMAGE_MINIO=$(resolve_third_party_image "minio/minio:RELEASE.2024-05-01T01-11-10Z-cpuv1")
+
+    # 内部采集器镜像
+    export DOCKER_IMAGE_FUSION_COLLECTOR=$(resolve_internal_app_image "fusion-collector:latest")
+    export DOCKER_IMAGE_TELEGRAF=$(resolve_internal_app_image "telegraf:latest")
+    export DOCKER_IMAGE_NATS_EXECUTOR=$(resolve_internal_app_image "nats-executor")
+
+    # 第三方工具镜像
+    export DOCKER_IMAGE_OPENSSL=$(resolve_third_party_image "alpine/openssl:3.5.4")
+
+    # 内部工具镜像
+    export DOCKER_IMAGE_VLLM=$(resolve_internal_app_image "vllm:latest")
+    export DOCKER_IMAGE_WEBHOOKD=$(resolve_internal_app_image "webhookd:latest")
+
     # 固定配置
     export DOCKER_NETWORK=prod
     export DIST_ARCH=amd64
     export POSTGRES_USERNAME="${POSTGRES_USERNAME:-postgres}"
     export TRAEFIK_ENABLE_DASHBOARD=false
     export DEFAULT_REQUEST_TIMEOUT=10
-    
+
     log "INFO" "Docker 镜像环境变量初始化完成"
 }
 
@@ -415,7 +506,7 @@ generate_common_env() {
     if [ -f "$COMMON_ENV_FILE" ]; then
         log "SUCCESS" "发现 $COMMON_ENV_FILE 配置文件，加载已保存的环境变量..."
         source "$COMMON_ENV_FILE"
-        load_mirror_config
+        load_image_config
         ensure_common_env_vars
         return
     fi
@@ -435,7 +526,7 @@ generate_common_env() {
     export MINIO_ROOT_PASSWORD=$(generate_password 32)
     export FALKORDB_PASSWORD=$(generate_password 32)
     
-    load_mirror_config
+    load_image_config
     
     export OFFLINE="${OFFLINE:-false}"
     export OFFLINE_IMAGES_PATH="${OFFLINE_IMAGES_PATH:-./images}"
@@ -494,6 +585,9 @@ export NATS_MONITOR_PASSWORD=$NATS_MONITOR_PASSWORD
 export MINIO_ROOT_USER=$MINIO_ROOT_USER
 export MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD
 export FALKORDB_PASSWORD=$FALKORDB_PASSWORD
+export ENTERPRISE_ENABLED=$ENTERPRISE_ENABLED
+export REGISTRY_BASE=$REGISTRY_BASE
+export APP_NAMESPACE=$APP_NAMESPACE
 export MIRROR=$MIRROR
 export OFFLINE=$OFFLINE
 export OFFLINE_IMAGES_PATH=$OFFLINE_IMAGES_PATH
@@ -940,8 +1034,8 @@ init_sidecar_token() {
 #=============================================================================
 update_common_env_flags() {
     [ -f "$COMMON_ENV_FILE" ] || return
-    
-    for var in OPSPILOT_ENABLED VLLM_ENABLED MIRROR; do
+
+    for var in ENTERPRISE_ENABLED OPSPILOT_ENABLED VLLM_ENABLED REGISTRY_BASE APP_NAMESPACE MIRROR; do
         local escaped_value
         escaped_value=$(escape_sed_replacement "${!var}")
 
@@ -952,8 +1046,8 @@ update_common_env_flags() {
             echo "export $var=${!var}" >> "$COMMON_ENV_FILE"
         fi
     done
-    
-    log "SUCCESS" "已保存参数配置: OPSPILOT_ENABLED=$OPSPILOT_ENABLED, VLLM_ENABLED=$VLLM_ENABLED, MIRROR=$MIRROR"
+
+    log "SUCCESS" "已保存参数配置: OPSPILOT_ENABLED=$OPSPILOT_ENABLED, VLLM_ENABLED=$VLLM_ENABLED, REGISTRY_BASE=$REGISTRY_BASE, APP_NAMESPACE=$APP_NAMESPACE"
 }
 
 #=============================================================================
@@ -984,7 +1078,7 @@ do_install() {
                 ;;
             --enterprise)
                 export ENTERPRISE_ENABLED=true
-                log "INFO" "命令行指定 --enterprise，切换企业版镜像仓库"
+                log "INFO" "命令行指定 --enterprise，切换企业版镜像命名空间 (weopsx)"
                 ;;
             --vllm)
                 if check_nvidia_gpu; then
@@ -998,7 +1092,7 @@ do_install() {
         esac
     done
 
-    load_mirror_config
+    load_image_config
     
     if [ "$clean_install" = true ]; then
         log "WARNING" "正在停止并清理现有容器和数据卷..."
@@ -1034,11 +1128,13 @@ do_install() {
     update_common_env_flags
     generate_postgres_initdb
     generate_tls_certs
-    
+    generate_nats_config
+    generate_dotenv
+
     # 生成 docker-compose.yaml
     log "INFO" "生成 docker-compose.yaml..."
     $COMPOSE_CMD > docker-compose.yaml
-    
+
     # 加载或拉取镜像
     if [[ "$load_local_images" == "true" ]]; then
         load_docker_images_with_hash_check "${OFFLINE_IMAGES_PATH:-./images}"
@@ -1046,14 +1142,10 @@ do_install() {
         log "INFO" "拉取最新镜像..."
         ${DOCKER_COMPOSE_CMD} pull
     fi
-    
+
     # 生成采集器包
     generate_collector_packages || exit 1
-    
-    # 生成配置文件
-    generate_nats_config
-    generate_dotenv
-    
+
     # 启动服务
     start_services
     init_plugins
@@ -1080,7 +1172,7 @@ do_package() {
                 ;;
             --enterprise)
                 export ENTERPRISE_ENABLED=true
-                log "INFO" "检测到 --enterprise，将切换企业版镜像仓库"
+                log "INFO" "检测到 --enterprise，将切换企业版镜像命名空间 (weopsx)"
                 ;;
             --vllm)
                 skip_vllm=false
@@ -1089,13 +1181,13 @@ do_package() {
         esac
     done
 
-    load_mirror_config
+    load_image_config
     
     [[ "$skip_opspilot" == "true" ]] && log "INFO" "跳过 OpsPilot 镜像（使用 --opspilot 下载）"
     [[ "$skip_vllm" == "true" ]] && log "INFO" "跳过 vLLM 镜像（使用 --vllm 下载）"
     
     log "INFO" "开始下载 Docker 镜像..."
-    log "INFO" "镜像仓库: ${MIRROR}"
+    log "INFO" "Registry Base: ${REGISTRY_BASE}, App Namespace: ${APP_NAMESPACE}"
     
     init_docker_images
     
@@ -1129,9 +1221,9 @@ EOF
         log "INFO" "下载镜像: $image_name"
         docker pull "$image_name"
         
-        # 还原镜像名称
+        # 还原镜像别名（使用统一的分类规则）
         local original_name
-        original_name=$(echo "$image_name" | sed "s|${MIRROR}/||;s|/library/|/|")
+        original_name=$(restore_image_alias "$image_name")
         docker tag "$image_name" "$original_name"
         
         # 保存镜像

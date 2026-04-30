@@ -21,7 +21,7 @@ tags: [CMDB, 故障排查, 依赖关系, BlueKing, 开源运维]
 
 <!-- truncate -->
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>真正把人卡住的，往往不是对象没搜到，而是关系从这里开始断了。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>真正把人卡住的，往往不是对象没搜到，而是关系从这里开始断了。</strong></div>
 
 因为接下来决定这次故障要不要升级、要不要摘流量、要不要拉更多人进群的，从来不是“对象搜到了没有”，而是下面这几件事能不能立刻回答出来：
 
@@ -55,7 +55,7 @@ tags: [CMDB, 故障排查, 依赖关系, BlueKing, 开源运维]
 
 > **CMDB 被当成了静态的资产清单，而不是一张持续更新、能被排障消费的关系图。**
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>台账能回答“它是谁”，关系图才有资格回答“它影响了谁”。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>台账能回答“它是谁”，关系图才有资格回答“它影响了谁”。</strong></div>
 
 这种错位一到故障现场，通常就会裂成四个连续断点：
 
@@ -376,7 +376,7 @@ flowchart TD
 
 这四件事里，前两件决定“找不找得到对象”，后两件决定“找到以后能不能继续判断”。很多团队之所以觉得 CMDB 在故障现场帮不上忙，不是因为四件事全都没有，而是因为只做成了前一半，后面真正决定排障效率的那一半始终没接上。
 
-<div style="background:#EEF4FF;border:1px solid #C9D8F2;border-radius:8px;padding:12px 14px;margin:12px 0;"><strong>排障现场最怕的，不是没有系统，而是系统把人带到门口就停住了。</strong></div>
+<div style={{ background: '#EEF4FF', border: '1px solid #C9D8F2', borderRadius: '8px', padding: '12px 14px', margin: '12px 0' }}><strong>排障现场最怕的，不是没有系统，而是系统把人带到门口就停住了。</strong></div>
 
 ## 结语
 

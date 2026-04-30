@@ -21,7 +21,7 @@ This is exactly the moment when many teams become disappointed with CMDB. It can
 
 <!-- truncate -->
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>What really blocks people is often not that the object cannot be found, but that the relationship chain breaks right there.</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>What really blocks people is often not that the object cannot be found, but that the relationship chain breaks right there.</strong></div>
 
 Because the questions that now determine whether this incident needs escalation, traffic removal, or more people pulled into the room are no longer about whether the object was found. They are about whether the following questions can be answered immediately:
 
@@ -55,7 +55,7 @@ The root cause is often one sentence:
 
 > **The CMDB is being treated as a static asset inventory rather than a continuously updated relationship graph that incident response can consume.**
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>A ledger can answer “what is it”, but only a relationship graph is qualified to answer “who else does it impact”.</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>A ledger can answer “what is it”, but only a relationship graph is qualified to answer “who else does it impact”.</strong></div>
 
 Once this mismatch reaches a real incident, it usually cracks into four continuous breakpoints:
 

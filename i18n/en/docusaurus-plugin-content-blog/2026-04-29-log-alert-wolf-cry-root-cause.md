@@ -24,7 +24,7 @@ Many teams think logs overwhelm them with volume. In reality, what slows them do
 
 <!-- truncate -->
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>What really causes hesitation is often not too many logs, but the fact that the system still has not handed over a clear answer to “which alert should we handle right now?”</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>What really causes hesitation is often not too many logs, but the fact that the system still has not handed over a clear answer to “which alert should we handle right now?”</strong></div>
 
 ## The Root Cause: The Abnormal Logs Were Seen, But the Alert Object Was Never Defined Clearly
 
@@ -88,7 +88,7 @@ At the start of an incident, Lao Zhao usually depends on keyword alerts first, a
 
 At the earliest stage, the team’s first question is often very direct: has a dangerous signal appeared at all, and is it starting to recur continuously?
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>This layer should answer “is there a dangerous signal”, not yet “which problem object should we take over?”</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>This layer should answer “is there a dangerous signal”, not yet “which problem object should we take over?”</strong></div>
 
 At this layer, the log center is clearly useful:
 
@@ -100,7 +100,7 @@ That is why keyword alerts often feel especially useful early in system adoption
 
 But the problem also starts here.
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>Keyword alerts act more like a unified warning. They shout the risk out loud, but they do not split the responsibility boundary for you.</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>Keyword alerts act more like a unified warning. They shout the risk out loud, but they do not split the responsibility boundary for you.</strong></div>
 
 #### Why They Cannot Define the Object For You
 
@@ -162,7 +162,7 @@ but the boundary is blurred]
 
 This is the part most teams describe vaguely. The question is not whether the system should alert again. The question is **how many handling objects the same anomaly wave should become**.
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>The real point of the second layer is not that “aggregation is more advanced”. It is that the same anomaly wave must be split along the right responsibility boundary.</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>The real point of the second layer is not that “aggregation is more advanced”. It is that the same anomaly wave must be split along the right responsibility boundary.</strong></div>
 
 If the same timeout appears on 12 instances and you still rely on one broad keyword alert, the only conclusion Lao Zhao gets is that there are many timeouts and the problem must be serious. But if aggregation is done by service name or instance IP, he can quickly tell whether this is full-service degradation or only a few bad nodes.
 
@@ -172,7 +172,7 @@ Keyword alerts answer whether a dangerous signal exists.
 
 Aggregation alerts answer how many handling objects that signal should become.
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>Once those two questions are mixed together, the on-call engineer hears only one loud alarm that is still very hard to take over.</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>Once those two questions are mixed together, the on-call engineer hears only one loud alarm that is still very hard to take over.</strong></div>
 
 This is where many teams misconfigure their rules. If they treat aggregation alerts as merely a stronger version of keyword alerts, they keep stuffing more keywords into one rule. If they expect keyword alerts to behave like aggregation alerts, they wrongly assume the responsibility split will happen automatically.
 
@@ -192,7 +192,7 @@ Events are raw anomaly data coming from external systems. Alerts are the handlin
 
 To Lao Zhao, the difference is very direct: Event says **what happened**. Alert says **what should be handled now**.
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>The third layer is where “many raw events” are turned into “a small number of objects that can be claimed, routed, and recovered”.</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>The third layer is where “many raw events” are turned into “a small number of objects that can be claimed, routed, and recovered”.</strong></div>
 
 #### What the Alert Center Really Converges
 

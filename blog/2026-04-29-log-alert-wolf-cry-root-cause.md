@@ -26,7 +26,7 @@ tags: [日志告警, 告警治理, Alert, BlueKing, 开源运维]
 
 <!-- truncate -->
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>真正让人迟疑的，往往不是日志太多，而是系统没有尽快交出“现在到底该处理哪一条”。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>真正让人迟疑的，往往不是日志太多，而是系统没有尽快交出“现在到底该处理哪一条”。</strong></div>
 
 ## 病根：日志异常看见了，告警对象没拆清
 
@@ -92,7 +92,7 @@ flowchart LR
 
 因为在故障刚发生的时候，团队最先需要回答的往往就是一个直接问题：某类危险信号有没有出现过，而且是不是已经开始持续出现。
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>这一层先解决的是“有没有危险信号”，还不是“到底该接哪一条问题”。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>这一层先解决的是“有没有危险信号”，还不是“到底该接哪一条问题”。</strong></div>
 
 日志中心在这一层的能力是明确的：
 
@@ -106,7 +106,7 @@ flowchart LR
 
 但问题也恰恰从这里开始。
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>关键字告警更像统一提醒，它先把风险喊出来，但不会替你把责任边界拆开。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>关键字告警更像统一提醒，它先把风险喊出来，但不会替你把责任边界拆开。</strong></div>
 
 #### 为什么它不能替你拆对象
 
@@ -176,7 +176,7 @@ flowchart TD
 
 字段一换，值班同学看到的就不再只是噪声大小，而是责任边界本身。
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>第二层真正要讲清的，不是“聚合更高级”，而是“同一波异常到底该按什么边界拆开”。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>第二层真正要讲清的，不是“聚合更高级”，而是“同一波异常到底该按什么边界拆开”。</strong></div>
 
 假设同样一条 timeout 日志同时出现在 12 个实例上，如果继续只用一条总的关键字告警，老赵只能得到一个模糊判断：超时很多，问题很大。
 
@@ -189,7 +189,7 @@ flowchart TD
 - 关键字告警回答“有没有”
 - 聚合告警回答“算几个”
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>一旦“有没有”和“算几个”混在一起，值班同学听到的就只剩下一声很响、但很难接手的警报。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>一旦“有没有”和“算几个”混在一起，值班同学听到的就只剩下一声很响、但很难接手的警报。</strong></div>
 
 这也是很多团队容易配错的地方。
 
@@ -215,7 +215,7 @@ flowchart TD
 
 对老赵来说，差别非常直接：Event 说明“发生了什么”，Alert 才真正说明“现在该处理什么”。
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>第三层真正收口的，是把“很多原始事件”变成“少量可以认领、可以流转、可以恢复的处理对象”。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>第三层真正收口的，是把“很多原始事件”变成“少量可以认领、可以流转、可以恢复的处理对象”。</strong></div>
 
 #### 告警中心真正收的是什么
 
@@ -247,7 +247,7 @@ flowchart LR
 
 到这里，团队听到的就不再是反复刷屏的“狼来了”，而是几条真正值得进入处置流程的问题单元。
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>告警治理真正要压下去的，不是响声本身，而是那种“大家都听见了，却还想先等等看”的迟疑。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>告警治理真正要压下去的，不是响声本身，而是那种“大家都听见了，却还想先等等看”的迟疑。</strong></div>
 
 ## 把三层串起来：为什么最后总会回到“先等等看”
 

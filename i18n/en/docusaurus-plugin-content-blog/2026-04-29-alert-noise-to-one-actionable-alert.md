@@ -18,7 +18,7 @@ The hard part is this: **out of these 10 alerts, which one is the real handling 
 
 <!-- truncate -->
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>Real alert governance is not about pushing more messages out. It is about collapsing one problem into a small number of objects worth acting on.</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>Real alert governance is not about pushing more messages out. It is about collapsing one problem into a small number of objects worth acting on.</strong></div>
 
 If the platform simply keeps forwarding abnormal signals from different sources, the frontline does not receive context. It receives fragments competing for attention. Every one of those 10 alerts looks important, and the result is that nobody wants to decide which one actually deserves priority.
 
@@ -39,7 +39,7 @@ At a deeper level, it is often just one problem surfacing repeatedly across mult
 
 This is where the distortion begins. If the platform treats all raw signals as "alerts to be handled", the incident view becomes misleading immediately. A large quantity of signals does not mean a large quantity of problems. Loud alerts do not automatically deserve ownership.
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>The frontline is not most afraid of large alert volume. It is most afraid that “many raw events” and “very few real handling objects” were never separated in advance.</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>The frontline is not most afraid of large alert volume. It is most afraid that “many raw events” and “very few real handling objects” were never separated in advance.</strong></div>
 
 That is why several objects in the alert center that look similar on the surface must actually be kept distinct:
 
@@ -130,7 +130,7 @@ BK Lite Alert Center provides a full convergence chain rather than a one-off ded
 - Session windows and observation periods filter flapping signals that self-recover.
 - Active alerts with the same fingerprint are updated instead of recreated.
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>The value of turning 10 into 1 is not that the list looks shorter. It is that the frontline can finally start from the right object.</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>The value of turning 10 into 1 is not that the list looks shorter. It is that the frontline can finally start from the right object.</strong></div>
 
 But this only solves half the problem. One alert surviving does not mean someone will actually pick it up.
 
@@ -212,7 +212,7 @@ BK Lite’s value here is not that the alert list becomes quieter. It is that th
 - Incidents carry problems that have already exceeded the scope of a single alert.
 - Operation logs preserve all governance actions for later review.
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>Good alert governance is not about making the system as quiet as possible. It is about making the one alert that should remain clearer, more trustworthy, and harder to bury.</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>Good alert governance is not about making the system as quiet as possible. It is about making the one alert that should remain clearer, more trustworthy, and harder to bury.</strong></div>
 
 ## What Was Really Compressed?
 

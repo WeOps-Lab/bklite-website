@@ -20,7 +20,7 @@ tags: [告警中心, 告警治理, Event, Alert, BlueKing, 开源运维]
 
 <!-- truncate -->
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>告警治理真正要解决的，不是把消息发出去，而是把同一个问题收成少量值得接手的对象。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>告警治理真正要解决的，不是把消息发出去，而是把同一个问题收成少量值得接手的对象。</strong></div>
 
 如果平台只是把不同来源的异常继续往外推，一线看到的就不会是上下文，而是一堆互相抢注意力的碎片。10 条看起来都重要，最后反而没人敢先判断哪条该优先处理。
 
@@ -41,7 +41,7 @@ tags: [告警中心, 告警治理, Event, Alert, BlueKing, 开源运维]
 
 问题就出在这里：平台如果把这些原始信号都直接当成“要处理的告警”，现场就会很快失真。数量很多，不等于问题很多；响得很凶，也不等于每一条都值得认领。
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>一线最怕的不是告警多，而是“原始事件很多”和“真正该处理的对象很少”这件事，没有被平台提前拆清。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>一线最怕的不是告警多，而是“原始事件很多”和“真正该处理的对象很少”这件事，没有被平台提前拆清。</strong></div>
 
 这也是告警中心里几个看起来相近、其实职责完全不同的对象必须被分开的原因：
 
@@ -132,7 +132,7 @@ BK Lite 告警中心在这一层给的是完整的收敛链路，而不是单点
 - 会话窗口和观察期负责过滤会自己恢复的短抖动
 - 相同指纹的活跃告警更新而不是重复创建
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>10 条压成 1 条，价值不在“列表更短了”，而在一线终于能先看对对象。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>10 条压成 1 条，价值不在“列表更短了”，而在一线终于能先看对对象。</strong></div>
 
 但走到这里，问题其实只解决了一半。1 条留下来了，不代表它就一定会被谁接住。
 
@@ -214,7 +214,7 @@ BK Lite 在这一层的价值，不是让告警列表看起来更安静，而是
 - Incident 可以承接已经超出“单条告警”处理范围的问题
 - 操作日志还能把这些治理动作保留下来，方便后续追溯
 
-<div style="background:#F5F5F5;border-left:6px solid #D9D9D9;padding:12px 16px;margin:12px 0;"><strong>好的告警治理不是让系统尽量少响，而是让真正该被处理的那一条，留下来以后更清楚、更敢接、更不会被埋。</strong></div>
+<div style={{ background: '#F5F5F5', borderLeft: '6px solid #D9D9D9', padding: '12px 16px', margin: '12px 0' }}><strong>好的告警治理不是让系统尽量少响，而是让真正该被处理的那一条，留下来以后更清楚、更敢接、更不会被埋。</strong></div>
 
 ## 收束：真正被压缩掉的是什么
 

@@ -183,12 +183,6 @@ load_image_config() {
 resolve_third_party_image() {
     local image="$1"
 
-    # OFFLINE 模式返回原始镜像名
-    if [[ "${OFFLINE:-false}" == "true" ]]; then
-        echo "$image"
-        return
-    fi
-
     if [ -n "${REGISTRY_BASE:-}" ]; then
         if [[ "$image" == *"/"* ]]; then
             echo "${REGISTRY_BASE}/${image}"
@@ -203,16 +197,6 @@ resolve_third_party_image() {
 resolve_internal_app_image() {
     local service="$1"
 
-    # OFFLINE 模式返回别名（与离线包别名一致）
-    if [[ "${OFFLINE:-false}" == "true" ]]; then
-        if [ -n "${APP_NAMESPACE}" ]; then
-            echo "${APP_NAMESPACE}/${service}"
-        else
-            echo "${service}"
-        fi
-        return
-    fi
-
     if [ -n "${REGISTRY_BASE:-}" ]; then
         if [ -n "${APP_NAMESPACE}" ]; then
             echo "${REGISTRY_BASE}/${APP_NAMESPACE}/${service}"
@@ -225,33 +209,6 @@ resolve_internal_app_image() {
         else
             echo "${service}"
         fi
-    fi
-}
-
-#=============================================================================
-# 镜像分类与别名还原辅助函数
-#=============================================================================
-restore_image_alias() {
-    local resolved_name="$1"
-    local after_base="${resolved_name#${REGISTRY_BASE}/}"
-
-    if [ -n "${APP_NAMESPACE}" ] && [[ "$after_base" == "${APP_NAMESPACE}/"* ]]; then
-        # 内部应用镜像（有 namespace）: 别名为 namespace/service
-        echo "$after_base"
-    elif [ -z "${APP_NAMESPACE}" ] && [[ "$resolved_name" != "$after_base" ]]; then
-        # 内部应用镜像（空 namespace，企业版）: 需要判断是否为第三方
-        # 第三方镜像有 library/ 前缀或含有子路径（如 minio/minio）
-        if [[ "$after_base" == "library/"* ]]; then
-            echo "${after_base#library/}"
-        else
-            echo "$after_base"
-        fi
-    elif [[ "$after_base" == "library/"* ]]; then
-        # 第三方 library 镜像: 去掉 library/ 前缀
-        echo "${after_base#library/}"
-    else
-        # 第三方上游镜像: 保留原始路径
-        echo "$after_base"
     fi
 }
 
@@ -920,9 +877,12 @@ EOF
 # 服务启动
 #=============================================================================
 start_services() {
+    local pull_flag=""
+    [[ "${OFFLINE:-false}" == "true" ]] && pull_flag="--pull never"
+
     log "INFO" "启动基础服务..."
-    ${DOCKER_COMPOSE_CMD} up -d traefik redis nats victoria-metrics falkordb victoria-logs minio mlflow nats-executor vector webhookd
-    
+    ${DOCKER_COMPOSE_CMD} up $pull_flag -d traefik redis nats victoria-metrics falkordb victoria-logs minio mlflow nats-executor vector webhookd
+
     log "INFO" "创建 JetStream..."
     docker run --rm --network=bklite-prod \
         -v "$PWD/conf/certs:/etc/certs:ro" \
@@ -934,10 +894,10 @@ start_services() {
         --max-age=20m --max-bytes=104857600 --max-consumers=-1 \
         --max-msg-size=-1 --max-msgs=-1 --max-msgs-per-subject=1000000 \
         --dupe-window=5m --no-allow-rollup --no-deny-delete --no-deny-purge
-    
+
     log "INFO" "重启所有服务..."
     ${DOCKER_COMPOSE_CMD} down server
-    ${DOCKER_COMPOSE_CMD} up -d
+    ${DOCKER_COMPOSE_CMD} up $pull_flag -d
     sleep 10
 }
 
@@ -1150,8 +1110,10 @@ do_install() {
     start_services
     init_plugins
     init_sidecar_token
-    
-    ${DOCKER_COMPOSE_CMD} up -d fusion-collector
+
+    local pull_flag=""
+    [[ "${OFFLINE:-false}" == "true" ]] && pull_flag="--pull never"
+    ${DOCKER_COMPOSE_CMD} up $pull_flag -d fusion-collector
     
     log "SUCCESS" "部署成功，访问 https://$HOST_IP:$TRAEFIK_WEB_PORT"
     log "SUCCESS" "初始用户名: admin, 初始密码: password"
@@ -1220,26 +1182,21 @@ EOF
         local image_name="${!image_var}"
         log "INFO" "下载镜像: $image_name"
         docker pull "$image_name"
-        
-        # 还原镜像别名（使用统一的分类规则）
-        local original_name
-        original_name=$(restore_image_alias "$image_name")
-        docker tag "$image_name" "$original_name"
-        
-        # 保存镜像
+
+        # 保存镜像（使用完整路径，与 install 侧 .env 引用一致）
         local safe_filename
-        safe_filename=$(echo "$original_name" | sed 's|/|_|g; s|:|_|g').tar
-        
+        safe_filename=$(echo "$image_name" | sed 's|/|_|g; s|:|_|g').tar
+
         log "INFO" "保存镜像: $safe_filename"
-        docker save "$original_name" -o "images/$safe_filename"
-        
+        docker save "$image_name" -o "images/$safe_filename"
+
         # 记录 hash
         local image_hash
-        image_hash=$(docker image inspect "$original_name" --format '{{.Id}}' 2>/dev/null | sed 's/sha256://')
-        
+        image_hash=$(docker image inspect "$image_name" --format '{{.Id}}' 2>/dev/null | sed 's/sha256://')
+
         if [ -n "$image_hash" ]; then
-            echo "$original_name $image_hash $safe_filename" >> "$hash_file"
-            log "SUCCESS" "已保存: $original_name"
+            echo "$image_name $image_hash $safe_filename" >> "$hash_file"
+            log "SUCCESS" "已保存: $image_name"
             image_count=$((image_count + 1))
         fi
     done

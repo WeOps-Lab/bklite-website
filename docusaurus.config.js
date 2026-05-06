@@ -19,6 +19,12 @@ const config = {
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
 
+  markdown: {
+    mermaid: true,
+  },
+
+  themes: ['@docusaurus/theme-mermaid'],
+
   customFields: {
     apiBaseUrl: 'https://bklite.canway.net/api/mlops',
     loginBaseUrl: 'https://bklite.canway.net/auth/signin',

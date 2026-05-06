@@ -11,34 +11,34 @@ import styles from './styles.module.css';
 function getBlogPosts() {
   return [
     {
-      tag: translate({id: 'homepage.blog.post.3.tag', message: '监控中心'}),
-      date: translate({id: 'homepage.blog.post.3.date', message: '2026-04-14'}),
-      title: translate({id: 'homepage.blog.post.3.title', message: '千万级告警风暴求生指南：为啥买了几万台服务器算不出一笔明白账？'}),
+      tag: translate({id: 'homepage.blog.post.3.tag', message: '告警中心'}),
+      date: translate({id: 'homepage.blog.post.3.date', message: '2026-04-29'}),
+      title: translate({id: 'homepage.blog.post.3.title', message: '10 条告警背后其实是 1 个问题，如何高效治理'}),
       summary: translate({
         id: 'homepage.blog.post.3.summary',
-        message: '从告警噪音、全局视图到事件闭环，拆解监控中心如何帮助团队在风暴中重新找回排障节奏。',
+        message: '从一次发布后的告警刷屏现场出发，拆开 Event、Alert、Incident 各自该承担的角色，看看 BK Lite 如何把 10 条噪声收成 1 条可处理对象。',
       }),
-      to: '/blog/monitor-alert-fatigue-noise-reduction',
+      to: '/blog/alert-noise-to-one-actionable-alert',
     },
     {
-      tag: translate({id: 'homepage.blog.post.2.tag', message: '最佳实践'}),
-      date: translate({id: 'homepage.blog.post.2.date', message: '2026-04-14'}),
-      title: translate({id: 'homepage.blog.post.2.title', message: 'Pinterest 砍掉 96% OOM 报错的背后，你还在靠人肉拼凑 Java 异常堆栈？'}),
+      tag: translate({id: 'homepage.blog.post.2.tag', message: '日志中心'}),
+      date: translate({id: 'homepage.blog.post.2.date', message: '2026-04-29'}),
+      title: translate({id: 'homepage.blog.post.2.title', message: '日志告警总像“狼来了”，问题卡在哪'}),
       summary: translate({
         id: 'homepage.blog.post.2.summary',
-        message: '面对规模以 PB 计的离散运行数据，探讨如何通过前端原生多行截断合并让杂乱无章的报错信息真正具备可观测连词成句的价值。',
+        message: '从一次发布后的复盘追问出发，拆开关键字告警、聚合告警和告警中心各自该承担的角色，看看日志异常为什么总会变成难接手的“狼来了”。',
       }),
-      to: '/blog/pinterest-oom-java-stack-trace',
+      to: '/blog/log-alert-wolf-cry-root-cause',
     },
     {
-      tag: translate({id: 'homepage.blog.post.1.tag', message: '痛点剖析'}),
-      date: translate({id: 'homepage.blog.post.1.date', message: '2026-04-14'}),
-      title: translate({id: 'homepage.blog.post.1.title', message: '买了几万台服务器，为啥算不出一笔明白账？'}),
+      tag: translate({id: 'homepage.blog.post.1.tag', message: 'CMDB'}),
+      date: translate({id: 'homepage.blog.post.1.date', message: '2026-04-28'}),
+      title: translate({id: 'homepage.blog.post.1.title', message: 'CMDB 真正失灵的时刻，不是查不到资产，而是查不动关系'}),
       summary: translate({
         id: 'homepage.blog.post.1.summary',
-        message: '基于图数据库驱动的新一代智能化 CMDB 如何穿透云原生“资产黑洞”，实现分钟级拓扑定位。',
+        message: '从一次真实的凌晨故障复盘出发，聊聊 CMDB 在故障排查里真正有价值的能力，以及 BlueKing Lite 怎么把关系链路串起来。',
       }),
-      to: '/blog/cmdb-asset-blackhole',
+      to: '/blog/cmdb-dependency-chain-troubleshooting',
     }
   ];
 }

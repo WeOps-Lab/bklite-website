@@ -7,7 +7,6 @@ volumes:
   redis:
   nats:
   victoria-metrics:
-  postgres:
   neo4j:
   victoria-logs:
   falkordb:
@@ -92,27 +91,6 @@ services:
     depends_on:
       - nats
 
-  postgres:
-    container_name: postgres
-    image: ${DOCKER_IMAGE_POSTGRES}
-    environment:
-      POSTGRES_USER: ${POSTGRES_USERNAME}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      PGDATA: /data/postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres:/data/postgres
-      - ../conf/postgres/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
-    networks:
-      - prod
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USERNAME}"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-    restart: always
-  
   victoria-logs:
     image: ${DOCKER_IMAGE_VICTORIALOGS}
     restart: always
@@ -169,8 +147,6 @@ services:
       - AWS_DEFAULT_REGION=us-east-1
       - MLFLOW_S3_ENDPOINT_URL=http://minio:9000
     depends_on:
-      postgres: 
-        condition: service_healthy
       minio:
         condition: service_healthy
     healthcheck:

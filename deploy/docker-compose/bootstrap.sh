@@ -64,6 +64,28 @@ version_gte() {
     [ "$(printf '%s\n' "$ver2" "$ver1" | sort -V | head -n1)" = "$ver2" ]
 }
 
+# 企业版 + 非默认 DB_ENGINE 视为外部数据库模式，跳过内置 postgres 容器编排
+is_external_db() {
+    [[ "${ENTERPRISE_ENABLED:-false}" == "true" ]] && \
+    [[ "${DB_ENGINE:-postgresql}" != "postgresql" ]]
+}
+
+# 外部数据库模式下校验连接参数，缺失则报错退出
+validate_external_db_env() {
+    local missing=()
+    [ -z "${DB_HOST:-}" ] && missing+=("DB_HOST")
+    [ -z "${DB_USER:-}" ] && missing+=("DB_USER")
+    [ -z "${DB_PASSWORD:-}" ] && missing+=("DB_PASSWORD")
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        die "外部数据库模式（--enterprise + DB_ENGINE=${DB_ENGINE}）缺少必要环境变量: ${missing[*]}。请在执行前 export 对应变量后重试。"
+    fi
+
+    if [ "${DB_HOST}" = "postgres" ]; then
+        die "外部数据库模式下 DB_HOST 不能为 'postgres'（该值指向内置容器名）。请改为外部数据库实例的可达地址。"
+    fi
+}
+
 escape_sed_replacement() {
     printf '%s' "$1" | sed 's/[&|\\]/\\&/g'
 }
@@ -1132,28 +1154,41 @@ do_install() {
         log "INFO" "安装应用列表: ${INSTALL_APPS}"
     fi
     
-    # 构建 compose 命令
-    COMPOSE_CMD="${DOCKER_COMPOSE_CMD} -f compose/infra.yaml -f compose/monitor.yaml -f compose/server.yaml -f compose/web.yaml"
-    [[ "$VLLM_ENABLED" == "true" ]] && COMPOSE_CMD="${COMPOSE_CMD} -f compose/vllm.yaml"
-    COMPOSE_CMD="${COMPOSE_CMD} -f compose/log.yaml config --no-interpolate"
-    
     # 镜像加载模式
     local load_local_images=false
     if [[ "$OFFLINE" == "true" ]]; then
         load_local_images=true
         log "INFO" "检测到 OFFLINE=true，将从本地加载镜像"
     fi
-    
+
     # 生成配置
     generate_ports_env
     generate_common_env
     generate_db_env
     init_docker_images
     update_common_env_flags
-    generate_postgres_initdb
+
+    # 外部数据库模式判定（依赖已加载的 DB_ENGINE / ENTERPRISE_ENABLED）
+    if is_external_db; then
+        log "WARNING" "检测到企业版外部数据库模式（DB_ENGINE=${DB_ENGINE}），将跳过内置 postgres 容器"
+        log "WARNING" "mlflow 服务未适配外部数据库，可能不可用"
+        validate_external_db_env
+    else
+        generate_postgres_initdb
+    fi
+
     generate_tls_certs
     generate_nats_config
     generate_dotenv
+
+    # 构建 compose 命令（postgres 容器仅在非外部数据库模式下加入）
+    COMPOSE_CMD="${DOCKER_COMPOSE_CMD} -f compose/infra.yaml"
+    if ! is_external_db; then
+        COMPOSE_CMD="${COMPOSE_CMD} -f compose/postgres.yaml"
+    fi
+    COMPOSE_CMD="${COMPOSE_CMD} -f compose/monitor.yaml -f compose/server.yaml -f compose/web.yaml"
+    [[ "$VLLM_ENABLED" == "true" ]] && COMPOSE_CMD="${COMPOSE_CMD} -f compose/vllm.yaml"
+    COMPOSE_CMD="${COMPOSE_CMD} -f compose/log.yaml config --no-interpolate"
 
     # 生成 docker-compose.yaml
     log "INFO" "生成 docker-compose.yaml..."
@@ -1189,7 +1224,7 @@ do_install() {
 do_package() {
     local skip_opspilot=true skip_vllm=true
     export ENTERPRISE_ENABLED="${ENTERPRISE_ENABLED:-false}"
-    
+
     for arg in "$@"; do
         case "$arg" in
             --opspilot)
@@ -1207,8 +1242,17 @@ do_package() {
         esac
     done
 
+    # 加载已保存的 db.env 以获取 DB_ENGINE，便于判定外部数据库模式
+    [ -f "$DB_ENV_FILE" ] && source "$DB_ENV_FILE"
+
     load_image_config
-    
+
+    local skip_postgres=false
+    if is_external_db; then
+        skip_postgres=true
+        log "INFO" "检测到企业版外部数据库模式（DB_ENGINE=${DB_ENGINE}），打包将跳过 postgres 镜像"
+    fi
+
     [[ "$skip_opspilot" == "true" ]] && log "INFO" "跳过 OpsPilot 镜像（使用 --opspilot 下载）"
     [[ "$skip_vllm" == "true" ]] && log "INFO" "跳过 vLLM 镜像（使用 --vllm 下载）"
     
@@ -1242,7 +1286,14 @@ EOF
             skipped_count=$((skipped_count + 1))
             continue
         fi
-        
+
+        # 外部数据库模式跳过 postgres 镜像（PGVECTOR 是独立服务，保留）
+        if [[ "$skip_postgres" == "true" ]] && [[ "$image_var" == "DOCKER_IMAGE_POSTGRES" ]]; then
+            log "INFO" "跳过: ${image_var}（外部数据库模式）"
+            skipped_count=$((skipped_count + 1))
+            continue
+        fi
+
         local image_name="${!image_var}"
         log "INFO" "下载镜像: $image_name"
         docker pull "$image_name"

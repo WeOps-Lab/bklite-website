@@ -368,23 +368,87 @@ EOF
 #=============================================================================
 # TLS 证书生成
 #=============================================================================
+is_ipv4_literal() {
+    [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]
+}
+
+is_valid_hostname() {
+    local h="$1"
+    [[ "$h" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]]
+}
+
+resolve_host_ip() {
+    local host="$1" ip=""
+    if command -v getent >/dev/null 2>&1; then
+        ip=$(getent ahostsv4 "$host" 2>/dev/null | awk 'NR==1{print $1}')
+    fi
+    if [ -z "$ip" ] && command -v host >/dev/null 2>&1; then
+        ip=$(host -t A "$host" 2>/dev/null | awk '/has address/{print $4; exit}')
+    fi
+    if [ -z "$ip" ] && command -v nslookup >/dev/null 2>&1; then
+        ip=$(nslookup -type=A "$host" 2>/dev/null | awk '/^Address: /{print $2; exit}')
+    fi
+    echo "$ip"
+}
+
+# 输入: $1=HOST_IP；输出: 完整的 subjectAltName 字符串
+# - IPv4 字面量 → IP: 前缀
+# - 合法 hostname → DNS: 前缀，并尽力解析出 IP 一并加入
+# - 其它 → die（调用方需保证已校验，但此处兜底）
+build_san_entries() {
+    local host="$1"
+    local entries="DNS:nats,DNS:localhost,IP:127.0.0.1"
+
+    _append_san_unique() {
+        local entry="$1"
+        case ",${entries}," in
+            *",${entry},"*) return ;;
+        esac
+        entries="${entries},${entry}"
+    }
+
+    if is_ipv4_literal "$host"; then
+        _append_san_unique "IP:${host}"
+        echo "$entries"
+        return
+    fi
+
+    if ! is_valid_hostname "$host"; then
+        die "HOST_IP 形态非法: '$host' (既不是 IPv4 字面量，也不符合 RFC 1123 主机名字符集)"
+    fi
+
+    _append_san_unique "DNS:${host}"
+
+    local resolved
+    resolved=$(resolve_host_ip "$host")
+    if [ -n "$resolved" ]; then
+        _append_san_unique "IP:${resolved}"
+    else
+        log "WARNING" "无法解析域名 '$host' 的 A 记录，证书 SAN 将仅包含 DNS 条目，不包含对应 IP" >&2
+    fi
+
+    echo "$entries"
+}
+
 generate_tls_certs() {
     : "${HOST_IP:?HOST_IP 未设置}"
-    
+
     local dir=./conf/certs
     local traefik_certs_dir=./conf/traefik/certs
-    local san="DNS:nats,DNS:localhost,IP:127.0.0.1,IP:${HOST_IP}"
     local cn="BluekingLite"
     local openssl_image="$DOCKER_IMAGE_OPENSSL"
     
-    # 证书已存在则跳过
+    # 证书已存在则跳过（不读取也不校验 HOST_IP，避免对已部署环境造成回归）
     if [ -f "$dir/server.crt" ] && [ -f "$dir/server.key" ] && [ -f "$dir/ca.crt" ]; then
         log "SUCCESS" "TLS 证书已存在，跳过生成步骤..."
         ensure_traefik_certs "$dir" "$traefik_certs_dir"
         return
     fi
-    
-    log "INFO" "生成自签名 TLS 证书（使用容器：${openssl_image}）..."
+
+    local san
+    san=$(build_san_entries "$HOST_IP")
+
+    log "INFO" "生成自签名 TLS 证书（使用容器：${openssl_image}），SAN: ${san}"
     mkdir -p "$dir"
     
     local abs_dir

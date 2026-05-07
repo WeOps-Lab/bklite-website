@@ -71,8 +71,6 @@ services:
       retries: 300
       start_period: 90s
     depends_on:
-      postgres:
-        condition: service_healthy
       falkordb:
         condition: service_healthy
       pgvector:

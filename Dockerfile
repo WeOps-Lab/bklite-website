@@ -34,6 +34,11 @@ RUN pnpm install --frozen-lockfile
 # 复制源代码
 COPY . .
 
+# 镜像构建专用：将 bklite.ai 替换为 bklite.cn（Cloudflare 站点保持 .ai）
+RUN find docs i18n src docusaurus.config.js \
+      -type f \( -name "*.md" -o -name "*.mdx" -o -name "*.js" \) \
+      -exec sed -i 's|bklite\.ai|bklite.cn|g' {} +
+
 # 构建应用
 RUN pnpm build
 

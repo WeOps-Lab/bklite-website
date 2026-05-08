@@ -39,3 +39,14 @@ GIT_USER=<Your GitHub username> yarn deploy
 ```
 
 If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+
+## Container Image
+
+每次合入 `master` 分支后,GitHub Actions 会自动构建镜像并推送到 GitHub Container Registry,标签为 `latest`,仅构建 `linux/amd64`。
+
+镜像默认私有,拉取前需要登录 ghcr。先在 [GitHub Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) 创建一个具有 `read:packages` 权限的 PAT,然后:
+
+```bash
+echo "$GHCR_PAT" | docker login ghcr.io -u <your-github-username> --password-stdin
+docker pull ghcr.io/weops-lab/bklite-website:latest
+```

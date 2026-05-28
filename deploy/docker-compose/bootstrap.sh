@@ -95,13 +95,13 @@ escape_sed_replacement() {
 #=============================================================================
 check_docker_version() {
     command -v docker >/dev/null 2>&1 || die "未找到 docker 命令，请安装 Docker"
-    
+
     local docker_version
     docker_version=$(docker --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
     [ -z "$docker_version" ] && die "无法获取 Docker 版本信息"
-    
+
     log "INFO" "当前 Docker 版本: $docker_version"
-    
+
     if version_gte "$docker_version" "$REQUIRED_DOCKER_VERSION"; then
         log "SUCCESS" "Docker 版本满足要求 (>= $REQUIRED_DOCKER_VERSION)"
     else
@@ -111,7 +111,7 @@ check_docker_version() {
 
 check_docker_compose_version() {
     local compose_version="" cmd_type=""
-    
+
     if command -v docker-compose >/dev/null 2>&1; then
         compose_version=$(docker-compose --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
         cmd_type="docker-compose"
@@ -123,11 +123,11 @@ check_docker_compose_version() {
     else
         die "未找到 docker-compose 或 docker compose 命令"
     fi
-    
+
     [ -z "$compose_version" ] && die "无法获取 Docker Compose 版本信息"
-    
+
     log "INFO" "当前 Docker Compose 版本: $compose_version (使用 $cmd_type 命令)"
-    
+
     if version_gte "$compose_version" "$REQUIRED_COMPOSE_VERSION"; then
         log "SUCCESS" "Docker Compose 版本满足要求 (>= $REQUIRED_COMPOSE_VERSION)"
     else
@@ -294,22 +294,22 @@ init_docker_images() {
 load_docker_images_with_hash_check() {
     local images_dir="$1"
     local hash_file="${images_dir}/images.sha256"
-    
+
     [ -d "$images_dir" ] || die "镜像目录不存在: $images_dir"
     [ -f "$hash_file" ] || die "镜像 hash 文件不存在: $hash_file\n请先运行 'bootstrap.sh package' 生成镜像包"
-    
+
     local loaded_count=0 skipped_count=0 total_count=0
-    
+
     log "INFO" "检查本地镜像状态..."
     while IFS= read -r line; do
         [[ -z "$line" || "$line" == \#* ]] && continue
-        
+
         local image_name image_hash image_file
         image_name=$(echo "$line" | awk '{print $1}')
         image_hash=$(echo "$line" | awk '{print $2}')
         image_file=$(echo "$line" | awk '{print $3}')
         total_count=$((total_count + 1))
-        
+
         # 检查镜像是否存在且 hash 匹配
         if docker image inspect "$image_name" >/dev/null 2>&1; then
             local local_hash
@@ -323,16 +323,16 @@ load_docker_images_with_hash_check() {
         else
             log "INFO" "镜像不存在，需要加载: $image_name"
         fi
-        
+
         local image_tar="${images_dir}/${image_file}"
         [ -f "$image_tar" ] || die "镜像文件不存在: $image_tar"
-        
+
         log "INFO" "正在加载镜像文件: $image_file"
         docker load -i "$image_tar"
         loaded_count=$((loaded_count + 1))
         log "SUCCESS" "镜像加载完成: $image_name"
     done < "$hash_file"
-    
+
     log "SUCCESS" "镜像检查完成 - 总计: $total_count, 已加载: $loaded_count, 已跳过: $skipped_count"
 }
 
@@ -342,7 +342,7 @@ load_docker_images_with_hash_check() {
 wait_container_health() {
     local container_name="$1"
     local service_name="$2"
-    
+
     log "INFO" "等待 $service_name 启动..."
     until [ "$($DOCKER_COMPOSE_CMD ps "$container_name" --format "{{.Health}}" 2>/dev/null)" == "healthy" ]; do
         sleep 5
@@ -359,20 +359,20 @@ generate_ports_env() {
         source "$PORT_ENV_FILE"
         return
     fi
-    
+
     local default_ip="127.0.0.1"
     if command -v hostname >/dev/null 2>&1 && hostname -I >/dev/null 2>&1; then
         default_ip=$(hostname -I | awk '{print $1}')
     elif command -v ifconfig >/dev/null 2>&1; then
         default_ip=$(ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -1)
     fi
-    
+
     if [ -n "${HOST_IP:-}" ] && [ -n "${TRAEFIK_WEB_PORT:-}" ]; then
         log "INFO" "使用环境变量: HOST_IP=$HOST_IP, TRAEFIK_WEB_PORT=$TRAEFIK_WEB_PORT"
     elif [ -t 0 ] && [ -e /dev/tty ]; then
         read -p "输入对外访问的IP地址，默认为 [$default_ip] " HOST_IP < /dev/tty
         export HOST_IP=${HOST_IP:-$default_ip}
-        
+
         read -p "输入访问端口，默认为 [$DEFAULT_PORT] " TRAEFIK_WEB_PORT < /dev/tty
         export TRAEFIK_WEB_PORT=${TRAEFIK_WEB_PORT:-$DEFAULT_PORT}
     else
@@ -380,7 +380,7 @@ generate_ports_env() {
         export HOST_IP="$default_ip"
         export TRAEFIK_WEB_PORT="$DEFAULT_PORT"
     fi
-    
+
     cat > "$PORT_ENV_FILE" <<EOF
 export HOST_IP=${HOST_IP}
 export TRAEFIK_WEB_PORT=${TRAEFIK_WEB_PORT}
@@ -459,7 +459,7 @@ generate_tls_certs() {
     local traefik_certs_dir=./conf/traefik/certs
     local cn="BluekingLite"
     local openssl_image="$DOCKER_IMAGE_OPENSSL"
-    
+
     # 证书已存在则跳过（不读取也不校验 HOST_IP，避免对已部署环境造成回归）
     if [ -f "$dir/server.crt" ] && [ -f "$dir/server.key" ] && [ -f "$dir/ca.crt" ]; then
         log "SUCCESS" "TLS 证书已存在，跳过生成步骤..."
@@ -472,26 +472,26 @@ generate_tls_certs() {
 
     log "INFO" "生成自签名 TLS 证书（使用容器：${openssl_image}），SAN: ${san}"
     mkdir -p "$dir"
-    
+
     local abs_dir
     abs_dir=$(cd "$dir" && pwd)
-    
+
     # CA 私钥
     log "INFO" "生成 CA 私钥..."
     docker run --rm -v "${abs_dir}:/certs" "${openssl_image}" \
         genrsa -out "/certs/ca.key" 2048
-    
+
     # CA 证书
     log "INFO" "生成 CA 证书..."
     docker run --rm -v "${abs_dir}:/certs" "${openssl_image}" \
         req -x509 -new -nodes -key "/certs/ca.key" -sha256 -days "$CERT_CA_DAYS" \
         -subj "/CN=Blueking Lite" -out "/certs/ca.crt"
-    
+
     # Server 私钥
     log "INFO" "生成服务器私钥..."
     docker run --rm -v "${abs_dir}:/certs" "${openssl_image}" \
         genrsa -out "/certs/server.key" 2048
-    
+
     # OpenSSL 配置
     cat > "${dir}/openssl.conf" <<EOF
 [req]
@@ -508,35 +508,35 @@ basicConstraints = CA:FALSE
 keyUsage = digitalSignature,keyEncipherment,keyAgreement
 extendedKeyUsage = serverAuth
 EOF
-    
+
     # CSR
     log "INFO" "生成证书签名请求..."
     docker run --rm -v "${abs_dir}:/certs" "${openssl_image}" \
         req -new -key "/certs/server.key" -out "/certs/server.csr" \
         -config "/certs/openssl.conf" -subj "/CN=${cn}"
-    
+
     # 签名
     log "INFO" "签名生成服务器证书..."
     docker run --rm -v "${abs_dir}:/certs" "${openssl_image}" \
         x509 -req -in "/certs/server.csr" -CA "/certs/ca.crt" -CAkey "/certs/ca.key" \
         -CAcreateserial -days "$CERT_SERVER_DAYS" -sha256 -out "/certs/server.crt" \
         -extensions v3_ext -extfile "/certs/openssl.conf"
-    
+
     rm -f "${dir}/server.csr" "${dir}/openssl.conf"
     log "SUCCESS" "TLS 证书生成完成"
-    
+
     ensure_traefik_certs "$dir" "$traefik_certs_dir"
 }
 
 ensure_traefik_certs() {
     local src_dir="$1"
     local dst_dir="$2"
-    
+
     if [ -f "$dst_dir/server.crt" ]; then
         log "INFO" "Traefik 证书目录已存在证书，跳过复制..."
         return
     fi
-    
+
     log "INFO" "复制证书到 Traefik 目录..."
     mkdir -p "$dst_dir"
     cp "${src_dir}/server.crt" "${src_dir}/server.key" "$dst_dir/"
@@ -553,9 +553,9 @@ generate_common_env() {
         ensure_common_env_vars
         return
     fi
-    
+
     log "INFO" "未发现 $COMMON_ENV_FILE 配置文件，生成随机环境变量..."
-    
+
     export POSTGRES_PASSWORD=$(generate_password 32)
     export REDIS_PASSWORD=$(generate_password 32)
     export SECRET_KEY=$(generate_password 32)
@@ -568,9 +568,9 @@ generate_common_env() {
     export MINIO_ROOT_USER=minio
     export MINIO_ROOT_PASSWORD=$(generate_password 32)
     export FALKORDB_PASSWORD=$(generate_password 32)
-    
+
     load_image_config
-    
+
     export OFFLINE="${OFFLINE:-false}"
     export OFFLINE_IMAGES_PATH="${OFFLINE_IMAGES_PATH:-./images}"
     export OPSPILOT_ENABLED="${OPSPILOT_ENABLED:-false}"
@@ -579,7 +579,7 @@ generate_common_env() {
     export VLLM_OLMOCR_MODEL_NAME="allenai/OlmOCR-7B-0725"
     export VLLM_BCE_RERANK_MODEL_NAME="maidalun/bce-reranker-base_v1"
     export VLLM_BGE_EMBEDDING_MODEL_NAME="AI-ModelScope/bge-large-zh-v1.5"
-    
+
     save_common_env
     log "SUCCESS" "环境变量已生成并保存到 $COMMON_ENV_FILE"
 }
@@ -596,15 +596,15 @@ ensure_common_env_vars() {
         "VLLM_BCE_RERANK_MODEL_NAME:maidalun/bce-reranker-base_v1"
         "VLLM_BGE_EMBEDDING_MODEL_NAME:AI-ModelScope/bge-large-zh-v1.5"
     )
-    
+
     for item in "${vars_to_check[@]}"; do
         local var_name="${item%%:*}"
         local default_value="${item#*:}"
-        
+
         if [ -z "${!var_name:-}" ]; then
             export "$var_name"="$default_value"
         fi
-        
+
         if ! grep -q "^export $var_name=" "$COMMON_ENV_FILE"; then
             log "INFO" "将缺失的环境变量 $var_name 添加到 $COMMON_ENV_FILE"
             echo "export $var_name=${!var_name}" >> "$COMMON_ENV_FILE"
@@ -712,20 +712,20 @@ generate_collector_packages() {
     local output_dir="${2:-./pkgs}"
     local certs_dir="${3:-./conf/certs}"
     local bin_dir="${4:-./bin}"
-    
+
     log "INFO" "开始生成控制器和采集器包..."
     log "INFO" "使用镜像: ${collector_image}"
-    
+
     if [[ "${OFFLINE:-false}" != "true" ]]; then
         docker pull "${collector_image}"
     else
         log "INFO" "检测到 OFFLINE=true，跳过拉取镜像步骤"
     fi
-    
+
     local cpu_arch
     cpu_arch=$(uname -m)
     log "INFO" "检测到CPU架构: ${cpu_arch}"
-    
+
     case "${cpu_arch}" in
         x86_64)
             generate_x86_packages "$collector_image" "$output_dir" "$certs_dir" "$bin_dir"
@@ -744,17 +744,17 @@ generate_x86_packages() {
     local output_dir="$2"
     local certs_dir="$3"
     local bin_dir="$4"
-    
+
     log "INFO" "当前CPU架构为x86_64，生成控制器和采集器包..."
-    
+
     [ -d "${output_dir}" ] && rm -rf "${output_dir}"
     mkdir -p "${output_dir}/controller/"{linux,windows}/certs
     mkdir -p "${output_dir}/collector/"{linux,windows}
-    
+
     [ -f "${certs_dir}/ca.crt" ] || die "CA证书文件不存在: ${certs_dir}/ca.crt"
     cp -a "${certs_dir}/ca.crt" "${output_dir}/controller/linux/certs/"
     cp -a "${certs_dir}/ca.crt" "${output_dir}/controller/windows/certs/"
-    
+
     local docker_args=(
         --rm
         -v "${PWD}/${output_dir}:/pkgs"
@@ -762,7 +762,7 @@ generate_x86_packages() {
         --entrypoint=/bin/bash
         "${collector_image}"
     )
-    
+
     docker run -i "${docker_args[@]}" -s <<'COLLECTOR_SCRIPT'
 set -e
 
@@ -815,7 +815,7 @@ log "SUCCESS" "Windows package built."
 
 log "SUCCESS" "All tasks completed."
 COLLECTOR_SCRIPT
-    
+
     log "SUCCESS" "控制器和采集器包生成成功"
 }
 
@@ -824,11 +824,11 @@ COLLECTOR_SCRIPT
 #=============================================================================
 generate_nats_config() {
     mkdir -p ./conf/nats
-    
+
     if [ -f ./conf/nats/nats.conf ]; then
         log "WARNING" "nats.conf 文件已存在，将被覆盖..."
     fi
-    
+
     cat > ./conf/nats/nats.conf <<EOF
 port: 4222
 monitor_port: 8222
@@ -900,7 +900,7 @@ generate_dotenv() {
     export DB_PORT="${DB_PORT:-5432}"
     export POSTGRES_USERNAME="${DB_USER}"
     export POSTGRES_PASSWORD="${DB_PASSWORD}"
-    
+
     cat > .env <<EOF
 HOST_IP=${HOST_IP}
 TRAEFIK_WEB_PORT=${TRAEFIK_WEB_PORT}
@@ -953,7 +953,7 @@ VLLM_BGE_EMBEDDING_MODEL_NAME=${VLLM_BGE_EMBEDDING_MODEL_NAME}
 VLLM_BCE_RERANK_MODEL_NAME=${VLLM_BCE_RERANK_MODEL_NAME}
 INSTALL_APPS="${INSTALL_APPS}"
 EOF
-    
+
     local nats_tls_ca
     nats_tls_ca=$(cat conf/certs/ca.crt)
     echo "NATS_TLS_CA=\"${nats_tls_ca}\"" >> .env
@@ -992,7 +992,7 @@ start_services() {
 #=============================================================================
 init_plugins() {
     log "INFO" "开始初始化内置插件..."
-    
+
     $DOCKER_COMPOSE_CMD exec -T server /bin/bash -s <<'PLUGIN_INIT'
 source /apps/pkgs/controller/VERSION
 python manage.py controller_package_init --pk_version $LINUX_SIDECAR_VERSION --file_path /apps/pkgs/controller/fusion-collectors-linux-amd64.zip
@@ -1002,6 +1002,7 @@ python manage.py collector_package_init --os linux --object Nats-Executor --pk_v
 python manage.py controller_package_init --os windows --pk_version $WINDOWS_SIDECAR_VERSION --file_path /apps/pkgs/controller/fusion-collectors-windows-amd64.zip
 python manage.py collector_package_init --os windows --object Telegraf --pk_version latest --file_path /apps/pkgs/collector/windows/telegraf.exe
 python manage.py collector_package_init --os windows --object Nats-Executor --pk_version latest --file_path /apps/pkgs/collector/windows/nats-executor.exe
+python manage.py collector_package_init --os windows --object Vector --pk_version latest --file_path /apps/pkgs/collector/windows/vector.exe
 python manage.py installer_init --os linux --file_path /apps/pkgs/controller/linux/bklite-controller-installer
 python manage.py installer_init --os windows --file_path /apps/pkgs/controller/windows/bklite-controller-installer.exe
 EXPORTER_DIR="/apps/pkgs/collector/linux/exporters"
@@ -1043,23 +1044,23 @@ init_sidecar_token() {
         log "SUCCESS" "检测到 SIDECAR_NODE_ID 环境变量，跳过初始化"
         return
     fi
-    
+
     log "WARNING" "重新初始化 Sidecar Node ID 和 Token..."
-    
+
     local arr=()
     mapfile -t arr < <($DOCKER_COMPOSE_CMD exec -T server /bin/bash -c 'python manage.py node_token_init --ip default' 2>&1 | grep -oP 'node_id: \K[0-9a-f]+|token: \K\S+')
-    
+
     if [ ${#arr[@]} -lt 2 ]; then
         log "ERROR" "无法获取 Sidecar Node ID 和 Token，请检查数据库连接"
         log "ERROR" "可能原因: PostgreSQL 密码不匹配（重部署场景需先执行 docker-compose down -v）"
         return 1
     fi
-    
+
     SIDECAR_NODE_ID="${arr[0]}"
     SIDECAR_INIT_TOKEN="${arr[1]}"
-    
+
     log "SUCCESS" "Sidecar Node ID: $SIDECAR_NODE_ID"
-    
+
     # 更新 common.env
     if ! grep -q "^SIDECAR_INIT_TOKEN=" "$COMMON_ENV_FILE" 2>/dev/null; then
         echo "export SIDECAR_INIT_TOKEN=$SIDECAR_INIT_TOKEN" >> "$COMMON_ENV_FILE"
@@ -1070,7 +1071,7 @@ init_sidecar_token() {
         rm -f "${COMMON_ENV_FILE}.bak"
     fi
     echo "export SIDECAR_NODE_ID=$SIDECAR_NODE_ID" >> "$COMMON_ENV_FILE"
-    
+
     echo "SIDECAR_NODE_ID=$SIDECAR_NODE_ID" >> .env
     echo "SIDECAR_INIT_TOKEN=$SIDECAR_INIT_TOKEN" >> .env
 }
@@ -1102,16 +1103,16 @@ update_common_env_flags() {
 do_install() {
     OFFLINE="${OFFLINE:-false}"
     local clean_install=false
-    
+
     if [ -f "$COMMON_ENV_FILE" ]; then
         log "SUCCESS" "发现配置文件，加载已保存的配置..."
         source "$COMMON_ENV_FILE"
     fi
-    
+
     export OPSPILOT_ENABLED="${OPSPILOT_ENABLED:-false}"
     export VLLM_ENABLED="${VLLM_ENABLED:-false}"
     export ENTERPRISE_ENABLED="${ENTERPRISE_ENABLED:-false}"
-    
+
     for arg in "$@"; do
         case "$arg" in
             --clean)
@@ -1139,21 +1140,21 @@ do_install() {
     done
 
     load_image_config
-    
+
     if [ "$clean_install" = true ]; then
         log "WARNING" "正在停止并清理现有容器和数据卷..."
         $DOCKER_COMPOSE_CMD down -v 2>/dev/null || true
         rm -f "$COMMON_ENV_FILE" "$DB_ENV_FILE" "$PORT_ENV_FILE" .env 2>/dev/null || true
         log "SUCCESS" "清理完成，开始全新部署"
     fi
-    
+
     # 构建安装应用列表
     INSTALL_APPS="system_mgmt,cmdb,monitor,node_mgmt,console_mgmt,alerts,log,mlops,operation_analysis,job_mgmt,opspilot"
     if [[ "$OPSPILOT_ENABLED" == "true" ]]; then
         #INSTALL_APPS="${INSTALL_APPS},opspilot"
         log "INFO" "安装应用列表: ${INSTALL_APPS}"
     fi
-    
+
     # 镜像加载模式
     local load_local_images=false
     if [[ "$OFFLINE" == "true" ]]; then
@@ -1213,7 +1214,7 @@ do_install() {
     local pull_flag=""
     [[ "${OFFLINE:-false}" == "true" ]] && pull_flag="--pull never"
     ${DOCKER_COMPOSE_CMD} up $pull_flag -d fusion-collector
-    
+
     log "SUCCESS" "部署成功，访问 https://$HOST_IP:$TRAEFIK_WEB_PORT"
     log "SUCCESS" "初始用户名: admin, 初始密码: password"
 }
@@ -1255,23 +1256,23 @@ do_package() {
 
     [[ "$skip_opspilot" == "true" ]] && log "INFO" "跳过 OpsPilot 镜像（使用 --opspilot 下载）"
     [[ "$skip_vllm" == "true" ]] && log "INFO" "跳过 vLLM 镜像（使用 --vllm 下载）"
-    
+
     log "INFO" "开始下载 Docker 镜像..."
     log "INFO" "Registry Base: ${REGISTRY_BASE}, App Namespace: ${APP_NAMESPACE}"
-    
+
     init_docker_images
-    
+
     mkdir -p images
-    
+
     local hash_file="images/images.sha256"
     cat > "$hash_file" <<EOF
 # 镜像 hash 文件
 # 格式: 镜像名称 镜像hash 文件名
 # 生成时间: $(date +'%Y-%m-%d %H:%M:%S')
 EOF
-    
+
     local image_count=0 skipped_count=0
-    
+
     for image_var in $(compgen -v | grep '^DOCKER_IMAGE_'); do
         # 跳过 OpsPilot 镜像
         if [[ "$skip_opspilot" == "true" ]] && [[ "$image_var" =~ METIS ]]; then
@@ -1279,7 +1280,7 @@ EOF
             skipped_count=$((skipped_count + 1))
             continue
         fi
-        
+
         # 跳过 vLLM 镜像
         if [[ "$skip_vllm" == "true" ]] && [[ "$image_var" =~ VLLM ]]; then
             log "INFO" "跳过: ${image_var}"
@@ -1315,10 +1316,10 @@ EOF
             image_count=$((image_count + 1))
         fi
     done
-    
+
     log "SUCCESS" "镜像打包完成！总计: $image_count 个"
     [ "$skipped_count" -gt 0 ] && log "INFO" "跳过: $skipped_count 个"
-    
+
     local pkg_name="bklite-offline.tar.gz"
     tar --exclude='*.env' --exclude='conf/certs/' --exclude='conf/nats/nats.conf' --exclude='pkgs/' --exclude='bin/' -czf "/opt/$pkg_name" .
     log "SUCCESS" "已生成离线包: /opt/$pkg_name"
@@ -1331,7 +1332,7 @@ main() {
     log "INFO" "开始检查 Docker 和 Docker Compose 版本..."
     check_docker_version
     check_docker_compose_version
-    
+
     case "${1:-}" in
         package)
             shift

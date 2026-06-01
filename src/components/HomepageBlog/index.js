@@ -11,34 +11,34 @@ import styles from './styles.module.css';
 function getBlogPosts() {
   return [
     {
-      tag: translate({id: 'homepage.blog.post.3.tag', message: '告警中心'}),
-      date: translate({id: 'homepage.blog.post.3.date', message: '2026-04-29'}),
-      title: translate({id: 'homepage.blog.post.3.title', message: '10 条告警背后其实是 1 个问题，如何高效治理'}),
+      tag: translate({id: 'homepage.blog.post.3.tag', message: '日志中心'}),
+      date: translate({id: 'homepage.blog.post.3.date', message: '2026-06-01'}),
+      title: translate({id: 'homepage.blog.post.3.title', message: '日志权限全量放开，排障更慢也更危险'}),
       summary: translate({
         id: 'homepage.blog.post.3.summary',
-        message: '从一次发布后的告警刷屏现场出发，拆开 Event、Alert、Incident 各自该承担的角色，看看 BK Lite 如何把 10 条噪声收成 1 条可处理对象。',
+        message: '从一次发布后的支付回调排障出发，拆解全量日志权限为什么会同时带来数据越界和定位变慢，以及 BK Lite 如何把日志访问变成可控搜索空间。',
       }),
-      to: '/blog/alert-noise-to-one-actionable-alert',
+      to: '/blog/log-access-search-space-control',
     },
     {
-      tag: translate({id: 'homepage.blog.post.2.tag', message: '日志中心'}),
-      date: translate({id: 'homepage.blog.post.2.date', message: '2026-04-29'}),
-      title: translate({id: 'homepage.blog.post.2.title', message: '日志告警总像“狼来了”，问题卡在哪'}),
+      tag: translate({id: 'homepage.blog.post.2.tag', message: 'CMDB'}),
+      date: translate({id: 'homepage.blog.post.2.date', message: '2026-05-26'}),
+      title: translate({id: 'homepage.blog.post.2.title', message: 'CMDB 失真，往往不是录入问题'}),
       summary: translate({
         id: 'homepage.blog.post.2.summary',
-        message: '从一次发布后的复盘追问出发，拆开关键字告警、聚合告警和告警中心各自该承担的角色，看看日志异常为什么总会变成难接手的“狼来了”。',
+        message: '很多团队的 CMDB 不是没资产，而是资产信息跟不上环境变化。模型标准、自动发现、关系回写和变更追踪，决定了它能不能重新成为排障入口。',
       }),
-      to: '/blog/log-alert-wolf-cry-root-cause',
+      to: '/blog/cmdb-data-drift-is-not-an-input-problem',
     },
     {
-      tag: translate({id: 'homepage.blog.post.1.tag', message: 'CMDB'}),
-      date: translate({id: 'homepage.blog.post.1.date', message: '2026-04-28'}),
-      title: translate({id: 'homepage.blog.post.1.title', message: 'CMDB 真正失灵的时刻，不是查不到资产，而是查不动关系'}),
+      tag: translate({id: 'homepage.blog.post.1.tag', message: '作业管理'}),
+      date: translate({id: 'homepage.blog.post.1.date', message: '2026-05-18'}),
+      title: translate({id: 'homepage.blog.post.1.title', message: '夜里该跑的巡检和清理，怎么总在交接班后断档？'}),
       summary: translate({
         id: 'homepage.blog.post.1.summary',
-        message: '从一次真实的凌晨故障复盘出发，聊聊 CMDB 在故障排查里真正有价值的能力，以及 BlueKing Lite 怎么把关系链路串起来。',
+        message: '从夜间巡检和日志清理经常在交接班后断档的现场切入，拆开服务器例行维护为什么总是靠人记着跑，以及 BK Lite 作业管理如何把动作、对象、时间和结果重新收进一套稳定执行方式。',
       }),
-      to: '/blog/cmdb-dependency-chain-troubleshooting',
+      to: '/blog/server-maintenance-breaks-after-shift-handover',
     }
   ];
 }

@@ -42,40 +42,40 @@
     "message": "Read article"
   },
   "homepage.blog.post.1.tag": {
-    "message": "CMDB"
+    "message": "Job Management"
   },
   "homepage.blog.post.1.date": {
-    "message": "2026-04-28"
+    "message": "2026-05-18"
   },
   "homepage.blog.post.1.title": {
-    "message": "The Moment a CMDB Really Fails Is Not When It Cannot Find an Asset, But When It Cannot Follow the Relationships"
+    "message": "Why Nightly Inspection and Cleanup Keep Breaking After Shift Handover"
   },
   "homepage.blog.post.1.summary": {
-    "message": "Starting from a real early-morning incident review, this piece explains what makes a CMDB truly useful in troubleshooting and how BlueKing Lite connects the dependency chain."
+    "message": "Starting from recurring gaps in nightly inspection and log cleanup after shift handover, this article explains why routine server maintenance often relies on memory, and how BK Lite Job Management brings actions, targets, timing, and results back into a stable execution flow."
   },
   "homepage.blog.post.2.tag": {
-    "message": "Log Center"
+    "message": "CMDB"
   },
   "homepage.blog.post.2.date": {
-    "message": "2026-04-29"
+    "message": "2026-05-26"
   },
   "homepage.blog.post.2.title": {
-    "message": "Why Log Alerts Always Feel Like Crying Wolf"
+    "message": "CMDB Drift Is Often Not an Input Problem"
   },
   "homepage.blog.post.2.summary": {
-    "message": "By separating keyword alerts, aggregation alerts, and alert-center ownership, this article explains why log anomalies often become noisy and hard to act on."
+    "message": "Many teams do not lack assets in CMDB. What they lack is asset data that can keep up with environment changes. Model standards, auto-discovery, relationship write-back, and change tracking determine whether CMDB can become a troubleshooting entry again."
   },
   "homepage.blog.post.3.tag": {
-    "message": "Alert Center"
+    "message": "Log Center"
   },
   "homepage.blog.post.3.date": {
-    "message": "2026-04-29"
+    "message": "2026-06-01"
   },
   "homepage.blog.post.3.title": {
-    "message": "10 Alerts, 1 Real Problem: How to Govern Alert Noise Efficiently"
+    "message": "Opening Full Log Access Makes Troubleshooting Slower and Riskier"
   },
   "homepage.blog.post.3.summary": {
-    "message": "Using a post-release alert storm as the starting point, this article breaks down the roles of Event, Alert, and Incident, and shows how BK Lite turns 10 noisy signals into one actionable object."
+    "message": "Starting from a failed payment callback after a release, this article explains why full log access can create both data overreach and slower diagnosis, and how BK Lite turns log access into a controllable search space."
   },
   "pricing.plan.community.name": {
     "message": "Community"

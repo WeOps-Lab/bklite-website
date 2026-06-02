@@ -43,12 +43,12 @@ curl -sSL https://bklite.ai/install.run | bash -s -
 docker compose ps --format "table {{.Name}}\t{{.Image}}"
 ```
 
-离线环境需先在联网机器上重新制作离线包，再分发到目标服务器后执行 `bootstrap.sh`，详见[系统部署指南](../deploy/docker-compose.md)。
+离线环境需先在联网机器上重新制作离线包，再分发到目标服务器后执行 `bootstrap.sh`，详见[系统部署指南](/docs/deploy/docker-compose)。
 
 **核查要点**：
 
 - [ ] 建立定期检查上游版本的机制（建议每月一次）。
-- [ ] 升级前先执行[备份](./backup-restore.md)，确保可回滚。
+- [ ] 升级前先执行[备份](/docs/operations/backup-restore)，确保可回滚。
 - [ ] 升级后核对各组件 `Status` 为 `healthy`。
 
 ---
@@ -202,7 +202,7 @@ docker compose version    # 要求 >= v2.27.0
 
 ### 5.2 超级管理员最小化
 
-参考平台内置的[安全最佳实践](../system/feature.md)：
+参考平台内置的[安全最佳实践](/docs/system/feature)：
 
 - 超级管理员（Super Admin）拥有全量数据与接管权限，**仅向极少数审计/合规人员保留**，并配备更高随机度口令与更短的失效周期。
 - 日常运维与配置使用**仅限业务范围的「平台管理员」**账号，避免误操作造成全局破坏。
@@ -529,7 +529,7 @@ cd /opt/bk-lite && docker compose ps --format "table {{.Name}}\t{{.Status}}"
 
 ## 获取帮助
 
-- [运维手册首页](./index.md)
-- [备份与还原](./backup-restore.md)
-- [系统部署指南](../deploy/docker-compose.md)
+- [运维手册首页](/docs/operations/)
+- [备份与还原](/docs/operations/backup-restore)
+- [系统部署指南](/docs/deploy/docker-compose)
 - [GitHub Issues](https://github.com/TencentBlueKing/bk-lite/issues)

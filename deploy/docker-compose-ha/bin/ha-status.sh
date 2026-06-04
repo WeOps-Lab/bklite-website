@@ -10,6 +10,10 @@ cd "$(dirname "$0")/.."
 source ./common.env
 source ./ha.env 2>/dev/null || { echo "ha.env 不存在，无法判断角色"; exit 2; }
 
+# 独立运行时 DOCKER_IMAGE_NATS_CLI 未由 bootstrap 注入，按 REGISTRY_BASE 兜底，
+# 否则下方 NATS 检查的 docker run 会因镜像名为空而失败、误报流"不存在"
+DOCKER_IMAGE_NATS_CLI="${DOCKER_IMAGE_NATS_CLI:-${REGISTRY_BASE}/natsio/nats-box:latest}"
+
 EXIT=0
 fail() { echo "  [FAIL] $*"; EXIT=1; }
 ok()   { echo "  [OK]   $*"; }

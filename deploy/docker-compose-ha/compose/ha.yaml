@@ -3,8 +3,9 @@
 # 用法：在 bootstrap.sh 中作为 `-f compose/ha.yaml` 最后一个 override 加载（已自动处理）
 #
 # 行为：
-#   - 给业务类服务（server / web / webhookd / nats-executor / stargazer / fusion-collector）打上 profile=active
+#   - 给业务类服务（server / web / webhookd / nats-executor / stargazer / fusion-collector / telegraf）打上 profile=active
 #     备节点启动时不带 --profile active，这些服务不创建；切换时 ha-failover.sh 启动 profile=active
+#     telegraf 因 depends_on server，必须同属 active，否则备节点（及未带 profile 的中间 config）会因悬空依赖报错
 #   - 主备 PG 行为差异通过自定义 entrypoint 注入：`HA_ROLE=standby` 时执行 pg_basebackup 后以 standby 启动
 #   - Redis / FalkorDB 备节点通过 command 追加 --replicaof / --masterauth
 #   - NATS server_name / instance id / vector connection_name 来自 ha.env
@@ -32,6 +33,10 @@ services:
     profiles: ["active"]
 
   fusion-collector:
+    profiles: ["active"]
+
+  #-- telegraf：depends_on server（active-only），故必须同属 active，否则备节点悬空依赖报错 --
+  telegraf:
     profiles: ["active"]
 
   #-- PostgreSQL：通过角色感知的 entrypoint 注入主备行为 --
@@ -91,7 +96,7 @@ services:
           export REDIS_ARGS="--requirepass $$FALKORDB_PASSWORD"
         fi
         export FALKORDB_ARGS="THREAD_COUNT 4"
-        exec /entrypoint.sh
+        exec /var/lib/falkordb/bin/run.sh
 
   #-- vector：用 NATS_SERVER_NAME 作为 connection_name 区分主备订阅 --
   vector:

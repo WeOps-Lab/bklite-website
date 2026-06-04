@@ -98,7 +98,9 @@ subjectAltName = $SAN
 subjectAltName = $SAN
 basicConstraints = CA:FALSE
 keyUsage = digitalSignature,keyEncipherment,keyAgreement
-extendedKeyUsage = serverAuth
+# NATS leafnode 为双向 TLS（verify: true），备节点作为 leaf 会用此证书做客户端认证，
+# 故必须同时包含 clientAuth，否则 leafnode TLS 握手报 "incompatible key usage"
+extendedKeyUsage = serverAuth, clientAuth
 EOF
 
 log "生成 CSR + 签名"

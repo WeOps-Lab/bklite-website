@@ -17,6 +17,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 source ./common.env
 source ./ha.env
+# 8b PG 写入探活用到 $DB_NAME（定义在 db.env）；脚本开了 set -u，不 source 会因未绑定变量中止
+source ./db.env 2>/dev/null || true
+
+# 独立运行时 DOCKER_IMAGE_NATS_CLI 未由 bootstrap 注入，按 REGISTRY_BASE 兜底，
+# 否则步骤 6（mirror 转可写）与 8d（NATS publish 探活）的 docker run 会因镜像名为空失败
+DOCKER_IMAGE_NATS_CLI="${DOCKER_IMAGE_NATS_CLI:-${REGISTRY_BASE}/natsio/nats-box:latest}"
 
 log()  { echo "[failover] $*"; }
 die()  { echo "[failover] FATAL: $*" >&2; exit 1; }
@@ -46,7 +52,7 @@ fi
 step "2/9 停止主节点业务进程"
 if ssh -o ConnectTimeout=5 -o BatchMode=yes "$PEER_SSH_USER@$PEER_HOST" "true" 2>/dev/null; then
     log "主节点 SSH 可达，远程停止业务进程"
-    ssh "$PEER_SSH_USER@$PEER_HOST" "cd $(pwd) && docker compose --profile active stop server web webhookd nats-executor stargazer fusion-collector || true"
+    ssh "$PEER_SSH_USER@$PEER_HOST" "cd $(pwd) && docker compose --profile active stop server web webhookd nats-executor stargazer fusion-collector telegraf || true"
 else
     log "主节点 SSH 不可达"
     confirm "请确认主节点已彻底失联且不会自动恢复，确认继续切换吗？"
@@ -82,22 +88,9 @@ log "Redis / FalkorDB 已转 master"
 
 #=== 6. NATS mirror -> source ===
 step "6/9 NATS 流接管"
-nats_exec() {
-    docker run --rm --network=bklite-prod \
-        -v "$PWD/conf/certs:/etc/certs:ro" \
-        "$DOCKER_IMAGE_NATS_CLI" nats \
-        -s tls://nats:4222 \
-        --tlsca /etc/certs/ca.crt \
-        --user "$NATS_ADMIN_USERNAME" --password "$NATS_ADMIN_PASSWORD" \
-        "$@"
-}
-for stream in ${HA_MIRROR_STREAMS:-metrics OBJ_bklite METRICS_ALL}; do
-    if nats_exec stream info "$stream" >/dev/null 2>&1; then
-        log "[$stream] 将 mirror 配置移除（变为可写流）"
-        nats_exec stream edit "$stream" --no-mirror --defaults || \
-            log "WARNING: $stream 移除 mirror 失败，可能需要手动 stream edit"
-    fi
-done
+# 注意：mirror 配置 immutable，无法用 `stream edit --no-mirror` 转可写（服务端报 10055）。
+# 正确做法是删除 mirror 流后重建为源流，由 ha-takeover-streams.sh 统一处理。
+bash ./bin/ha-takeover-streams.sh || log "WARNING: NATS 流接管出现问题，请检查 ha-takeover-streams 输出"
 
 #=== 7. 启动业务进程 ===
 step "7/9 启动业务进程 (--profile active)"

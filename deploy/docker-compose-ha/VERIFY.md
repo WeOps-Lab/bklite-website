@@ -2,6 +2,8 @@
 
 按顺序执行下列验证点。前提：两台跨机房 Linux 主机（下称 **A** = primary、**B** = standby），都已能 `docker run` 且双向放行了 **5432 / 7422 / 9000 / 6379 / 6479** 端口。
 
+> **重要前置**：阶段 7/8 的 `ha-failover.sh` / `ha-failback.sh` 需要两节点之间 **root 双向免密 SSH**（A→B 且 B→A，含彼此的 `known_hosts`）。bootstrap 不会自动配置，请运维提前准备；否则远程停对端业务的步骤会失败（脚本会降级为人工确认）。
+
 > 安装步骤本身见 [Readme.md](./Readme.md)。本文件聚焦"装完之后怎么验证"。
 
 ## 阶段 1：部署前准备
@@ -69,10 +71,13 @@ docker compose ps
 **验证点 V3（业务可访问）**
 
 ```bash
-curl -k https://127.0.0.1:443/
+# web 路由规则是 Host(<HOST_IP>)，必须用本机 IP（或带正确 Host 头）访问，
+# 直接 curl 127.0.0.1 的 Host 头不匹配会返回 404。
+curl -k https://<A-IP>/
+# 或：curl -k -H "Host: <A-IP>" https://127.0.0.1:443/
 ```
 
-期望：返回 200 或登录页 HTML。
+期望：返回 200 或登录页 HTML（`<title>BlueKing Lite</title>`）。
 
 ---
 
@@ -129,13 +134,16 @@ docker exec $(docker compose ps -q falkordb) \
 
 **验证点 V8（NATS leafnode 已连接）**
 
+`nats server report connections` 需要 system 账号权限，普通 `admin` 账号会报
+`ensure the account used has system privileges`。改用日志判断 leafnode 是否稳定连接：
+
 ```bash
-# A
-docker run --rm --network=bklite-prod -v $PWD/conf/certs:/c \
-  bk-lite.tencentcloudcr.com/bklite/weopsx/natsio/nats-box:latest \
-  nats -s tls://admin:$NATS_ADMIN_PASSWORD@nats:4222 --tlsca /c/ca.crt \
-  server report connections
-# 期望: 列表里有来自 B 的 leaf node 连接（kind=Leafnode）
+# A：应看到 "Leafnode connection created" 且无 "TLS Handshake Failure"
+docker logs --since 2m $(docker compose ps -q nats) 2>&1 | grep -iE "leafnode|handshake"
+# 期望: 有 "Leafnode connection created"，且无 "incompatible key usage" / "Handshake Failure"
+
+# B：应能持续连上 A 的 7422 且无 "connection refused" / "Read Error"
+docker logs --since 2m $(docker compose ps -q nats) 2>&1 | grep -iE "leafnode|refused"
 ```
 
 **验证点 V9（NATS mirror 流存在）**
@@ -145,8 +153,13 @@ docker run --rm --network=bklite-prod -v $PWD/conf/certs:/c \
 docker run --rm --network=bklite-prod -v $PWD/conf/certs:/c \
   bk-lite.tencentcloudcr.com/bklite/weopsx/natsio/nats-box:latest \
   nats -s tls://admin:$NATS_ADMIN_PASSWORD@nats:4222 --tlsca /c/ca.crt stream ls
-# 期望: 列表里有 metrics、OBJ_bklite、METRICS_ALL，类型为 mirror
+# 期望: 列表里有 metrics、OBJ_bklite、METRICS_ALL，stream info 显示 "Mirror: ... API Prefix"
 ```
+
+> **已知限制**：`OBJ_bklite`（MinIO 对象存储事件流）源端若存在大量内部删除（messages 远小于 last seq），
+> 跨 leafnode 的 external-API mirror 回填可能停滞（日志反复 `create mirror consumer: stream not found 10059`）。
+> 对象**数据本身**由 MinIO 站点复制（V10/V11）保护，该事件流回填不完整不影响对象可用性，
+> 但 failover 后事件流历史会缺失。需要 NATS 拓扑层面（gateway/supercluster）进一步优化。
 
 ---
 

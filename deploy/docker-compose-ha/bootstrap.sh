@@ -131,6 +131,12 @@ load_ha_env() {
     export PG_REPL_USER PG_REPL_PASSWORD
     export MINIO_SR_USER MINIO_SR_PASSWORD
     export NATS_SERVER_NAME NATS_INSTANCE_ID
+    # 对端 NATS 实例 ID（用于推导 mirror 源 domain）。未显式配置则按角色兜底：
+    # primary 的对端是 standby，standby 的对端是 primary。
+    if [ -z "${PEER_NATS_INSTANCE_ID:-}" ]; then
+        if [ "$HA_ROLE" = "standby" ]; then PEER_NATS_INSTANCE_ID=primary; else PEER_NATS_INSTANCE_ID=standby; fi
+    fi
+    export PEER_NATS_INSTANCE_ID
     export HA_MIRROR_STREAMS="${HA_MIRROR_STREAMS:-metrics OBJ_bklite METRICS_ALL}"
     export PEER_PG_PORT="${PEER_PG_PORT:-5432}"
     export PEER_NATS_LEAFNODE_PORT="${PEER_NATS_LEAFNODE_PORT:-7422}"
@@ -878,6 +884,15 @@ generate_nats_config() {
         log "WARNING" "nats.conf 文件已存在，将被覆盖..."
     fi
 
+    # JetStream domain 必须主备不同：跨 leafnode 做 mirror 时，leaf（备）需要独立 domain，
+    # 并通过 external api "$JS.<对端domain>.API" 引用对端流。两端同 domain 会导致 mirror 自引用、拉不到数据。
+    #
+    # 关键：domain 按「节点」而非「角色」固定 —— 每节点 domain = bklite_<本节点 NATS_INSTANCE_ID>，
+    # 这样 failover/failback 角色互换后 domain 不变、mirror 引用始终对称，无需手动改 domain。
+    # mirror 源 domain = bklite_<对端 NATS_INSTANCE_ID>。NATS_JS_DOMAIN / HA_HUB_JS_DOMAIN 可显式覆盖。
+    export NATS_JS_DOMAIN="${NATS_JS_DOMAIN:-bklite_${NATS_INSTANCE_ID}}"
+    export NATS_HUB_JS_DOMAIN="${HA_HUB_JS_DOMAIN:-bklite_${PEER_NATS_INSTANCE_ID:-}}"
+
     local leafnode_remotes=""
     if [ "${HA_ROLE:-primary}" = "standby" ]; then
         leafnode_remotes=$(cat <<REMOTES
@@ -922,7 +937,7 @@ ${leafnode_remotes}
 jetstream: enabled
 jetstream {
   store_dir=/nats/storage
-  domain=bklite
+  domain=${NATS_JS_DOMAIN}
 }
 
 server_name=${NATS_SERVER_NAME}
@@ -1046,21 +1061,15 @@ start_services() {
     [[ "${OFFLINE:-false}" == "true" ]] && pull_flag="--pull never"
 
     log "INFO" "启动基础 DB 类服务..."
-    ${DOCKER_COMPOSE_CMD} up $pull_flag -d traefik redis nats victoria-metrics falkordb victoria-logs minio mlflow nats-executor vector webhookd
+    # 注意：不要在此显式点名 profile=active 的业务服务（nats-executor / webhookd）；
+    # 显式点名会无视 profile 强行启动，导致备节点也起这些业务进程。它们只应由
+    # 主节点下方的 `--profile active up` 拉起。
+    ${DOCKER_COMPOSE_CMD} up $pull_flag -d traefik redis nats victoria-metrics falkordb victoria-logs minio mlflow vector
 
     if [ "$HA_ROLE" = "primary" ]; then
-        log "INFO" "[primary] 创建 metrics JetStream..."
-        docker run --rm --network=bklite-prod \
-            -v "$PWD/conf/certs:/etc/certs:ro" \
-            "$DOCKER_IMAGE_NATS_CLI" nats -s tls://nats:4222 \
-            --tlsca /etc/certs/ca.crt \
-            --user "$NATS_ADMIN_USERNAME" --password "$NATS_ADMIN_PASSWORD" \
-            stream add metrics --subjects=metrics.* --storage=file \
-            --replicas=1 --retention=limits --discard=old \
-            --max-age=20m --max-bytes=104857600 --max-consumers=-1 \
-            --max-msg-size=-1 --max-msgs=-1 --max-msgs-per-subject=1000000 \
-            --dupe-window=5m --no-allow-rollup --no-deny-delete --no-deny-purge || \
-            log "WARNING" "metrics 流可能已存在，忽略错误"
+        log "INFO" "[primary] 确保 metrics 源流存在..."
+        # 统一由 ha-ensure-source-streams.sh 创建，failover/failback 接管时复用同一逻辑
+        bash ./bin/ha-ensure-source-streams.sh || log "WARNING" "metrics 源流创建可能有问题"
 
         log "INFO" "[primary] 启动业务进程 (profile=active)..."
         ${DOCKER_COMPOSE_CMD} --profile active up $pull_flag -d

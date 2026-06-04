@@ -9,6 +9,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 source ./common.env
 source ./ha.env
+source ./db.env 2>/dev/null || true
+
+# 独立运行时 DOCKER_IMAGE_NATS_CLI 未由 bootstrap 注入，按 REGISTRY_BASE 兜底
+DOCKER_IMAGE_NATS_CLI="${DOCKER_IMAGE_NATS_CLI:-${REGISTRY_BASE}/natsio/nats-box:latest}"
 
 log()  { echo "[failback] $*"; }
 die()  { echo "[failback] FATAL: $*" >&2; exit 1; }
@@ -44,10 +48,18 @@ confirm "反向同步已追平，继续 failback 吗？"
 
 #=== 2. 在当前主（原备）上停业务进程 ===
 step "2/4 远程停止当前主上的业务进程"
+# 前置：本节点到对端需配置 root 免密 SSH（双向）。bootstrap 不会自动配置，需运维准备。
 PEER_SSH_USER="${PEER_SSH_USER:-root}"
-ssh -o ConnectTimeout=5 "$PEER_SSH_USER@$PEER_HOST" \
-    "cd $(pwd) && docker compose --profile active stop server web webhookd nats-executor stargazer fusion-collector" || \
-    die "无法远程停止当前主业务进程"
+STOP_CMD="cd $(pwd) && docker compose --profile active stop server web webhookd nats-executor stargazer fusion-collector telegraf"
+if ssh -o ConnectTimeout=5 -o BatchMode=yes "$PEER_SSH_USER@$PEER_HOST" "true" 2>/dev/null; then
+    ssh "$PEER_SSH_USER@$PEER_HOST" "$STOP_CMD" || die "远程停止当前主业务进程失败"
+else
+    # SSH 不通（如未配双向免密）：降级为人工执行，避免直接 die
+    log "WARNING: 无法 SSH 到当前主 $PEER_HOST（请检查双向免密 SSH）"
+    echo "请手动在当前主 $PEER_HOST 上执行以下命令停止其业务进程，完成后回车继续："
+    echo "    $STOP_CMD"
+    confirm "已在 $PEER_HOST 停止业务进程，继续 failback 吗？"
+fi
 
 #=== 3. 在本节点 promote + 启动业务 ===
 step "3/4 在本节点 promote + 启动业务"
@@ -62,19 +74,8 @@ docker exec "$redis_cid" redis-cli -a "$REDIS_PASSWORD" --no-auth-warning REPLIC
 docker exec "$fdb_cid" redis-cli -a "$FALKORDB_PASSWORD" --no-auth-warning REPLICAOF NO ONE \
     || die "FalkorDB REPLICAOF NO ONE 失败"
 
-nats_exec() {
-    docker run --rm --network=bklite-prod \
-        -v "$PWD/conf/certs:/etc/certs:ro" \
-        "$DOCKER_IMAGE_NATS_CLI" nats \
-        -s tls://nats:4222 \
-        --tlsca /etc/certs/ca.crt \
-        --user "$NATS_ADMIN_USERNAME" --password "$NATS_ADMIN_PASSWORD" \
-        "$@"
-}
-for stream in ${HA_MIRROR_STREAMS:-metrics OBJ_bklite METRICS_ALL}; do
-    nats_exec stream info "$stream" >/dev/null 2>&1 && \
-        nats_exec stream edit "$stream" --no-mirror --defaults || true
-done
+# NATS 流接管：mirror immutable，删除后重建为源流（详见 ha-takeover-streams.sh）
+bash ./bin/ha-takeover-streams.sh || log "WARNING: NATS 流接管出现问题"
 
 docker compose --profile active up -d
 sleep 10

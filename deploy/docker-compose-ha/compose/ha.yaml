@@ -1,0 +1,106 @@
+# HA 模式 override
+#
+# 用法：在 bootstrap.sh 中作为 `-f compose/ha.yaml` 最后一个 override 加载（已自动处理）
+#
+# 行为：
+#   - 给业务类服务（server / web / webhookd / nats-executor / stargazer / fusion-collector / telegraf）打上 profile=active
+#     备节点启动时不带 --profile active，这些服务不创建；切换时 ha-failover.sh 启动 profile=active
+#     telegraf 因 depends_on server，必须同属 active，否则备节点（及未带 profile 的中间 config）会因悬空依赖报错
+#   - 主备 PG 行为差异通过自定义 entrypoint 注入：`HA_ROLE=standby` 时执行 pg_basebackup 后以 standby 启动
+#   - Redis / FalkorDB 备节点通过 command 追加 --replicaof / --masterauth
+#   - NATS server_name / instance id / vector connection_name 来自 ha.env
+
+services:
+
+  #-- 业务类服务：只有在主节点（或切换后的备节点）显式激活 profile=active 才启动 --
+  server:
+    profiles: ["active"]
+
+  web:
+    profiles: ["active"]
+
+  webhookd:
+    profiles: ["active"]
+
+  nats-executor:
+    profiles: ["active"]
+    environment:
+      - NATS_INSTANCE_ID=${NATS_INSTANCE_ID}
+      - NATS_URLS=tls://${NATS_ADMIN_USERNAME}:${NATS_ADMIN_PASSWORD}@nats:4222
+      - NATS_CA_FILE=/etc/nats/certs/ca.crt
+
+  stargazer:
+    profiles: ["active"]
+
+  fusion-collector:
+    profiles: ["active"]
+
+  #-- telegraf：depends_on server（active-only），故必须同属 active，否则备节点悬空依赖报错 --
+  telegraf:
+    profiles: ["active"]
+
+  #-- PostgreSQL：通过角色感知的 entrypoint 注入主备行为 --
+  postgres:
+    environment:
+      POSTGRES_USER: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /data/postgres
+      HA_ROLE: ${HA_ROLE}
+      PEER_HOST: ${PEER_HOST}
+      PEER_PG_PORT: ${PEER_PG_PORT}
+      PG_REPL_USER: ${PG_REPL_USER}
+      PG_REPL_PASSWORD: ${PG_REPL_PASSWORD}
+    volumes:
+      - ../conf/postgres/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+      - ../conf/postgres/01-create-replicator.sh:/docker-entrypoint-initdb.d/01-create-replicator.sh:ro
+      - ../conf/postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - ../conf/postgres/ha-entrypoint.sh:/usr/local/bin/ha-entrypoint.sh:ro
+    entrypoint: ["/usr/local/bin/ha-entrypoint.sh"]
+    command: ["postgres", "-c", "hba_file=/etc/postgresql/pg_hba.conf", "-c", "wal_level=replica", "-c", "max_wal_senders=10", "-c", "max_replication_slots=10", "-c", "hot_standby=on", "-c", "wal_keep_size=2GB"]
+
+  #-- Redis：备节点配置 replicaof --
+  redis:
+    environment:
+      HA_ROLE: ${HA_ROLE}
+      PEER_HOST: ${PEER_HOST}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        if [ "$$HA_ROLE" = "standby" ]; then
+          exec redis-server \
+            --requirepass "$$REDIS_PASSWORD" \
+            --masterauth "$$REDIS_PASSWORD" \
+            --replicaof "$$PEER_HOST" 6379
+        else
+          exec redis-server \
+            --requirepass "$$REDIS_PASSWORD" \
+            --masterauth "$$REDIS_PASSWORD"
+        fi
+
+  #-- FalkorDB：备节点配置 replicaof（底层是 Redis） --
+  falkordb:
+    environment:
+      HA_ROLE: ${HA_ROLE}
+      PEER_HOST: ${PEER_HOST}
+      FALKORDB_PASSWORD: ${FALKORDB_PASSWORD}
+      REDIS_ARGS: ""  # 占位，下方 command 覆盖
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        if [ "$$HA_ROLE" = "standby" ]; then
+          export REDIS_ARGS="--requirepass $$FALKORDB_PASSWORD --masterauth $$FALKORDB_PASSWORD --replicaof $$PEER_HOST 6479"
+        else
+          export REDIS_ARGS="--requirepass $$FALKORDB_PASSWORD"
+        fi
+        export FALKORDB_ARGS="THREAD_COUNT 4"
+        exec /var/lib/falkordb/bin/run.sh
+
+  #-- vector：用 NATS_SERVER_NAME 作为 connection_name 区分主备订阅 --
+  vector:
+    environment:
+      - NATS_ADMIN_USERNAME=${NATS_ADMIN_USERNAME}
+      - NATS_ADMIN_PASSWORD=${NATS_ADMIN_PASSWORD}
+      - VECTOR_CONNECTION_NAME=${NATS_SERVER_NAME}

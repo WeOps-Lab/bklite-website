@@ -1,0 +1,38 @@
+# 内置 PostgreSQL 服务定义
+# 企业版外部数据库模式（--enterprise + DB_ENGINE != postgresql）下不会被加载
+# 同时通过 service override 注入对 postgres 的 depends_on，避免外部模式下因依赖找不到 service 而启动失败
+
+volumes:
+  postgres:
+
+services:
+  postgres:
+    container_name: postgres
+    image: ${DOCKER_IMAGE_POSTGRES}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      PGDATA: /data/postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres:/data/postgres
+      - ../conf/postgres/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+    networks:
+      - prod
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: always
+
+  mlflow:
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  server:
+    depends_on:
+      postgres:
+        condition: service_healthy

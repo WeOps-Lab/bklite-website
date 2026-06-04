@@ -1,0 +1,1447 @@
+#!/bin/bash
+set -euo pipefail
+
+#=============================================================================
+# 常量定义
+#=============================================================================
+
+readonly DEFAULT_REGISTRY_BASE="bk-lite.tencentcloudcr.com/bklite"
+readonly DEFAULT_APP_NAMESPACE="bklite"
+readonly ENTERPRISE_REGISTRY_BASE="bk-lite.tencentcloudcr.com/bklite/weopsx"
+readonly ENTERPRISE_APP_NAMESPACE=""
+readonly REQUIRED_DOCKER_VERSION="20.10.23"
+readonly REQUIRED_COMPOSE_VERSION="2.27.0"
+readonly DEFAULT_PORT=443
+readonly CERT_SERVER_DAYS=825
+readonly CERT_CA_DAYS=3650
+readonly COMMON_ENV_FILE="common.env"
+readonly DB_ENV_FILE="db.env"
+readonly PORT_ENV_FILE="port.env"
+readonly HA_ENV_FILE="ha.env"
+readonly HA_ENV_EXAMPLE_FILE="ha.env.example"
+
+#=============================================================================
+# 颜色定义
+#=============================================================================
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[0;33m'
+readonly BLUE='\033[0;34m'
+readonly NC='\033[0m'
+
+#=============================================================================
+# 保存用户通过环境变量传入的 MIRROR（作为 registry base 覆盖）
+#=============================================================================
+readonly USER_MIRROR="${MIRROR:-}"
+
+#=============================================================================
+# 工具函数
+#=============================================================================
+log() {
+    local level="$1"
+    local message="$2"
+    local color=""
+    case "$level" in
+        INFO)    color="$BLUE" ;;
+        WARNING) color="$YELLOW" ;;
+        ERROR)   color="$RED" ;;
+        SUCCESS) color="$GREEN" ;;
+        *)       color="$NC" ;;
+    esac
+    echo -e "${color}[$(date +'%Y-%m-%d %H:%M:%S')] [$level] $message${NC}"
+}
+
+die() {
+    log "ERROR" "$1"
+    exit 1
+}
+
+generate_password() {
+    local length="${1:-32}"
+    tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c "$length"
+}
+
+version_gte() {
+    local ver1="$1" ver2="$2"
+    [ "$(printf '%s\n' "$ver2" "$ver1" | sort -V | head -n1)" = "$ver2" ]
+}
+
+# 企业版 + 非默认 DB_ENGINE 视为外部数据库模式，跳过内置 postgres 容器编排
+is_external_db() {
+    [[ "${ENTERPRISE_ENABLED:-false}" == "true" ]] && \
+    [[ "${DB_ENGINE:-postgresql}" != "postgresql" ]]
+}
+
+# 外部数据库模式下校验连接参数，缺失则报错退出
+validate_external_db_env() {
+    local missing=()
+    [ -z "${DB_HOST:-}" ] && missing+=("DB_HOST")
+    [ -z "${DB_USER:-}" ] && missing+=("DB_USER")
+    [ -z "${DB_PASSWORD:-}" ] && missing+=("DB_PASSWORD")
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        die "外部数据库模式（--enterprise + DB_ENGINE=${DB_ENGINE}）缺少必要环境变量: ${missing[*]}。请在执行前 export 对应变量后重试。"
+    fi
+
+    if [ "${DB_HOST}" = "postgres" ]; then
+        die "外部数据库模式下 DB_HOST 不能为 'postgres'（该值指向内置容器名）。请改为外部数据库实例的可达地址。"
+    fi
+}
+
+escape_sed_replacement() {
+    printf '%s' "$1" | sed 's/[&|\\]/\\&/g'
+}
+
+#=============================================================================
+# HA 角色加载与校验
+#=============================================================================
+load_ha_env() {
+    if [ ! -f "$HA_ENV_FILE" ]; then
+        die "未找到 $HA_ENV_FILE。请先复制 $HA_ENV_EXAMPLE_FILE 为 $HA_ENV_FILE 并按本节点角色填写后重试。"
+    fi
+    # shellcheck disable=SC1090
+    source "$HA_ENV_FILE"
+
+    case "${HA_ROLE:-}" in
+        primary|standby)
+            ;;
+        "")
+            die "$HA_ENV_FILE 中未设置 HA_ROLE。取值必须为 primary 或 standby。"
+            ;;
+        *)
+            die "$HA_ENV_FILE 中 HA_ROLE=$HA_ROLE 非法。取值必须为 primary 或 standby。"
+            ;;
+    esac
+
+    local required_vars=(
+        PEER_HOST
+        PG_REPL_USER PG_REPL_PASSWORD
+        MINIO_SR_USER MINIO_SR_PASSWORD
+        NATS_SERVER_NAME NATS_INSTANCE_ID
+    )
+    local missing=()
+    for v in "${required_vars[@]}"; do
+        [ -z "${!v:-}" ] && missing+=("$v")
+    done
+    if [ ${#missing[@]} -gt 0 ]; then
+        die "$HA_ENV_FILE 缺少以下变量：${missing[*]}"
+    fi
+
+    export HA_ROLE PEER_HOST PEER_PG_PORT PEER_NATS_LEAFNODE_PORT PEER_MINIO_ENDPOINT
+    export PG_REPL_USER PG_REPL_PASSWORD
+    export MINIO_SR_USER MINIO_SR_PASSWORD
+    export NATS_SERVER_NAME NATS_INSTANCE_ID
+    export HA_MIRROR_STREAMS="${HA_MIRROR_STREAMS:-metrics OBJ_bklite METRICS_ALL}"
+    export PEER_PG_PORT="${PEER_PG_PORT:-5432}"
+    export PEER_NATS_LEAFNODE_PORT="${PEER_NATS_LEAFNODE_PORT:-7422}"
+    export PEER_MINIO_ENDPOINT="${PEER_MINIO_ENDPOINT:-http://${PEER_HOST}:9000}"
+
+    log "INFO" "HA 角色: $HA_ROLE | 对端: $PEER_HOST | NATS server_name: $NATS_SERVER_NAME"
+}
+
+#=============================================================================
+# 环境检查
+#=============================================================================
+check_docker_version() {
+    command -v docker >/dev/null 2>&1 || die "未找到 docker 命令，请安装 Docker"
+    
+    local docker_version
+    docker_version=$(docker --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+    [ -z "$docker_version" ] && die "无法获取 Docker 版本信息"
+    
+    log "INFO" "当前 Docker 版本: $docker_version"
+    
+    if version_gte "$docker_version" "$REQUIRED_DOCKER_VERSION"; then
+        log "SUCCESS" "Docker 版本满足要求 (>= $REQUIRED_DOCKER_VERSION)"
+    else
+        die "Docker 版本过低，要求 >= $REQUIRED_DOCKER_VERSION，当前: $docker_version"
+    fi
+}
+
+check_docker_compose_version() {
+    local compose_version="" cmd_type=""
+    
+    if command -v docker-compose >/dev/null 2>&1; then
+        compose_version=$(docker-compose --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+        cmd_type="docker-compose"
+        DOCKER_COMPOSE_CMD="docker-compose"
+    elif docker compose version >/dev/null 2>&1; then
+        compose_version=$(docker compose version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+        cmd_type="docker compose"
+        DOCKER_COMPOSE_CMD="docker compose"
+    else
+        die "未找到 docker-compose 或 docker compose 命令"
+    fi
+    
+    [ -z "$compose_version" ] && die "无法获取 Docker Compose 版本信息"
+    
+    log "INFO" "当前 Docker Compose 版本: $compose_version (使用 $cmd_type 命令)"
+    
+    if version_gte "$compose_version" "$REQUIRED_COMPOSE_VERSION"; then
+        log "SUCCESS" "Docker Compose 版本满足要求 (>= $REQUIRED_COMPOSE_VERSION)"
+    else
+        die "Docker Compose 版本过低，要求 >= $REQUIRED_COMPOSE_VERSION，当前: $compose_version"
+    fi
+}
+
+check_nvidia_gpu() {
+    command -v nvidia-smi >/dev/null 2>&1 || return 1
+    nvidia-smi >/dev/null 2>&1 || return 1
+    local gpu_count
+    gpu_count=$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | wc -l)
+    [ "$gpu_count" -gt 0 ]
+}
+
+#=============================================================================
+# 配置加载（单一入口）
+# 镜像配置模型: REGISTRY_BASE (模式特定的 registry 地址) + APP_NAMESPACE (内部应用前缀)
+# - Default:    REGISTRY_BASE=bk-lite.tencentcloudcr.com/bklite, APP_NAMESPACE=bklite
+# - Enterprise: REGISTRY_BASE=bk-lite.tencentcloudcr.com/bklite/weopsx, APP_NAMESPACE=""
+#   企业版 weopsx 已在 REGISTRY_BASE 中，内部应用不需要额外前缀
+# MIRROR 仅作为向后兼容的派生值保留
+#=============================================================================
+load_image_config() {
+    if [ -f "$COMMON_ENV_FILE" ]; then
+        source "$COMMON_ENV_FILE"
+    fi
+
+    # 兼容旧 common.env: 仅有 MIRROR 时推导 REGISTRY_BASE 和 APP_NAMESPACE
+    if [ -z "${REGISTRY_BASE:-}" ] && [ -n "${MIRROR:-}" ]; then
+        if [[ "$MIRROR" == */weopsx ]]; then
+            # 企业版 MIRROR 整体作为 REGISTRY_BASE，内部应用无额外前缀
+            REGISTRY_BASE="$MIRROR"
+            APP_NAMESPACE=""
+        else
+            REGISTRY_BASE="$MIRROR"
+            APP_NAMESPACE="${APP_NAMESPACE-bklite}"
+        fi
+    fi
+
+    # 兼容过渡态 common.env: REGISTRY_BASE 不含 weopsx 但 APP_NAMESPACE=weopsx
+    # 这是旧版脚本写入的值，需要修正为新模型
+    if [ -n "${REGISTRY_BASE:-}" ] && [[ "${APP_NAMESPACE:-}" == "weopsx" ]] && [[ "$REGISTRY_BASE" != */weopsx ]]; then
+        REGISTRY_BASE="${REGISTRY_BASE}/weopsx"
+        APP_NAMESPACE=""
+    fi
+
+    # --enterprise 模式覆盖
+    if [[ "${ENTERPRISE_ENABLED:-false}" == "true" ]]; then
+        REGISTRY_BASE="$ENTERPRISE_REGISTRY_BASE"
+        APP_NAMESPACE="$ENTERPRISE_APP_NAMESPACE"
+    fi
+
+    # 用户环境变量 MIRROR 覆盖 registry base（不影响 namespace）
+    if [ -n "$USER_MIRROR" ]; then
+        REGISTRY_BASE="$USER_MIRROR"
+    fi
+
+    # 兜底默认值（注意: 用 ${VAR-default} 而非 ${VAR:-default}，保留空值）
+    REGISTRY_BASE="${REGISTRY_BASE:-$DEFAULT_REGISTRY_BASE}"
+    APP_NAMESPACE="${APP_NAMESPACE-$DEFAULT_APP_NAMESPACE}"
+
+    # 派生 MIRROR 用于向后兼容
+    MIRROR="$REGISTRY_BASE"
+
+    export REGISTRY_BASE APP_NAMESPACE MIRROR
+}
+
+#=============================================================================
+# 镜像解析辅助函数
+# - resolve_third_party_image:  第三方镜像 → REGISTRY_BASE + 原始路径
+# - resolve_internal_app_image: 内部应用镜像 → REGISTRY_BASE + [APP_NAMESPACE/] + 服务名
+#   当 APP_NAMESPACE 为空时（企业版），直接 REGISTRY_BASE/服务名
+#=============================================================================
+resolve_third_party_image() {
+    local image="$1"
+
+    if [ -n "${REGISTRY_BASE:-}" ]; then
+        if [[ "$image" == *"/"* ]]; then
+            echo "${REGISTRY_BASE}/${image}"
+        else
+            echo "${REGISTRY_BASE}/library/${image}"
+        fi
+    else
+        echo "$image"
+    fi
+}
+
+resolve_internal_app_image() {
+    local service="$1"
+
+    if [ -n "${REGISTRY_BASE:-}" ]; then
+        if [ -n "${APP_NAMESPACE}" ]; then
+            echo "${REGISTRY_BASE}/${APP_NAMESPACE}/${service}"
+        else
+            echo "${REGISTRY_BASE}/${service}"
+        fi
+    else
+        if [ -n "${APP_NAMESPACE}" ]; then
+            echo "${APP_NAMESPACE}/${service}"
+        else
+            echo "${service}"
+        fi
+    fi
+}
+
+#=============================================================================
+# Docker 镜像初始化
+#=============================================================================
+init_docker_images() {
+    log "INFO" "初始化镜像变量，当前 REGISTRY_BASE=${REGISTRY_BASE:-}, APP_NAMESPACE=${APP_NAMESPACE:-}"
+
+    # 第三方基础设施镜像
+    export DOCKER_IMAGE_TRAEFIK=$(resolve_third_party_image "traefik:3.6.2")
+    export DOCKER_IMAGE_REDIS=$(resolve_third_party_image "redis:5.0.14")
+    export DOCKER_IMAGE_NATS=$(resolve_third_party_image "nats:2.10.25")
+    export DOCKER_IMAGE_NATS_CLI=$(resolve_third_party_image "natsio/nats-box:latest")
+
+    # 第三方数据库镜像
+    export DOCKER_IMAGE_POSTGRES=$(resolve_third_party_image "postgres:15")
+    export DOCKER_IMAGE_PGVECTOR=$(resolve_third_party_image "pgvector/pgvector:pg15")
+    export DOCKER_IMAGE_FALKORDB=$(resolve_third_party_image "falkordb/falkordb:latest")
+
+    # 第三方监控日志镜像
+    export DOCKER_IMAGE_VICTORIA_METRICS=$(resolve_third_party_image "victoriametrics/victoria-metrics:v1.106.1")
+    export DOCKER_IMAGE_VICTORIALOGS=$(resolve_third_party_image "victoriametrics/victoria-logs:v1.49.0")
+    export DOCKER_IMAGE_VECTOR=$(resolve_third_party_image "timberio/vector:0.48.0-debian")
+
+    # 内部应用镜像（通过 APP_NAMESPACE 动态解析）
+    export DOCKER_IMAGE_SERVER=$(resolve_internal_app_image "server")
+    export DOCKER_IMAGE_WEB=$(resolve_internal_app_image "web")
+    export DOCKER_IMAGE_STARGAZER=$(resolve_internal_app_image "stargazer")
+    export DOCKER_IMAGE_METIS=$(resolve_internal_app_image "metis")
+    export DOCKER_IMAGE_MLFLOW=$(resolve_internal_app_image "mlflow")
+
+    # 第三方存储镜像
+    export DOCKER_IMAGE_MINIO=$(resolve_third_party_image "minio/minio:RELEASE.2024-05-01T01-11-10Z-cpuv1")
+
+    # 内部采集器镜像
+    export DOCKER_IMAGE_FUSION_COLLECTOR=$(resolve_internal_app_image "fusion-collector:latest")
+    export DOCKER_IMAGE_TELEGRAF=$(resolve_internal_app_image "telegraf:latest")
+    export DOCKER_IMAGE_NATS_EXECUTOR=$(resolve_internal_app_image "nats-executor")
+
+    # 第三方工具镜像
+    export DOCKER_IMAGE_OPENSSL=$(resolve_third_party_image "alpine/openssl:3.5.4")
+
+    # 内部工具镜像
+    export DOCKER_IMAGE_VLLM=$(resolve_internal_app_image "vllm:latest")
+    export DOCKER_IMAGE_WEBHOOKD=$(resolve_internal_app_image "webhookd:latest")
+
+    # 固定配置
+    export DOCKER_NETWORK=prod
+    export DIST_ARCH=amd64
+    export POSTGRES_USERNAME="${POSTGRES_USERNAME:-postgres}"
+    export TRAEFIK_ENABLE_DASHBOARD=false
+    export DEFAULT_REQUEST_TIMEOUT=10
+
+    log "INFO" "Docker 镜像环境变量初始化完成"
+}
+
+#=============================================================================
+# 镜像加载（带 hash 校验）
+#=============================================================================
+load_docker_images_with_hash_check() {
+    local images_dir="$1"
+    local hash_file="${images_dir}/images.sha256"
+    
+    [ -d "$images_dir" ] || die "镜像目录不存在: $images_dir"
+    [ -f "$hash_file" ] || die "镜像 hash 文件不存在: $hash_file\n请先运行 'bootstrap.sh package' 生成镜像包"
+    
+    local loaded_count=0 skipped_count=0 total_count=0
+    
+    log "INFO" "检查本地镜像状态..."
+    while IFS= read -r line; do
+        [[ -z "$line" || "$line" == \#* ]] && continue
+        
+        local image_name image_hash image_file
+        image_name=$(echo "$line" | awk '{print $1}')
+        image_hash=$(echo "$line" | awk '{print $2}')
+        image_file=$(echo "$line" | awk '{print $3}')
+        total_count=$((total_count + 1))
+        
+        # 检查镜像是否存在且 hash 匹配
+        if docker image inspect "$image_name" >/dev/null 2>&1; then
+            local local_hash
+            local_hash=$(docker image inspect "$image_name" --format '{{.Id}}' 2>/dev/null | sed 's/sha256://')
+            if [ "$local_hash" == "$image_hash" ]; then
+                log "SUCCESS" "镜像已存在且 hash 匹配，跳过: $image_name"
+                skipped_count=$((skipped_count + 1))
+                continue
+            fi
+            log "WARNING" "镜像存在但 hash 不匹配，需要更新: $image_name"
+        else
+            log "INFO" "镜像不存在，需要加载: $image_name"
+        fi
+        
+        local image_tar="${images_dir}/${image_file}"
+        [ -f "$image_tar" ] || die "镜像文件不存在: $image_tar"
+        
+        log "INFO" "正在加载镜像文件: $image_file"
+        docker load -i "$image_tar"
+        loaded_count=$((loaded_count + 1))
+        log "SUCCESS" "镜像加载完成: $image_name"
+    done < "$hash_file"
+    
+    log "SUCCESS" "镜像检查完成 - 总计: $total_count, 已加载: $loaded_count, 已跳过: $skipped_count"
+}
+
+#=============================================================================
+# 容器健康检查
+#=============================================================================
+wait_container_health() {
+    local container_name="$1"
+    local service_name="$2"
+    
+    log "INFO" "等待 $service_name 启动..."
+    until [ "$($DOCKER_COMPOSE_CMD ps "$container_name" --format "{{.Health}}" 2>/dev/null)" == "healthy" ]; do
+        sleep 5
+    done
+    log "SUCCESS" "$service_name 已成功启动"
+}
+
+#=============================================================================
+# 端口配置
+#=============================================================================
+generate_ports_env() {
+    if [ -f "$PORT_ENV_FILE" ]; then
+        log "SUCCESS" "$PORT_ENV_FILE 文件已存在，跳过生成..."
+        source "$PORT_ENV_FILE"
+        return
+    fi
+    
+    local default_ip="127.0.0.1"
+    if command -v hostname >/dev/null 2>&1 && hostname -I >/dev/null 2>&1; then
+        default_ip=$(hostname -I | awk '{print $1}')
+    elif command -v ifconfig >/dev/null 2>&1; then
+        default_ip=$(ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -1)
+    fi
+    
+    if [ -n "${HOST_IP:-}" ] && [ -n "${TRAEFIK_WEB_PORT:-}" ]; then
+        log "INFO" "使用环境变量: HOST_IP=$HOST_IP, TRAEFIK_WEB_PORT=$TRAEFIK_WEB_PORT"
+    elif [ -t 0 ] && [ -e /dev/tty ]; then
+        read -p "输入对外访问的IP地址，默认为 [$default_ip] " HOST_IP < /dev/tty
+        export HOST_IP=${HOST_IP:-$default_ip}
+        
+        read -p "输入访问端口，默认为 [$DEFAULT_PORT] " TRAEFIK_WEB_PORT < /dev/tty
+        export TRAEFIK_WEB_PORT=${TRAEFIK_WEB_PORT:-$DEFAULT_PORT}
+    else
+        log "INFO" "非交互模式，使用默认值: HOST_IP=$default_ip, TRAEFIK_WEB_PORT=$DEFAULT_PORT"
+        export HOST_IP="$default_ip"
+        export TRAEFIK_WEB_PORT="$DEFAULT_PORT"
+    fi
+    
+    cat > "$PORT_ENV_FILE" <<EOF
+export HOST_IP=${HOST_IP}
+export TRAEFIK_WEB_PORT=${TRAEFIK_WEB_PORT}
+EOF
+}
+
+#=============================================================================
+# TLS 证书生成
+#=============================================================================
+is_ipv4_literal() {
+    [[ "$1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]
+}
+
+is_valid_hostname() {
+    local h="$1"
+    [[ "$h" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]*[A-Za-z0-9])?$ ]]
+}
+
+resolve_host_ip() {
+    local host="$1" ip=""
+    if command -v getent >/dev/null 2>&1; then
+        ip=$(getent ahostsv4 "$host" 2>/dev/null | awk 'NR==1{print $1}')
+    fi
+    if [ -z "$ip" ] && command -v host >/dev/null 2>&1; then
+        ip=$(host -t A "$host" 2>/dev/null | awk '/has address/{print $4; exit}')
+    fi
+    if [ -z "$ip" ] && command -v nslookup >/dev/null 2>&1; then
+        ip=$(nslookup -type=A "$host" 2>/dev/null | awk '/^Address: /{print $2; exit}')
+    fi
+    echo "$ip"
+}
+
+# 输入: $1=HOST_IP；输出: 完整的 subjectAltName 字符串
+# - IPv4 字面量 → IP: 前缀
+# - 合法 hostname → DNS: 前缀，并尽力解析出 IP 一并加入
+# - 其它 → die（调用方需保证已校验，但此处兜底）
+build_san_entries() {
+    local host="$1"
+    local entries="DNS:nats,DNS:localhost,IP:127.0.0.1"
+
+    _append_san_unique() {
+        local entry="$1"
+        case ",${entries}," in
+            *",${entry},"*) return ;;
+        esac
+        entries="${entries},${entry}"
+    }
+
+    if is_ipv4_literal "$host"; then
+        _append_san_unique "IP:${host}"
+        echo "$entries"
+        return
+    fi
+
+    if ! is_valid_hostname "$host"; then
+        die "HOST_IP 形态非法: '$host' (既不是 IPv4 字面量，也不符合 RFC 1123 主机名字符集)"
+    fi
+
+    _append_san_unique "DNS:${host}"
+
+    local resolved
+    resolved=$(resolve_host_ip "$host")
+    if [ -n "$resolved" ]; then
+        _append_san_unique "IP:${resolved}"
+    else
+        log "WARNING" "无法解析域名 '$host' 的 A 记录，证书 SAN 将仅包含 DNS 条目，不包含对应 IP" >&2
+    fi
+
+    echo "$entries"
+}
+
+generate_tls_certs() {
+    : "${HOST_IP:?HOST_IP 未设置}"
+
+    local dir=./conf/certs
+    local traefik_certs_dir=./conf/traefik/certs
+    local cn="BluekingLite"
+    local openssl_image="$DOCKER_IMAGE_OPENSSL"
+    
+    # 证书已存在则跳过（不读取也不校验 HOST_IP，避免对已部署环境造成回归）
+    if [ -f "$dir/server.crt" ] && [ -f "$dir/server.key" ] && [ -f "$dir/ca.crt" ]; then
+        log "SUCCESS" "TLS 证书已存在，跳过生成步骤..."
+        ensure_traefik_certs "$dir" "$traefik_certs_dir"
+        return
+    fi
+
+    local san
+    san=$(build_san_entries "$HOST_IP")
+
+    log "INFO" "生成自签名 TLS 证书（使用容器：${openssl_image}），SAN: ${san}"
+    mkdir -p "$dir"
+    
+    local abs_dir
+    abs_dir=$(cd "$dir" && pwd)
+    
+    # CA 私钥
+    log "INFO" "生成 CA 私钥..."
+    docker run --rm -v "${abs_dir}:/certs" "${openssl_image}" \
+        genrsa -out "/certs/ca.key" 2048
+    
+    # CA 证书
+    log "INFO" "生成 CA 证书..."
+    docker run --rm -v "${abs_dir}:/certs" "${openssl_image}" \
+        req -x509 -new -nodes -key "/certs/ca.key" -sha256 -days "$CERT_CA_DAYS" \
+        -subj "/CN=Blueking Lite" -out "/certs/ca.crt"
+    
+    # Server 私钥
+    log "INFO" "生成服务器私钥..."
+    docker run --rm -v "${abs_dir}:/certs" "${openssl_image}" \
+        genrsa -out "/certs/server.key" 2048
+    
+    # OpenSSL 配置
+    cat > "${dir}/openssl.conf" <<EOF
+[req]
+distinguished_name = req
+req_extensions = req_ext
+prompt = no
+
+[req_ext]
+subjectAltName = ${san}
+
+[v3_ext]
+subjectAltName = ${san}
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature,keyEncipherment,keyAgreement
+extendedKeyUsage = serverAuth
+EOF
+    
+    # CSR
+    log "INFO" "生成证书签名请求..."
+    docker run --rm -v "${abs_dir}:/certs" "${openssl_image}" \
+        req -new -key "/certs/server.key" -out "/certs/server.csr" \
+        -config "/certs/openssl.conf" -subj "/CN=${cn}"
+    
+    # 签名
+    log "INFO" "签名生成服务器证书..."
+    docker run --rm -v "${abs_dir}:/certs" "${openssl_image}" \
+        x509 -req -in "/certs/server.csr" -CA "/certs/ca.crt" -CAkey "/certs/ca.key" \
+        -CAcreateserial -days "$CERT_SERVER_DAYS" -sha256 -out "/certs/server.crt" \
+        -extensions v3_ext -extfile "/certs/openssl.conf"
+    
+    rm -f "${dir}/server.csr" "${dir}/openssl.conf"
+    log "SUCCESS" "TLS 证书生成完成"
+    
+    ensure_traefik_certs "$dir" "$traefik_certs_dir"
+}
+
+ensure_traefik_certs() {
+    local src_dir="$1"
+    local dst_dir="$2"
+    
+    if [ -f "$dst_dir/server.crt" ]; then
+        log "INFO" "Traefik 证书目录已存在证书，跳过复制..."
+        return
+    fi
+    
+    log "INFO" "复制证书到 Traefik 目录..."
+    mkdir -p "$dst_dir"
+    cp "${src_dir}/server.crt" "${src_dir}/server.key" "$dst_dir/"
+}
+
+#=============================================================================
+# 通用环境变量生成
+#=============================================================================
+generate_common_env() {
+    if [ -f "$COMMON_ENV_FILE" ]; then
+        log "SUCCESS" "发现 $COMMON_ENV_FILE 配置文件，加载已保存的环境变量..."
+        source "$COMMON_ENV_FILE"
+        load_image_config
+        ensure_common_env_vars
+        return
+    fi
+    
+    log "INFO" "未发现 $COMMON_ENV_FILE 配置文件，生成随机环境变量..."
+    
+    export POSTGRES_PASSWORD=$(generate_password 32)
+    export REDIS_PASSWORD=$(generate_password 32)
+    export SECRET_KEY=$(generate_password 32)
+    export NEXTAUTH_SECRET=$(generate_password 12)
+    export POSTGRES_USERNAME="${POSTGRES_USERNAME:-postgres}"
+    export NATS_ADMIN_USERNAME=admin
+    export NATS_ADMIN_PASSWORD=$(generate_password 32)
+    export NATS_MONITOR_USERNAME=monitor
+    export NATS_MONITOR_PASSWORD=$(generate_password 32)
+    export MINIO_ROOT_USER=minio
+    export MINIO_ROOT_PASSWORD=$(generate_password 32)
+    export FALKORDB_PASSWORD=$(generate_password 32)
+    
+    load_image_config
+    
+    export OFFLINE="${OFFLINE:-false}"
+    export OFFLINE_IMAGES_PATH="${OFFLINE_IMAGES_PATH:-./images}"
+    export OPSPILOT_ENABLED="${OPSPILOT_ENABLED:-false}"
+    export VLLM_ENABLED="${VLLM_ENABLED:-false}"
+    export VLLM_BCE_EMBEDDING_MODEL_NAME="maidalun/bce-embedding-base_v1"
+    export VLLM_OLMOCR_MODEL_NAME="allenai/OlmOCR-7B-0725"
+    export VLLM_BCE_RERANK_MODEL_NAME="maidalun/bce-reranker-base_v1"
+    export VLLM_BGE_EMBEDDING_MODEL_NAME="AI-ModelScope/bge-large-zh-v1.5"
+    
+    save_common_env
+    log "SUCCESS" "环境变量已生成并保存到 $COMMON_ENV_FILE"
+}
+
+ensure_common_env_vars() {
+    local vars_to_check=(
+        "POSTGRES_USERNAME:postgres"
+        "OPSPILOT_ENABLED:false"
+        "VLLM_ENABLED:false"
+        "OFFLINE:false"
+        "OFFLINE_IMAGES_PATH:./images"
+        "VLLM_BCE_EMBEDDING_MODEL_NAME:maidalun/bce-embedding-base_v1"
+        "VLLM_OLMOCR_MODEL_NAME:allenai/OlmOCR-7B-0725"
+        "VLLM_BCE_RERANK_MODEL_NAME:maidalun/bce-reranker-base_v1"
+        "VLLM_BGE_EMBEDDING_MODEL_NAME:AI-ModelScope/bge-large-zh-v1.5"
+    )
+    
+    for item in "${vars_to_check[@]}"; do
+        local var_name="${item%%:*}"
+        local default_value="${item#*:}"
+        
+        if [ -z "${!var_name:-}" ]; then
+            export "$var_name"="$default_value"
+        fi
+        
+        if ! grep -q "^export $var_name=" "$COMMON_ENV_FILE"; then
+            log "INFO" "将缺失的环境变量 $var_name 添加到 $COMMON_ENV_FILE"
+            echo "export $var_name=${!var_name}" >> "$COMMON_ENV_FILE"
+        fi
+    done
+}
+
+save_common_env() {
+    cat > "$COMMON_ENV_FILE" <<EOF
+# 自动生成的环境变量配置
+# 生成日期: $(date +'%Y-%m-%d %H:%M:%S')
+export POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+export POSTGRES_USERNAME=$POSTGRES_USERNAME
+export REDIS_PASSWORD=$REDIS_PASSWORD
+export SECRET_KEY=$SECRET_KEY
+export NEXTAUTH_SECRET=$NEXTAUTH_SECRET
+export NATS_ADMIN_USERNAME=$NATS_ADMIN_USERNAME
+export NATS_ADMIN_PASSWORD=$NATS_ADMIN_PASSWORD
+export NATS_MONITOR_USERNAME=$NATS_MONITOR_USERNAME
+export NATS_MONITOR_PASSWORD=$NATS_MONITOR_PASSWORD
+export MINIO_ROOT_USER=$MINIO_ROOT_USER
+export MINIO_ROOT_PASSWORD=$MINIO_ROOT_PASSWORD
+export FALKORDB_PASSWORD=$FALKORDB_PASSWORD
+export ENTERPRISE_ENABLED=$ENTERPRISE_ENABLED
+export REGISTRY_BASE=$REGISTRY_BASE
+export APP_NAMESPACE=$APP_NAMESPACE
+export MIRROR=$MIRROR
+export OFFLINE=$OFFLINE
+export OFFLINE_IMAGES_PATH=$OFFLINE_IMAGES_PATH
+export OPSPILOT_ENABLED=$OPSPILOT_ENABLED
+export VLLM_ENABLED=$VLLM_ENABLED
+export VLLM_BCE_EMBEDDING_MODEL_NAME=$VLLM_BCE_EMBEDDING_MODEL_NAME
+export VLLM_OLMOCR_MODEL_NAME=$VLLM_OLMOCR_MODEL_NAME
+export VLLM_BCE_RERANK_MODEL_NAME=$VLLM_BCE_RERANK_MODEL_NAME
+export VLLM_BGE_EMBEDDING_MODEL_NAME=$VLLM_BGE_EMBEDDING_MODEL_NAME
+EOF
+}
+
+ensure_db_env_vars() {
+    export DB_ENGINE="${DB_ENGINE:-postgresql}"
+    export DB_NAME="${DB_NAME:-bklite}"
+    export DB_USER="${DB_USER:-${POSTGRES_USERNAME:-postgres}}"
+    export DB_HOST="${DB_HOST:-postgres}"
+    export DB_PASSWORD="${DB_PASSWORD:-${POSTGRES_PASSWORD}}"
+    export DB_PORT="${DB_PORT:-5432}"
+
+    local db_vars=(DB_ENGINE DB_NAME DB_USER DB_HOST DB_PASSWORD DB_PORT)
+    for var_name in "${db_vars[@]}"; do
+        if ! grep -q "^export ${var_name}=" "$DB_ENV_FILE"; then
+            log "INFO" "将缺失的环境变量 ${var_name} 添加到 $DB_ENV_FILE"
+            echo "export ${var_name}=${!var_name}" >> "$DB_ENV_FILE"
+        fi
+    done
+
+    export POSTGRES_USERNAME="$DB_USER"
+    export POSTGRES_PASSWORD="$DB_PASSWORD"
+}
+
+save_db_env() {
+    cat > "$DB_ENV_FILE" <<EOF
+# 自动生成的数据库环境变量配置
+# 生成日期: $(date +'%Y-%m-%d %H:%M:%S')
+export DB_ENGINE=$DB_ENGINE
+export DB_NAME=$DB_NAME
+export DB_USER=$DB_USER
+export DB_HOST=$DB_HOST
+export DB_PASSWORD=$DB_PASSWORD
+export DB_PORT=$DB_PORT
+EOF
+}
+
+generate_db_env() {
+    if [ -f "$DB_ENV_FILE" ]; then
+        log "SUCCESS" "发现 $DB_ENV_FILE 配置文件，加载已保存的数据库环境变量..."
+        source "$DB_ENV_FILE"
+        ensure_db_env_vars
+        return
+    fi
+
+    log "INFO" "未发现 $DB_ENV_FILE 配置文件，生成数据库环境变量..."
+    ensure_db_env_vars
+    save_db_env
+    log "SUCCESS" "数据库环境变量已生成并保存到 $DB_ENV_FILE"
+}
+
+generate_postgres_initdb() {
+    mkdir -p ./conf/postgres
+
+    cat > ./conf/postgres/initdb.sql <<EOF
+CREATE DATABASE ${DB_NAME};
+EOF
+
+    if [ "$DB_NAME" != "mlflow" ]; then
+        cat >> ./conf/postgres/initdb.sql <<EOF
+CREATE DATABASE mlflow;
+EOF
+    fi
+}
+
+#=============================================================================
+# 采集器包生成
+#=============================================================================
+generate_collector_packages() {
+    local collector_image="${1:-${DOCKER_IMAGE_FUSION_COLLECTOR}}"
+    local output_dir="${2:-./pkgs}"
+    local certs_dir="${3:-./conf/certs}"
+    local bin_dir="${4:-./bin}"
+    
+    log "INFO" "开始生成控制器和采集器包..."
+    log "INFO" "使用镜像: ${collector_image}"
+    
+    if [[ "${OFFLINE:-false}" != "true" ]]; then
+        docker pull "${collector_image}"
+    else
+        log "INFO" "检测到 OFFLINE=true，跳过拉取镜像步骤"
+    fi
+    
+    local cpu_arch
+    cpu_arch=$(uname -m)
+    log "INFO" "检测到CPU架构: ${cpu_arch}"
+    
+    case "${cpu_arch}" in
+        x86_64)
+            generate_x86_packages "$collector_image" "$output_dir" "$certs_dir" "$bin_dir"
+            ;;
+        aarch64)
+            log "WARNING" "当前CPU架构为arm64，暂时无内置采集器"
+            ;;
+        *)
+            die "不支持的CPU架构: ${cpu_arch}"
+            ;;
+    esac
+}
+
+generate_x86_packages() {
+    local collector_image="$1"
+    local output_dir="$2"
+    local certs_dir="$3"
+    local bin_dir="$4"
+    
+    log "INFO" "当前CPU架构为x86_64，生成控制器和采集器包..."
+    
+    [ -d "${output_dir}" ] && rm -rf "${output_dir}"
+    mkdir -p "${output_dir}/controller/"{linux,windows}/certs
+    mkdir -p "${output_dir}/collector/"{linux,windows}
+    
+    [ -f "${certs_dir}/ca.crt" ] || die "CA证书文件不存在: ${certs_dir}/ca.crt"
+    cp -a "${certs_dir}/ca.crt" "${output_dir}/controller/linux/certs/"
+    cp -a "${certs_dir}/ca.crt" "${output_dir}/controller/windows/certs/"
+    
+    local docker_args=(
+        --rm
+        -v "${PWD}/${output_dir}:/pkgs"
+        -v "${PWD}/${bin_dir}:/tmp/bin"
+        --entrypoint=/bin/bash
+        "${collector_image}"
+    )
+    
+    docker run -i "${docker_args[@]}" -s <<'COLLECTOR_SCRIPT'
+set -e
+
+log() {
+    local level="$1" message="$2"
+    echo "[Package] [$level] $message"
+}
+
+OPT="/opt"
+PKG="/pkgs"
+STAGE_L="${OPT}/fusion-collectors"
+STAGE_W="${OPT}/windows/fusion-collectors"
+
+log "INFO" "Starting Build Process..."
+
+# 导出二进制文件
+log "INFO" "Exporting binaries..."
+cp -a bin/* "${PKG}/collector/linux/"
+cp -a /opt/release/linux/exporters "${PKG}/collector/linux/"
+cp -a bin/* /tmp/bin/ 2>/dev/null || log "WARNING" "Failed to update /tmp/bin. Skipping."
+cp -a "${OPT}/release/windows/fusion-collectors/bin/"* "${PKG}/collector/windows/"
+
+# 构建 Linux 包
+log "INFO" "Building Linux package..."
+cp -a "${STAGE_L}/misc/linux/"* "${STAGE_L}/"
+# 保留原始 VERSION 文件供 init_plugins 使用
+cp "${STAGE_L}/misc/VERSION" "${PKG}/controller/"
+# 从 VERSION 文件提取版本号（仅数值，不带变量名）写入包内
+source "${STAGE_L}/misc/VERSION"
+echo "${LINUX_SIDECAR_VERSION}" > "${STAGE_L}/VERSION"
+mkdir -p "${STAGE_L}/certs"
+cp "${PKG}/controller/linux/certs/ca.crt" "${STAGE_L}/certs/"
+rm -rf "${STAGE_L}/misc"
+cp /opt/release/linux/fusion-collectors/bklite-controller-installer "${PKG}/controller/linux/"
+(cd "${OPT}" && zip -rq "${PKG}/controller/fusion-collectors-linux-amd64.zip" fusion-collectors)
+log "SUCCESS" "Linux package built."
+
+# 构建 Windows 包
+log "INFO" "Building Windows package..."
+mkdir -p "$(dirname ${STAGE_W})"
+cp -a "${OPT}/release/windows/"* "$(dirname ${STAGE_W})/"
+mkdir -p "${STAGE_W}/certs"
+cp "${PKG}/controller/windows/certs/ca.crt" "${STAGE_W}/certs/"
+# 写入纯版本号
+echo "${WINDOWS_SIDECAR_VERSION}" > "${STAGE_W}/VERSION"
+rm -rf "${STAGE_W}/misc"
+cp ${STAGE_W}/bklite-controller-installer.exe "${PKG}/controller/windows/"
+(cd "${OPT}/windows" && zip -rq "${PKG}/controller/fusion-collectors-windows-amd64.zip" fusion-collectors)
+log "SUCCESS" "Windows package built."
+
+log "SUCCESS" "All tasks completed."
+COLLECTOR_SCRIPT
+    
+    log "SUCCESS" "控制器和采集器包生成成功"
+}
+
+#=============================================================================
+# NATS 配置生成
+#=============================================================================
+generate_nats_config() {
+    mkdir -p ./conf/nats
+
+    if [ -f ./conf/nats/nats.conf ]; then
+        log "WARNING" "nats.conf 文件已存在，将被覆盖..."
+    fi
+
+    local leafnode_remotes=""
+    if [ "${HA_ROLE:-primary}" = "standby" ]; then
+        leafnode_remotes=$(cat <<REMOTES
+    remotes = [
+        {
+            url: "tls://${NATS_ADMIN_USERNAME}:${NATS_ADMIN_PASSWORD}@${PEER_HOST}:${PEER_NATS_LEAFNODE_PORT}"
+            tls {
+                cert_file: "/etc/nats/certs/server.crt"
+                key_file: "/etc/nats/certs/server.key"
+                ca_file: "/etc/nats/certs/ca.crt"
+            }
+        }
+    ]
+REMOTES
+)
+    fi
+
+    cat > ./conf/nats/nats.conf <<EOF
+port: 4222
+monitor_port: 8222
+trace: false
+debug: false
+logtime: false
+
+tls {
+  cert_file: "/etc/nats/certs/server.crt"
+  key_file: "/etc/nats/certs/server.key"
+  ca_file: "/etc/nats/certs/ca.crt"
+}
+
+leafnodes {
+    port: 7422
+    tls {
+        cert_file: "/etc/nats/certs/server.crt"
+        key_file: "/etc/nats/certs/server.key"
+        ca_file: "/etc/nats/certs/ca.crt"
+        verify: true
+    }
+${leafnode_remotes}
+}
+
+jetstream: enabled
+jetstream {
+  store_dir=/nats/storage
+  domain=bklite
+}
+
+server_name=${NATS_SERVER_NAME}
+authorization {
+  default_permissions = {
+    publish = []
+    subscribe = []
+  }
+  users = [
+    {
+      user: "${NATS_ADMIN_USERNAME}"
+      password: "${NATS_ADMIN_PASSWORD}"
+      permissions: {
+        publish = [">"]
+        subscribe = [">"]
+      }
+    },
+    {
+      user: "${NATS_MONITOR_USERNAME}"
+      password: "${NATS_MONITOR_PASSWORD}"
+      permissions: {
+        publish = ["metrics.>","vector","_INBOX.>"]
+        subscribe = []
+      }
+    }
+  ]
+}
+EOF
+}
+
+#=============================================================================
+# .env 文件生成
+#=============================================================================
+generate_dotenv() {
+    log "INFO" "生成 .env 文件..."
+    [ -f "$DB_ENV_FILE" ] && source "$DB_ENV_FILE"
+    export DB_ENGINE="${DB_ENGINE:-postgresql}"
+    export DB_NAME="${DB_NAME:-bklite}"
+    export DB_USER="${DB_USER:-${POSTGRES_USERNAME:-postgres}}"
+    export DB_HOST="${DB_HOST:-postgres}"
+    export DB_PASSWORD="${DB_PASSWORD:-${POSTGRES_PASSWORD}}"
+    export DB_PORT="${DB_PORT:-5432}"
+    export POSTGRES_USERNAME="${DB_USER}"
+    export POSTGRES_PASSWORD="${DB_PASSWORD}"
+    
+    cat > .env <<EOF
+HOST_IP=${HOST_IP}
+TRAEFIK_WEB_PORT=${TRAEFIK_WEB_PORT}
+DB_ENGINE=${DB_ENGINE}
+DB_NAME=${DB_NAME}
+DB_USER=${DB_USER}
+DB_HOST=${DB_HOST}
+DB_PASSWORD=${DB_PASSWORD}
+DB_PORT=${DB_PORT}
+POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+REDIS_PASSWORD=${REDIS_PASSWORD}
+SECRET_KEY=${SECRET_KEY}
+NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+NATS_ADMIN_USERNAME=${NATS_ADMIN_USERNAME}
+NATS_ADMIN_PASSWORD=${NATS_ADMIN_PASSWORD}
+NATS_MONITOR_USERNAME=${NATS_MONITOR_USERNAME}
+NATS_MONITOR_PASSWORD=${NATS_MONITOR_PASSWORD}
+MINIO_ROOT_USER=${MINIO_ROOT_USER}
+MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+FALKORDB_PASSWORD=${FALKORDB_PASSWORD}
+DOCKER_IMAGE_TRAEFIK=${DOCKER_IMAGE_TRAEFIK}
+DOCKER_IMAGE_REDIS=${DOCKER_IMAGE_REDIS}
+DOCKER_IMAGE_NATS=${DOCKER_IMAGE_NATS}
+DOCKER_IMAGE_NATS_CLI=${DOCKER_IMAGE_NATS_CLI}
+DOCKER_IMAGE_VICTORIA_METRICS=${DOCKER_IMAGE_VICTORIA_METRICS}
+DOCKER_IMAGE_POSTGRES=${DOCKER_IMAGE_POSTGRES}
+DOCKER_IMAGE_SERVER=${DOCKER_IMAGE_SERVER}
+DOCKER_IMAGE_WEB=${DOCKER_IMAGE_WEB}
+DOCKER_IMAGE_STARGAZER=${DOCKER_IMAGE_STARGAZER}
+DOCKER_IMAGE_FUSION_COLLECTOR=${DOCKER_IMAGE_FUSION_COLLECTOR}
+DOCKER_IMAGE_MINIO=${DOCKER_IMAGE_MINIO}
+DOCKER_IMAGE_METIS=${DOCKER_IMAGE_METIS}
+DOCKER_IMAGE_TELEGRAF=${DOCKER_IMAGE_TELEGRAF}
+POSTGRES_USERNAME=${POSTGRES_USERNAME}
+TRAEFIK_ENABLE_DASHBOARD=${TRAEFIK_ENABLE_DASHBOARD}
+DEFAULT_REQUEST_TIMEOUT=${DEFAULT_REQUEST_TIMEOUT}
+DIST_ARCH=${DIST_ARCH}
+DOCKER_NETWORK=${DOCKER_NETWORK}
+DOCKER_IMAGE_VICTORIALOGS=${DOCKER_IMAGE_VICTORIALOGS}
+DOCKER_IMAGE_MLFLOW=${DOCKER_IMAGE_MLFLOW}
+DOCKER_IMAGE_NATS_EXECUTOR=${DOCKER_IMAGE_NATS_EXECUTOR}
+DOCKER_IMAGE_FALKORDB=${DOCKER_IMAGE_FALKORDB}
+DOCKER_IMAGE_PGVECTOR=${DOCKER_IMAGE_PGVECTOR}
+DOCKER_IMAGE_VECTOR=${DOCKER_IMAGE_VECTOR}
+DOCKER_IMAGE_VLLM=${DOCKER_IMAGE_VLLM}
+DOCKER_IMAGE_WEBHOOKD=${DOCKER_IMAGE_WEBHOOKD}
+VLLM_BCE_EMBEDDING_MODEL_NAME=${VLLM_BCE_EMBEDDING_MODEL_NAME}
+VLLM_OLMOCR_MODEL_NAME=${VLLM_OLMOCR_MODEL_NAME}
+VLLM_BGE_EMBEDDING_MODEL_NAME=${VLLM_BGE_EMBEDDING_MODEL_NAME}
+VLLM_BCE_RERANK_MODEL_NAME=${VLLM_BCE_RERANK_MODEL_NAME}
+INSTALL_APPS="${INSTALL_APPS}"
+HA_ROLE=${HA_ROLE}
+PEER_HOST=${PEER_HOST}
+PEER_PG_PORT=${PEER_PG_PORT}
+PEER_NATS_LEAFNODE_PORT=${PEER_NATS_LEAFNODE_PORT}
+PEER_MINIO_ENDPOINT=${PEER_MINIO_ENDPOINT}
+PG_REPL_USER=${PG_REPL_USER}
+PG_REPL_PASSWORD=${PG_REPL_PASSWORD}
+MINIO_SR_USER=${MINIO_SR_USER}
+MINIO_SR_PASSWORD=${MINIO_SR_PASSWORD}
+NATS_SERVER_NAME=${NATS_SERVER_NAME}
+NATS_INSTANCE_ID=${NATS_INSTANCE_ID}
+VECTOR_CONNECTION_NAME=${NATS_SERVER_NAME}
+EOF
+
+    local nats_tls_ca
+    nats_tls_ca=$(cat conf/certs/ca.crt)
+    echo "NATS_TLS_CA=\"${nats_tls_ca}\"" >> .env
+}
+
+#=============================================================================
+# 服务启动
+#=============================================================================
+start_services() {
+    local pull_flag=""
+    [[ "${OFFLINE:-false}" == "true" ]] && pull_flag="--pull never"
+
+    log "INFO" "启动基础 DB 类服务..."
+    ${DOCKER_COMPOSE_CMD} up $pull_flag -d traefik redis nats victoria-metrics falkordb victoria-logs minio mlflow nats-executor vector webhookd
+
+    if [ "$HA_ROLE" = "primary" ]; then
+        log "INFO" "[primary] 创建 metrics JetStream..."
+        docker run --rm --network=bklite-prod \
+            -v "$PWD/conf/certs:/etc/certs:ro" \
+            "$DOCKER_IMAGE_NATS_CLI" nats -s tls://nats:4222 \
+            --tlsca /etc/certs/ca.crt \
+            --user "$NATS_ADMIN_USERNAME" --password "$NATS_ADMIN_PASSWORD" \
+            stream add metrics --subjects=metrics.* --storage=file \
+            --replicas=1 --retention=limits --discard=old \
+            --max-age=20m --max-bytes=104857600 --max-consumers=-1 \
+            --max-msg-size=-1 --max-msgs=-1 --max-msgs-per-subject=1000000 \
+            --dupe-window=5m --no-allow-rollup --no-deny-delete --no-deny-purge || \
+            log "WARNING" "metrics 流可能已存在，忽略错误"
+
+        log "INFO" "[primary] 启动业务进程 (profile=active)..."
+        ${DOCKER_COMPOSE_CMD} --profile active up $pull_flag -d
+    else
+        log "INFO" "[standby] 跳过 metrics 流创建（将由 mirror 流同步）"
+        log "INFO" "[standby] 业务进程不启动（profile=active 未激活）"
+        bash ./bin/ha-init-mirror-streams.sh || \
+            log "WARNING" "mirror 流初始化失败或部分跳过；可在 PG/MinIO/Redis 就绪后手动重跑"
+    fi
+    sleep 10
+}
+
+#=============================================================================
+# 插件初始化
+#=============================================================================
+init_plugins() {
+    log "INFO" "开始初始化内置插件..."
+    
+    $DOCKER_COMPOSE_CMD exec -T server /bin/bash -s <<'PLUGIN_INIT'
+source /apps/pkgs/controller/VERSION
+python manage.py controller_package_init --pk_version $LINUX_SIDECAR_VERSION --file_path /apps/pkgs/controller/fusion-collectors-linux-amd64.zip
+python manage.py collector_package_init --os linux --object Telegraf --pk_version latest --file_path /apps/pkgs/collector/linux/telegraf
+python manage.py collector_package_init --os linux --object Vector --pk_version latest --file_path /apps/pkgs/collector/linux/vector
+python manage.py collector_package_init --os linux --object Nats-Executor --pk_version latest --file_path /apps/pkgs/collector/linux/nats-executor
+python manage.py controller_package_init --os windows --pk_version $WINDOWS_SIDECAR_VERSION --file_path /apps/pkgs/controller/fusion-collectors-windows-amd64.zip
+python manage.py collector_package_init --os windows --object Telegraf --pk_version latest --file_path /apps/pkgs/collector/windows/telegraf.exe
+python manage.py collector_package_init --os windows --object Nats-Executor --pk_version latest --file_path /apps/pkgs/collector/windows/nats-executor.exe
+python manage.py installer_init --os linux --file_path /apps/pkgs/controller/linux/bklite-controller-installer
+python manage.py installer_init --os windows --file_path /apps/pkgs/controller/windows/bklite-controller-installer.exe
+EXPORTER_DIR="/apps/pkgs/collector/linux/exporters"
+
+for filepath in "${EXPORTER_DIR}"/*; do
+    [ -f "${filepath}" ] || [ -d "${filepath}" ] || continue
+
+    filename=$(basename "${filepath}")
+
+    if [[ "${filename}" =~ ^(.+)-([0-9]+\.[0-9]+(\.[0-9]+)*)$ ]]; then
+        object="${BASH_REMATCH[1]}"
+        version="${BASH_REMATCH[2]}"
+    elif [[ "${filename}" =~ ^(.+)\.(jar|tar\.gz|tgz|zip|bin)$ ]]; then
+        object="${BASH_REMATCH[1]}"
+        version="1.0.0"
+        echo "[WARN] ${filename}: no version detected, using default ${version}"
+    else
+        echo "[SKIP] ${filename}: unable to parse, skipping"
+        continue
+    fi
+
+    echo ">>> Importing: object=${object}, version=${version}, path=${filepath}"
+    python manage.py collector_package_init \
+        --os linux \
+        --object "${object}" \
+        --pk_version "${version}" \
+        --file_path "${filepath}"
+done
+
+echo "All packages imported successfully."
+PLUGIN_INIT
+}
+
+#=============================================================================
+# Sidecar Token 初始化
+#=============================================================================
+init_sidecar_token() {
+    if [ -n "${SIDECAR_NODE_ID:-}" ]; then
+        log "SUCCESS" "检测到 SIDECAR_NODE_ID 环境变量，跳过初始化"
+        return
+    fi
+    
+    log "WARNING" "重新初始化 Sidecar Node ID 和 Token..."
+    
+    local arr=()
+    mapfile -t arr < <($DOCKER_COMPOSE_CMD exec -T server /bin/bash -c 'python manage.py node_token_init --ip default' 2>&1 | grep -oP 'node_id: \K[0-9a-f]+|token: \K\S+')
+    
+    if [ ${#arr[@]} -lt 2 ]; then
+        log "ERROR" "无法获取 Sidecar Node ID 和 Token，请检查数据库连接"
+        log "ERROR" "可能原因: PostgreSQL 密码不匹配（重部署场景需先执行 docker-compose down -v）"
+        return 1
+    fi
+    
+    SIDECAR_NODE_ID="${arr[0]}"
+    SIDECAR_INIT_TOKEN="${arr[1]}"
+    
+    log "SUCCESS" "Sidecar Node ID: $SIDECAR_NODE_ID"
+    
+    # 更新 common.env
+    if ! grep -q "^SIDECAR_INIT_TOKEN=" "$COMMON_ENV_FILE" 2>/dev/null; then
+        echo "export SIDECAR_INIT_TOKEN=$SIDECAR_INIT_TOKEN" >> "$COMMON_ENV_FILE"
+    else
+        local escaped_token
+        escaped_token=$(escape_sed_replacement "$SIDECAR_INIT_TOKEN")
+        sed -i.bak "s|^export SIDECAR_INIT_TOKEN=.*$|export SIDECAR_INIT_TOKEN=\"$escaped_token\"|g" "$COMMON_ENV_FILE"
+        rm -f "${COMMON_ENV_FILE}.bak"
+    fi
+    echo "export SIDECAR_NODE_ID=$SIDECAR_NODE_ID" >> "$COMMON_ENV_FILE"
+    
+    echo "SIDECAR_NODE_ID=$SIDECAR_NODE_ID" >> .env
+    echo "SIDECAR_INIT_TOKEN=$SIDECAR_INIT_TOKEN" >> .env
+}
+
+#=============================================================================
+# 更新 common.env 中的参数
+#=============================================================================
+update_common_env_flags() {
+    [ -f "$COMMON_ENV_FILE" ] || return
+
+    for var in ENTERPRISE_ENABLED OPSPILOT_ENABLED VLLM_ENABLED REGISTRY_BASE APP_NAMESPACE MIRROR; do
+        local escaped_value
+        escaped_value=$(escape_sed_replacement "${!var}")
+
+        if grep -q "^export $var=" "$COMMON_ENV_FILE"; then
+            sed -i.bak "s|^export $var=.*$|export $var=$escaped_value|" "$COMMON_ENV_FILE"
+            rm -f "${COMMON_ENV_FILE}.bak"
+        else
+            echo "export $var=${!var}" >> "$COMMON_ENV_FILE"
+        fi
+    done
+
+    log "SUCCESS" "已保存参数配置: OPSPILOT_ENABLED=$OPSPILOT_ENABLED, VLLM_ENABLED=$VLLM_ENABLED, REGISTRY_BASE=$REGISTRY_BASE, APP_NAMESPACE=$APP_NAMESPACE"
+}
+
+#=============================================================================
+# install 命令
+#=============================================================================
+do_install() {
+    OFFLINE="${OFFLINE:-false}"
+    local clean_install=false
+
+    load_ha_env
+
+    if [ -f "$COMMON_ENV_FILE" ]; then
+        log "SUCCESS" "发现配置文件，加载已保存的配置..."
+        source "$COMMON_ENV_FILE"
+    fi
+    
+    export OPSPILOT_ENABLED="${OPSPILOT_ENABLED:-false}"
+    export VLLM_ENABLED="${VLLM_ENABLED:-false}"
+    export ENTERPRISE_ENABLED="${ENTERPRISE_ENABLED:-false}"
+    
+    for arg in "$@"; do
+        case "$arg" in
+            --clean)
+                clean_install=true
+                log "WARNING" "检测到 --clean 参数，将清理现有数据并重新部署"
+                ;;
+            --opspilot)
+                export OPSPILOT_ENABLED=true
+                log "INFO" "命令行指定 --opspilot，启用 OpsPilot"
+                ;;
+            --enterprise)
+                export ENTERPRISE_ENABLED=true
+                log "INFO" "命令行指定 --enterprise，切换企业版镜像命名空间 (weopsx)"
+                ;;
+            --vllm)
+                if check_nvidia_gpu; then
+                    export VLLM_ENABLED=true
+                    log "INFO" "启用 vLLM（GPU 可用）"
+                else
+                    log "ERROR" "未检测到 NVIDIA GPU"
+                    export VLLM_ENABLED=false
+                fi
+                ;;
+        esac
+    done
+
+    load_image_config
+    
+    if [ "$clean_install" = true ]; then
+        log "WARNING" "正在停止并清理现有容器和数据卷..."
+        $DOCKER_COMPOSE_CMD down -v 2>/dev/null || true
+        rm -f "$COMMON_ENV_FILE" "$DB_ENV_FILE" "$PORT_ENV_FILE" .env 2>/dev/null || true
+        log "SUCCESS" "清理完成，开始全新部署"
+    fi
+    
+    # 构建安装应用列表
+    INSTALL_APPS="system_mgmt,cmdb,monitor,node_mgmt,console_mgmt,alerts,log,mlops,operation_analysis,job_mgmt,opspilot"
+    if [[ "$OPSPILOT_ENABLED" == "true" ]]; then
+        #INSTALL_APPS="${INSTALL_APPS},opspilot"
+        log "INFO" "安装应用列表: ${INSTALL_APPS}"
+    fi
+    
+    # 镜像加载模式
+    local load_local_images=false
+    if [[ "$OFFLINE" == "true" ]]; then
+        load_local_images=true
+        log "INFO" "检测到 OFFLINE=true，将从本地加载镜像"
+    fi
+
+    # 生成配置
+    generate_ports_env
+    generate_common_env
+    generate_db_env
+    init_docker_images
+    update_common_env_flags
+
+    # 外部数据库模式判定（依赖已加载的 DB_ENGINE / ENTERPRISE_ENABLED）
+    if is_external_db; then
+        log "WARNING" "检测到企业版外部数据库模式（DB_ENGINE=${DB_ENGINE}），将跳过内置 postgres 容器"
+        log "WARNING" "mlflow 服务未适配外部数据库，可能不可用"
+        validate_external_db_env
+    else
+        generate_postgres_initdb
+    fi
+
+    generate_tls_certs
+    generate_nats_config
+    generate_dotenv
+
+    # 构建 compose 命令（postgres 容器仅在非外部数据库模式下加入）
+    COMPOSE_CMD="${DOCKER_COMPOSE_CMD} -f compose/infra.yaml"
+    if ! is_external_db; then
+        COMPOSE_CMD="${COMPOSE_CMD} -f compose/postgres.yaml"
+    fi
+    COMPOSE_CMD="${COMPOSE_CMD} -f compose/monitor.yaml -f compose/server.yaml -f compose/web.yaml"
+    [[ "$VLLM_ENABLED" == "true" ]] && COMPOSE_CMD="${COMPOSE_CMD} -f compose/vllm.yaml"
+    # HA override：将业务服务标记为 profile=active；按 HA_ROLE 注入差异化 entrypoint / command
+    COMPOSE_CMD="${COMPOSE_CMD} -f compose/log.yaml -f compose/ha.yaml config --no-interpolate"
+
+    # 生成 docker-compose.yaml
+    log "INFO" "生成 docker-compose.yaml..."
+    $COMPOSE_CMD > docker-compose.yaml
+
+    # 加载或拉取镜像
+    if [[ "$load_local_images" == "true" ]]; then
+        load_docker_images_with_hash_check "${OFFLINE_IMAGES_PATH:-./images}"
+    else
+        log "INFO" "拉取最新镜像..."
+        ${DOCKER_COMPOSE_CMD} pull
+    fi
+
+    # 生成采集器包（仅主节点；备节点 server 不启动，初始化无意义）
+    if [ "$HA_ROLE" = "primary" ]; then
+        generate_collector_packages || exit 1
+    else
+        log "INFO" "[standby] 跳过采集器包生成"
+    fi
+
+    # 启动服务（角色感知）
+    start_services
+
+    if [ "$HA_ROLE" = "primary" ]; then
+        init_plugins
+        init_sidecar_token
+
+        local pull_flag=""
+        [[ "${OFFLINE:-false}" == "true" ]] && pull_flag="--pull never"
+        ${DOCKER_COMPOSE_CMD} --profile active up $pull_flag -d fusion-collector
+
+        log "SUCCESS" "[primary] 部署成功，访问 https://$HOST_IP:$TRAEFIK_WEB_PORT"
+        log "SUCCESS" "初始用户名: admin, 初始密码: password"
+    else
+        log "INFO" "[standby] 跳过 init_plugins / init_sidecar_token / fusion-collector 启动"
+        log "INFO" "[standby] 当前节点为热备：DB 类组件运行中，业务进程未启动"
+        log "INFO" "[standby] 故障切换时请执行 bin/ha-failover.sh"
+        log "SUCCESS" "[standby] 部署成功"
+    fi
+}
+
+#=============================================================================
+# package 命令
+#=============================================================================
+do_package() {
+    local skip_opspilot=true skip_vllm=true
+    export ENTERPRISE_ENABLED="${ENTERPRISE_ENABLED:-false}"
+
+    for arg in "$@"; do
+        case "$arg" in
+            --opspilot)
+                skip_opspilot=false
+                log "INFO" "检测到 --opspilot，将下载 OpsPilot 镜像"
+                ;;
+            --enterprise)
+                export ENTERPRISE_ENABLED=true
+                log "INFO" "检测到 --enterprise，将切换企业版镜像命名空间 (weopsx)"
+                ;;
+            --vllm)
+                skip_vllm=false
+                log "INFO" "检测到 --vllm，将下载 vLLM 镜像"
+                ;;
+        esac
+    done
+
+    # 加载已保存的 db.env 以获取 DB_ENGINE，便于判定外部数据库模式
+    [ -f "$DB_ENV_FILE" ] && source "$DB_ENV_FILE"
+
+    load_image_config
+
+    local skip_postgres=false
+    if is_external_db; then
+        skip_postgres=true
+        log "INFO" "检测到企业版外部数据库模式（DB_ENGINE=${DB_ENGINE}），打包将跳过 postgres 镜像"
+    fi
+
+    [[ "$skip_opspilot" == "true" ]] && log "INFO" "跳过 OpsPilot 镜像（使用 --opspilot 下载）"
+    [[ "$skip_vllm" == "true" ]] && log "INFO" "跳过 vLLM 镜像（使用 --vllm 下载）"
+    
+    log "INFO" "开始下载 Docker 镜像..."
+    log "INFO" "Registry Base: ${REGISTRY_BASE}, App Namespace: ${APP_NAMESPACE}"
+    
+    init_docker_images
+    
+    mkdir -p images
+    
+    local hash_file="images/images.sha256"
+    cat > "$hash_file" <<EOF
+# 镜像 hash 文件
+# 格式: 镜像名称 镜像hash 文件名
+# 生成时间: $(date +'%Y-%m-%d %H:%M:%S')
+EOF
+    
+    local image_count=0 skipped_count=0
+    
+    for image_var in $(compgen -v | grep '^DOCKER_IMAGE_'); do
+        # 跳过 OpsPilot 镜像
+        if [[ "$skip_opspilot" == "true" ]] && [[ "$image_var" =~ METIS ]]; then
+            log "INFO" "跳过: ${image_var}"
+            skipped_count=$((skipped_count + 1))
+            continue
+        fi
+        
+        # 跳过 vLLM 镜像
+        if [[ "$skip_vllm" == "true" ]] && [[ "$image_var" =~ VLLM ]]; then
+            log "INFO" "跳过: ${image_var}"
+            skipped_count=$((skipped_count + 1))
+            continue
+        fi
+
+        # 外部数据库模式跳过 postgres 镜像（PGVECTOR 是独立服务，保留）
+        if [[ "$skip_postgres" == "true" ]] && [[ "$image_var" == "DOCKER_IMAGE_POSTGRES" ]]; then
+            log "INFO" "跳过: ${image_var}（外部数据库模式）"
+            skipped_count=$((skipped_count + 1))
+            continue
+        fi
+
+        local image_name="${!image_var}"
+        log "INFO" "下载镜像: $image_name"
+        docker pull "$image_name"
+
+        # 保存镜像（使用完整路径，与 install 侧 .env 引用一致）
+        local safe_filename
+        safe_filename=$(echo "$image_name" | sed 's|/|_|g; s|:|_|g').tar
+
+        log "INFO" "保存镜像: $safe_filename"
+        docker save "$image_name" -o "images/$safe_filename"
+
+        # 记录 hash
+        local image_hash
+        image_hash=$(docker image inspect "$image_name" --format '{{.Id}}' 2>/dev/null | sed 's/sha256://')
+
+        if [ -n "$image_hash" ]; then
+            echo "$image_name $image_hash $safe_filename" >> "$hash_file"
+            log "SUCCESS" "已保存: $image_name"
+            image_count=$((image_count + 1))
+        fi
+    done
+    
+    log "SUCCESS" "镜像打包完成！总计: $image_count 个"
+    [ "$skipped_count" -gt 0 ] && log "INFO" "跳过: $skipped_count 个"
+    
+    local pkg_name="bklite-offline.tar.gz"
+    tar --exclude='*.env' --exclude='conf/certs/' --exclude='conf/nats/nats.conf' --exclude='pkgs/' --exclude='bin/' -czf "/opt/$pkg_name" .
+    log "SUCCESS" "已生成离线包: /opt/$pkg_name"
+}
+
+#=============================================================================
+# 入口
+#=============================================================================
+main() {
+    log "INFO" "开始检查 Docker 和 Docker Compose 版本..."
+    check_docker_version
+    check_docker_compose_version
+    
+    case "${1:-}" in
+        package)
+            shift
+            do_package "$@"
+            ;;
+        *)
+            do_install "$@"
+            ;;
+    esac
+}
+
+main "$@"
